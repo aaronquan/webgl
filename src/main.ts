@@ -33,8 +33,9 @@ if(gl){
 
 }
 
+/*
 function draw2(){
-  const transformColour = new CustomShader.TransformColourProgram();
+  //const transformColour = new CustomShader.TransformColourProgram();
   //const translateColour = new CustomShader.TranslateColourMixin();
 
   const t = Date.now();
@@ -86,4 +87,4 @@ function drawScene(){
 
   requestAnimationFrame(drawScene);
 }
-
+*/

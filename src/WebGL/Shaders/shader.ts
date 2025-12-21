@@ -121,6 +121,7 @@ export class ShaderProgram{
   }
 }
 
+// custom shader for inheritance
 export abstract class CustomShaderProgram{
   protected program: ShaderProgram;
   protected declare name: string;
@@ -139,13 +140,14 @@ export abstract class CustomShaderProgram{
     if(!this.program.is_linked){
       this.program.link();
     }
-    this.add_attribute_locations();
-    this.add_uniform_locations();
+    this.addAttributeLocations();
+    this.addUniformLocations();
   }
-  abstract add_attribute_locations(): void;
-  abstract add_uniform_locations(): void;
+  abstract addAttributeLocations(): void;
+  abstract addUniformLocations(): void;
 }
 
+// custom shader for mixins
 export class ShaderProgramMixin{
   protected program: ShaderProgram;
   protected declare vertex_name: string;
@@ -170,9 +172,9 @@ export class ShaderProgramMixin{
   private link(){
     if(!this.program.is_linked){
       this.program.link();
-      this.add_vertex_attribute_locations();
-      this.add_vertex_uniform_locations();
-      this.add_fragment_uniform_locations();
+      this.addVertexAttributeLocations();
+      this.addVertexUniformLocations();
+      this.addFragmentUniformLocations();
     }
   }
   protected setupVertex(): void{
@@ -181,13 +183,13 @@ export class ShaderProgramMixin{
   protected setupFragment(): void{
     throw new Error("Setup fragment needs to be overridden");
   }
-  protected add_vertex_attribute_locations(): void{
+  protected addVertexAttributeLocations(): void{
     throw new Error("Vertex attributes need to be overridden");
   };
-  protected add_vertex_uniform_locations(): void{
+  protected addVertexUniformLocations(): void{
     throw new Error("Vertex uniforms need to be overridden");
   };
-  protected add_fragment_uniform_locations(): void{
+  protected addFragmentUniformLocations(): void{
     throw new Error("Fragment uniforms need to be overridden");
   };
 }

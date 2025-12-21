@@ -2,6 +2,7 @@ import WebGL from "../WebGL/globals";
 import * as Shapes from '../WebGL/Shapes/Shapes';
 import * as CustomShader from "../WebGL/Shaders/custom";
 import * as Matrix from "../WebGL/Matrix/matrix";
+import * as Grid from "./grid";
 
 
 
@@ -67,11 +68,11 @@ export class MyEngine extends BaseEngine{
   positions: Position[];
   mouse: Position;
 
-  grid: boolean[][];
+  grid: Grid.RectGrid;
 
-  gw: number;
-  gh: number;
-  gsize: number;
+  //gw: number;
+  //gh: number;
+  //gsize: number;
 
   mouse_grid_coord: Position | undefined;
 
@@ -83,10 +84,11 @@ export class MyEngine extends BaseEngine{
     this.width = 500;
     this.height = 500;
 
-    this.grid = [];
-    this.gw = 10;
-    this.gh = 10;
-    this.gsize = 25;
+    this.grid = new Grid.RectGrid(10, 10, 25);
+    //this.gw = 10;
+    //this.gh = 10;
+    //this.gsize = 25;
+    //this
 
     this.mouse_grid_coord = undefined;
   }
@@ -101,13 +103,9 @@ export class MyEngine extends BaseEngine{
     this.mouse = {x: ev.clientX, y: ev.clientY};
     const coords = document.getElementById("coords") as HTMLElement;
     coords.innerText = `x: ${ev.clientX}, y: ${ev.clientY}`;
-    const grid_width = this.gw*this.gsize;
-    const grid_height = this.gh*this.gsize;
-    if(this.mouse.x < grid_height && this.mouse.y < grid_width){
-      this.mouse_grid_coord = {x: Math.floor(this.mouse.x/this.gsize), y: Math.floor(this.mouse.y/this.gsize)};
-    }else{
-      this.mouse_grid_coord = undefined;
-    }
+    //const grid_width = this.grid.pixel_width;
+    //const grid_height = this.grid.pixel_height;
+    this.mouse_grid_coord = this.grid.getPosition(this.mouse.x, this.mouse.y);
   }
   protected override handleMouseDown(ev: MouseEvent): void{
     this.positions.push({x: (this.mouse.x*2/this.width) - 1, y: 1 - (this.mouse.y*2/this.height)});
@@ -121,6 +119,7 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
   mvp_colour: CustomShader.MVPColourProgram;
   mvp_outline_circle: CustomShader.MVPOutlineCircleProgram;
   mvp_outline_rect: CustomShader.MVPOutlineRectProgram;
+  mvp_solid_line: CustomShader.MVPSolidLineProgram;
   vp: Matrix.TransformationMatrix3x3;
   constructor(){
     this.transform_colour = new CustomShader.TransformColourProgram();
@@ -128,6 +127,7 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
     this.mvp_colour = new CustomShader.MVPColourProgram();
     this.mvp_outline_circle = new CustomShader.MVPOutlineCircleProgram();
     this.mvp_outline_rect = new CustomShader.MVPOutlineRectProgram();
+    this.mvp_solid_line = new CustomShader.MVPSolidLineProgram();
     this.vp = Matrix.TransformationMatrix3x3.orthographic(0, 500, 500, 0);
   }
   renderGrid(engine: MyEngine){
@@ -141,14 +141,13 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
     //this.mvp_colour.setColour(0, 0, 0);
     //Shapes.CenterQuad.drawRelative();
     //this.mvp_colour.setView(view);
-    for(let y = 0; y < engine.gh; y++){
-      for(let x = 0; x < engine.gw; x++){
-        const model = Matrix.TransformationMatrix3x3.translate(x*engine.gsize+(engine.gsize/2), y*engine.gsize+(engine.gsize/2));
-        model.multiply(Matrix.TransformationMatrix3x3.scale(engine.gsize, engine.gsize));
+    for(let y = 0; y < engine.grid.height; y++){
+      for(let x = 0; x < engine.grid.width; x++){
+        const model = engine.grid.getTransformation(x, y);
         const mvp = this.vp.multiplyCopy(model);
-        this.mvp_colour.setMVP(mvp);
-        this.mvp_colour.setColour(x/engine.gw, y/engine.gw, 0.5);
-        Shapes.CenterQuad.drawRelative();
+        this.mvp_colour.setMvp(mvp);
+        this.mvp_colour.setColour(x/engine.grid.width, y/engine.grid.height, 0.5);
+        Shapes.Quad.drawRelative();
       }
     }
   }
@@ -167,18 +166,14 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
         this.mvp_outline_circle.setCentre(0.5, 0.5);
         this.mvp_outline_circle.setRadius(0.5);
         this.mvp_outline_circle.setOutlineRadius(0.1);
-        const model = Matrix.TransformationMatrix3x3.translate(
-          engine.mouse_grid_coord.x*engine.gsize+(engine.gsize/2), 
-          engine.mouse_grid_coord.y*engine.gsize+(engine.gsize/2)
-        );
-        model.multiply(Matrix.TransformationMatrix3x3.scale(engine.gsize*2.5, engine.gsize*2.5));
-        this.mvp_outline_circle.setMVP(this.vp.multiplyCopy(model));
+        const model = engine.grid.getCenterTransformation(engine.mouse_grid_coord.x, engine.mouse_grid_coord.y);
+        model.multiply(Matrix.TransformationMatrix3x3.scale(1.6, 1.2));
+        this.mvp_outline_circle.setMvp(this.vp.multiplyCopy(model));
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         Shapes.CenterQuad.drawRelative();
         gl.disable(gl.BLEND);
       }
-
       this.mvp_outline_circle.use();
       const model = Matrix.TransformationMatrix3x3.translate(200, 200);
       model.multiply(Matrix.TransformationMatrix3x3.scale(50, 50));
@@ -186,53 +181,24 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
       this.mvp_outline_circle.setRadius(0.5);
       this.mvp_outline_circle.setOutlineRadius(0.1);
       this.mvp_outline_circle.setOutlineColour(1, 0.5, 0, 1);
-      this.mvp_outline_circle.setMVP(this.vp.multiplyCopy(model));
+      this.mvp_outline_circle.setMvp(this.vp.multiplyCopy(model));
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      Shapes.CenterQuad.drawRelative();
+      Shapes.Quad.drawRelative();
       gl.disable(gl.BLEND);
-      
-      /*
-      this.mvp_outline_rect.use();
-      const rmodel = Matrix.TransformationMatrix3x3.translate(25, 25);
-      rmodel.multiply(Matrix.TransformationMatrix3x3.scale(66, 66));
-      
-      this.mvp_outline_rect.setOutlineRatio(0.1);
-      this.mvp_outline_rect.setOutlineColour(1, 0.5, 0, 1);
-      this.mvp_outline_rect.setMVP(this.vp.multiplyCopy(rmodel));
 
+      
+      const lmodel = Matrix.TransformationMatrix3x3.translate(250, 250);
+      lmodel.multiply(Matrix.TransformationMatrix3x3.scale(150, 150));
+      this.mvp_solid_line.use();
+      this.mvp_solid_line.setEquation(1.6, 12.6, -12.5);
+      this.mvp_solid_line.setMvp(this.vp.multiplyCopy(lmodel));
+      this.mvp_solid_line.setThickness(0.6);
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      Shapes.CenterQuad.drawRelative();
-      gl.disable(gl.BLEND);*/
-
-      /*
-      this.transform_colour.use();
-      this.transform_colour.setColour(0.2, 0.6, 0.3);
-      for(const i of engine.obj){
-        const m = Matrix.TransformationMatrix3x3.translate(i*2-1, 0.3);
-        m.multiply(Matrix.TransformationMatrix3x3.scale(0.1, 0.1));
-        this.transform_colour.setTransform(m);
-        Shapes.CenterQuad.draw();
-      }
-      this.transform_circle.use();
-      for(const p of engine.positions){
-        const m = Matrix.TransformationMatrix3x3.translate(p.x, p.y);
-        m.multiply(Matrix.TransformationMatrix3x3.scale(0.1, 0.1));
-        this.transform_circle.setTransform(m);
-        //this.transform_colour.setTransform(m);
-        Shapes.CenterQuad.draw();
-      }
-
-      /*
-      this.transform_circle.use();
-      const m = Matrix.TransformationMatrix3x3.translate(0,0);
-      this.transform_circle.setTransform(m);
-      this.transform_circle.setRadius(0.15);
-      this.transform_circle.setCentre(0.05,0.1);
-      this.transform_circle.setCircleColour(0.5,0.2,0.7);
-      Shapes.CenterQuad.drawRelative();
-      */
+      Shapes.Quad.drawRelative();
+      gl.disable(gl.BLEND);
+  
     }
     requestAnimationFrame(() => this.render(engine));
   };
@@ -252,16 +218,16 @@ export class TestRenderer{
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       this.transform_colour.use();
-      this.transform_colour.setTransform(Matrix.TransformationMatrix3x3.scale(0.5, 0.5));
+      this.transform_colour.setMatrix(Matrix.TransformationMatrix3x3.scale(0.5, 0.5));
 
       Shapes.Quad.drawArrays();
 
       this.transform_colour.setColour(0.5, 0.8, 0.5);
-      this.transform_colour.setTransform(Matrix.TransformationMatrix3x3.rotate(0.4));
+      this.transform_colour.setMatrix(Matrix.TransformationMatrix3x3.rotate(0.4));
 
       Shapes.RightTriangle.draw();
 
-      this.transform_colour.setTransform(Matrix.TransformationMatrix3x3.translate(-0.9, -0.9));
+      this.transform_colour.setMatrix(Matrix.TransformationMatrix3x3.translate(-0.9, -0.9));
       this.transform_colour.setColour(0.6, 0.4, 0.7);
 
       Shapes.Quad.drawArrays();
@@ -275,7 +241,7 @@ export class TestRenderer{
       const sh = Math.floor(Math.random()*3);
       const matrix = Matrix.TransformationMatrix3x3.translate(Math.random()-0.5, Math.random()-0.5);
       matrix.multiply(Matrix.TransformationMatrix3x3.scale(Math.random()/2, Math.random()/2));
-      shader.setTransform(matrix);
+      shader.setMatrix(matrix);
       shader.setColour(Math.random(),Math.random(),Math.random());
       switch(sh){
         case 0:

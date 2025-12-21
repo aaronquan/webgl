@@ -1,13 +1,37 @@
+export class Matrix2x2{
+  protected _matrix: Float32Array;
+  constructor(){
+    this._matrix = new Float32Array(4);
+  }
+  get matrix(): Float32Array{
+    return this._matrix;
+  }
+}
 
-
-export class TransformationMatrix3x3{
-  private _matrix: Float32Array;
+export class Matrix3x3{
+  protected _matrix: Float32Array;
   constructor(){
     this._matrix = new Float32Array(9);
   }
   get matrix(): Float32Array{
     return this._matrix;
   }
+  static identity(): Matrix3x3{
+    const mat = new Matrix3x3();
+    mat._matrix[0] = 1.0;
+    mat._matrix[4] = 1.0;
+    mat._matrix[8] = 1.0;
+    return mat;
+  }
+}
+
+export class TransformationMatrix3x3 extends Matrix3x3{
+  //private _matrix: Float32Array;
+  constructor(){
+    super();
+    //this._matrix = new Float32Array(9);
+  }
+
   static identity(): TransformationMatrix3x3{
     const mat = new TransformationMatrix3x3();
     mat._matrix[0] = 1.0;

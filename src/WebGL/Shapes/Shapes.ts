@@ -76,22 +76,38 @@ export class Quad{
     }
   }
 
+  static drawRelative(){
+    if(!Quad.positionBuffer) Quad.setup();
+    if(WebGL.gl){
+      const gl = WebGL.gl;
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Quad.indicesBuffer!);
+      gl.bindBuffer(gl.ARRAY_BUFFER, Quad.positionBuffer!);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); // changes the bind buffers
+      gl.bindBuffer(gl.ARRAY_BUFFER, Quad.positionBuffer!);
+      gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0); // changes the bind buffers
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    }
+  }
+
   private static setup(){
     if(WebGL.gl){
-      Quad.positionBuffer = WebGL.gl.createBuffer();
-      WebGL.gl.bindBuffer(WebGL.gl.ARRAY_BUFFER, Quad.positionBuffer);
-      WebGL.gl.bufferData(WebGL.gl.ARRAY_BUFFER, Quad.positions, WebGL.gl.STATIC_DRAW);
+      const gl = WebGL.gl;
+      Quad.positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, Quad.positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, Quad.positions, gl.STATIC_DRAW);
 
-      Quad.indicesBuffer = WebGL.gl.createBuffer();
-      WebGL.gl.bindBuffer(WebGL.gl.ELEMENT_ARRAY_BUFFER, Quad.indicesBuffer);
-      WebGL.gl.bufferData(WebGL.gl.ELEMENT_ARRAY_BUFFER, Quad.indices, WebGL.gl.STATIC_DRAW);
+      Quad.indicesBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Quad.indicesBuffer);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, Quad.indices, gl.STATIC_DRAW);
       
-      Quad.positionsArrayBuffer = WebGL.gl.createBuffer();
-      WebGL.gl.bindBuffer(WebGL.gl.ARRAY_BUFFER, Quad.positionsArrayBuffer);
-      WebGL.gl.bufferData(WebGL.gl.ARRAY_BUFFER, Quad.positionsArray, WebGL.gl.DYNAMIC_DRAW);
+      Quad.positionsArrayBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, Quad.positionsArrayBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, Quad.positionsArray, gl.DYNAMIC_DRAW);
       
-      WebGL.gl.enableVertexAttribArray(0);
-      WebGL.gl.vertexAttribPointer(0, 2, WebGL.gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
     }else{
       throw new Error("WebGL globals not initialised");
     }

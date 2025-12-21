@@ -4,10 +4,23 @@ import * as Vertex from './Vertex/vertex';
 import * as Fragment from './Fragment/fragment';
 import * as Shader from './shader'
 
+//TODO add shader programs here
 
+
+//const MVPMixin = Vertex.MvpShaderProgramMix(Shader.ShaderProgramMixin);
+//const TransformMixin = Vertex.Transform2dShaderProgramMix(Shader.ShaderProgramMixin);
+
+export class MVPColourProgram extends Fragment.ColourMixin(Vertex.Mvp2dMixin){};
+export class TransformColourProgram extends Fragment.ColourMixin(Vertex.Transform2dMixin){};
+export class TransformCircleProgram extends Fragment.CircleMixin(Vertex.Transform2dMixin){};
+export class MVPOutlineCircleProgram extends Fragment.CircleOutlineMixin(Vertex.Mvp2dMixin){};
+export class MVPSolidPathProgram extends Fragment.SolidPathMixin(Vertex.Mvp2dMixin){};
+export class MVPOutlineRectProgram extends Fragment.RectOutlineMixin(Vertex.Mvp2dMixin){};
+export class MVPSolidLineProgram extends Fragment.LineMixin(Vertex.Mvp2dMixin){};
+/*
 interface Colour{
   setColour(r: GLfloat, g: GLfloat, b: GLfloat): void;
-}
+}*/
 
 /*
 export class TestSimple extends Vertex.SimpleShaderProgram{
@@ -25,7 +38,7 @@ export class TestSimple extends Vertex.SimpleShaderProgram{
     }
   }
 }*/
-
+/*
 export class TestTranslate extends Vertex.TranslateShaderProgram{
   constructor(){
     super();
@@ -54,8 +67,8 @@ export class TestColourTranslate extends Vertex.TranslateShaderProgram implement
       console.log("ColourFragmentShader not loaded");
     }
   }
-  add_uniform_locations(): void {
-    super.add_uniform_locations();
+  addUniformLocations(): void {
+    super.addUniformLocations();
     this.colour_uniform_location =  this.program.getUniformLocation("colour");
   };
   setColour(r: GLfloat, g: GLfloat, b: GLfloat){
@@ -76,8 +89,8 @@ export class TestColourTransform extends Vertex.TransformShaderProgram implement
       console.log("ColourFragmentShader not loaded");
     }
   }
-  add_uniform_locations(): void {
-    super.add_uniform_locations();
+  addUniformLocations(): void {
+    super.addUniformLocations();
     this.colour_uniform_location =  this.program.getUniformLocation("colour");
   };
   setColour(r: GLfloat, g: GLfloat, b: GLfloat){
@@ -101,3 +114,6 @@ export class TransformCircleProgram extends Fragment.CircleShaderProgramMixin(Tr
 export class MVPColourProgram extends Fragment.ColourShaderProgramMixin(MVPRelativeMixin){};
 export class MVPOutlineCircleProgram extends Fragment.CircleOutlineShaderProgramMixin(MVPRelativeMixin){};
 export class MVPOutlineRectProgram extends Fragment.RectOutlineShaderProgramMixin(MVPRelativeMixin){};
+
+export class MVPSolidLineProgram extends Fragment.SolidLineShaderProgramMixin(MVPRelativeMixin){};
+*/
