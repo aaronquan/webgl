@@ -1,31 +1,32 @@
-import SolidPath from './../Source/solid_path.frag?raw';
+import PathCentreCircle from './../Source/path_centre_circle.frag?raw';
 import * as Shader from './../../shader';
 
-export class SolidPathFragmentShader{
+export class PathCentreCircleFragmentShader{
   static shader?: Shader.FragmentShader;
   static load(){
     if(this.shader == undefined){
       this.shader = new Shader.FragmentShader();
-      if(!this.shader.addSource(SolidPath)){
-        console.log('SolidPath: fragment source not added');
+      if(!this.shader.addSource(PathCentreCircle)){
+        console.log('PathCentreCircle: fragment source not added');
       }
     }
   }
 }
 
-export function SolidPathShaderProgramMix<TBase extends Shader.CustomShaderProgramable>(Base: TBase){
-  return class SolidPath extends Base{
+export function PathCentreCircleShaderProgramMix<TBase extends Shader.CustomShaderProgramable>(Base: TBase){
+  return class PathCentreCircle extends Base{
     private declare left_uniform_location: WebGLUniformLocation | null;
     private declare right_uniform_location: WebGLUniformLocation | null;
     private declare top_uniform_location: WebGLUniformLocation | null;
     private declare bot_uniform_location: WebGLUniformLocation | null;
+    private declare circle_radius_uniform_location: WebGLUniformLocation | null;
     private declare size_uniform_location: WebGLUniformLocation | null;
     private declare colour_uniform_location: WebGLUniformLocation | null;
     private declare background_colour_uniform_location: WebGLUniformLocation | null;
     protected override setupFragment(){
-      this.fragment_name = 'SolidPathShader';
-      if(SolidPathFragmentShader.shader){
-        this.program.addFragment(SolidPathFragmentShader.shader)
+      this.fragment_name = 'PathCentreCircleShader';
+      if(PathCentreCircleFragmentShader.shader){
+        this.program.addFragment(PathCentreCircleFragmentShader.shader)
       }else{
         throw new Error(`${this.fragment_name} not loaded`);
       }
@@ -35,6 +36,7 @@ export function SolidPathShaderProgramMix<TBase extends Shader.CustomShaderProgr
       this.right_uniform_location = this.program.getUniformLocation('u_right');
       this.top_uniform_location = this.program.getUniformLocation('u_top');
       this.bot_uniform_location = this.program.getUniformLocation('u_bot');
+      this.circle_radius_uniform_location = this.program.getUniformLocation('u_circle_radius');
       this.size_uniform_location = this.program.getUniformLocation('u_size');
       this.colour_uniform_location = this.program.getUniformLocation('u_colour');
       this.background_colour_uniform_location = this.program.getUniformLocation('u_background_colour');
@@ -50,6 +52,9 @@ export function SolidPathShaderProgramMix<TBase extends Shader.CustomShaderProgr
     }
     setBot(a: GLfloat){
       this.program.setFloat(this.bot_uniform_location!, a);
+    }
+    setCircleRadius(a: GLfloat){
+      this.program.setFloat(this.circle_radius_uniform_location!, a);
     }
     setSize(a: GLfloat){
       this.program.setFloat(this.size_uniform_location!, a);

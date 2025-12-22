@@ -1,6 +1,4 @@
 import * as Matrix from "../WebGL/Matrix/matrix";
-import * as App from "./app";
-import * as Shader from "./../WebGL/Shaders/custom";
 
 export type GridPosition = {
   x: number, y:number
@@ -67,6 +65,16 @@ export class WallTile{
     this.right = false;
     this.top = false;
   }
+  randomise(){
+    let r = Math.random();
+    this.left = r < 0.5;
+    r = Math.random();
+    this.right = r < 0.5;
+    r = Math.random();
+    this.bottom = r < 0.5;
+    r = Math.random();
+    this.top = r < 0.5;
+  }
 }
 
 export class WallGrid{
@@ -78,17 +86,11 @@ export class WallGrid{
     this.height = h;
     this.grid = Array.from({length: h}, () => Array.from({length: w}, () => new WallTile()));
   }
-}
-
-export class WallEngine extends App.BaseEngine{
-  grid: WallGrid;
-
-  constructor(){
-    super();
-    this.grid = new WallGrid(5,5);
+  randomise(){
+    for(let y = 0; y < this.height; y++){
+      for(let x = 0; x < this.width; x++){
+        this.grid[y][x].randomise();
+      }
+    }
   }
-}
-
-export class WallRenderer{
-
 }

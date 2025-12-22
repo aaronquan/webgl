@@ -33,7 +33,7 @@ export class BaseEngine implements IEngine{
 
 }
 
-interface IEngineRenderer<E extends IEngine>{
+export interface IEngineRenderer<E extends IEngine>{
   render: (engine: E) => void;
 }
 

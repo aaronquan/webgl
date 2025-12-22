@@ -6,6 +6,7 @@ import * as Matrix from "./WebGL/Matrix/matrix";
 
 import * as Mixin from './utils/mixin';
 import * as App from './App/app';
+import * as Grid from './App/grid_app';
 //import * as CustomShaders from './shaders/custom';
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
@@ -20,8 +21,10 @@ WebGL.initialise(canvas);
 const gl = WebGL.gl;
 
 
-const engine = new App.MyEngine();
-const renderer = new App.MyRenderer();
+//const engine = new App.MyEngine();
+const engine = new Grid.WallEngine();
+//const renderer = new App.MyRenderer();
+const renderer = new Grid.WallRenderer();
 const app = new App.App(engine, renderer);
 
 if(gl){
