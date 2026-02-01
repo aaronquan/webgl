@@ -7,12 +7,15 @@ import * as Matrix from "./WebGL/Matrix/matrix";
 import * as Mixin from './utils/mixin';
 import * as App from './App/app';
 import * as Grid from './App/grid_app';
+import * as WebGLGlobals from './WebGL/globals';
+
+import * as Water from './App/water/water'
 //import * as CustomShaders from './shaders/custom';
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
 
-canvas.width = 500;
-canvas.height = 500;
+canvas.width = 900;
+canvas.height = 900;
 
 //console.log(txt.);
 //const gl: WebGL2RenderingContext = canvas.getContext("webgl2")!;
@@ -24,14 +27,17 @@ const gl = WebGL.gl;
 //const engine = new App.MyEngine();
 const engine = new Grid.WallEngine();
 //const renderer = new App.MyRenderer();
-const renderer = new Grid.WallRenderer();
+const renderer = new Grid.WallRenderer(canvas.width, canvas.height);
 const app = new App.App(engine, renderer);
 
+
+const water_engine = new Water.WaterEngine();
+const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
+
 if(gl){
-  app.addEvents();
-  app.draw();
-  //draw2();
-  //drawScene();
+  //app.addEvents();
+  //app.draw();
+  water_renderer.render(water_engine);
 }else{
 
 }

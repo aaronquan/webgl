@@ -7,7 +7,7 @@ uniform float u_left;
 uniform float u_right;
 uniform float u_top;
 uniform float u_bot;
-uniform flaot u_circle_radius;
+uniform float u_circle_radius;
 uniform float u_size; // between 0 and 0.5
 uniform vec3 u_colour;
 uniform vec3 u_background_colour;
@@ -21,7 +21,7 @@ void main(){
   float inside_right = step(abs(0.5-uv.y), sz)*step(0.5-sz, uv.x)*u_right;
 
   vec2 middle = vec2(0.5, 0.5);
-  float inside_circle = step(u_circle_radius, distance(middle, v_relative));
+  float inside_circle = 1.0-step(u_circle_radius, distance(middle, v_relative));
   float inside = clamp(inside_top+inside_bot+inside_left+inside_right+inside_circle, 0.0, 1.0);
 
   gl_FragColor = vec4(inside*u_colour+(1.0-inside)*u_background_colour, 1.0);
