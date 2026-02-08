@@ -6,6 +6,7 @@ import * as Line from './Program/line';
 import * as PathCentreCircle from './Program/path_centre_circle';
 import * as RectOutline from './Program/rect_outline';
 import * as SolidPath from './Program/solid_path';
+import * as Texture from './Program/texture';
 
 export function loadFragmentShaders(){
   Circle.CircleFragmentShader.load();
@@ -15,6 +16,7 @@ export function loadFragmentShaders(){
   PathCentreCircle.PathCentreCircleFragmentShader.load();
   RectOutline.RectOutlineFragmentShader.load();
   SolidPath.SolidPathFragmentShader.load();
+  Texture.TextureFragmentShader.load();
 }
 export const CircleMixin = Circle.CircleShaderProgramMix;
 export const CircleOutlineMixin = CircleOutline.CircleOutlineShaderProgramMix;
@@ -23,3 +25,4 @@ export const LineMixin = Line.LineShaderProgramMix;
 export const PathCentreCircleMixin = PathCentreCircle.PathCentreCircleShaderProgramMix;
 export const RectOutlineMixin = RectOutline.RectOutlineShaderProgramMix;
 export const SolidPathMixin = SolidPath.SolidPathShaderProgramMix;
+export const TextureMixin = Texture.TextureShaderProgramMix;

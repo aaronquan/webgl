@@ -6,6 +6,7 @@ import * as Shader from "./Shaders/custom";
 import * as Shapes from "./Shapes/Shapes"
 import * as Matrix from "./Matrix/matrix";
 import * as Line from "./Shapes/Line";
+import * as Colour from "./colour";
 
 type Float = number;
 
@@ -51,8 +52,6 @@ export class WebGL{
   //}
 }
 
-type BasicModelType = "Rect" | "Line";
-
 
 //can only draw rects
 class BasicModel{
@@ -82,39 +81,11 @@ class BasicModel{
   }
 }
 
-type ColourRGB = {
-  red: Float;
-  green: Float;
-  blue: Float;
-}
-
 type BasicModelItem2D = {
-  colour: ColourRGB;
+  colour: Colour.ColourRGB;
   transformation: Matrix.TransformationMatrix3x3;
 }
 
-/*
-class BasicModelItem{
-  type: BasicModelType;
-  model: Matrix.TransformationMatrix3x3;
-  constructor(type: BasicModelType, model: Matrix.TransformationMatrix3x3){
-    this.type = type;
-    this.model = model;
-  }
-  getModel(){
-    switch(this.type){
-      case "Rect":
-
-      case "Line":
-        
-    }
-  }
-  draw(tm: Matrix.TransformationMatrix3x3){
-
-    const m = this.model.multiplyCopy(tm);
-
-  }
-}*/
 
 export function testBasicModel(){
   const pers = Matrix.TransformationMatrix3x3.orthographic(0, 10, 10, 0);
@@ -137,6 +108,38 @@ export function testBasicModel(){
 
   bm.draw(pers);
   //Shapes.Quad.draw();
+}
+
+
+export function loadTexture(){
+  if(WebGL.gl){
+    const gl = WebGL.gl;
+
+    const texture_shader = new Shader.MVPTextureProgram();
+
+    const image = new Image();
+    image.src = "/base.png";
+    image.onload = () => {
+      console.log(`${image.src} loaded`);
+      const texture = gl.createTexture();
+      const tex_id = 1;
+      gl.activeTexture(gl.TEXTURE0+tex_id);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      texture_shader.use();
+      texture_shader.setTextureId(tex_id);
+      texture_shader.setTextureId(0);
+      //texture_shader.setTextureId(0);
+      const perspective = Matrix.TransformationMatrix3x3.orthographic(0, 1, 1, 0);
+
+      texture_shader.setMvp(perspective);
+      Shapes.Quad.drawRelative();
+    } 
+  }
 }
 
 export default WebGL;
