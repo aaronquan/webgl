@@ -147,7 +147,7 @@ export class GridPosition{
     return new Track(track_part, p1);
   }
   static turnTrackHorizontalFirst(p1: GridPosition, p2: GridPosition): Track{
-    //todo
+    const track_part = new TrackPart();
   }
   static turnTrackVerticalFirst(p1: GridPosition, p2: GridPosition): Track{
     //todo
