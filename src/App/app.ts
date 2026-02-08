@@ -20,6 +20,7 @@ export class BaseEngine implements IEngine{
     window.addEventListener("keyup", (ev) => this.handleKeyUp(ev));
     window.addEventListener("mousemove", (ev) => this.handleMouseMove(ev));
     window.addEventListener("mousedown", (ev) => this.handleMouseDown(ev));
+    window.addEventListener("mouseup", (ev) => this.handleMouseUp(ev));
   }
 
   //to override
@@ -30,6 +31,8 @@ export class BaseEngine implements IEngine{
   protected handleMouseMove(ev: MouseEvent){};
   //to override
   protected handleMouseDown(ev: MouseEvent){};
+  //to override
+  protected handleMouseUp(ev: MouseEvent){};
 
 }
 

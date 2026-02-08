@@ -75,12 +75,12 @@ function getLocationsAway(grid: Grid.RectGrid, pos: Grid.GridPosition, away: num
   return positions;
 }
 
-function generateKeyLocations(grid: Grid.RectGrid): Grid.GridPosition[]{
+function generateKeyLocations(grid: Grid.RectGrid, n_locations: Int32=5): Grid.GridPosition[]{
   const locations: Grid.GridPosition[] = [];
   locations.push(new Grid.GridPosition(0, 0)); //start at corner
   let away = getLocationsAway(grid, locations.at(-1)!, 8);
   locations.push(randomPick(away));
-  while(locations.length < 14){
+  while(locations.length < n_locations){
     away = getLocationsAway(grid, locations.at(-1)!, 7);
 
     const pick = randomPick(away);
@@ -89,6 +89,21 @@ function generateKeyLocations(grid: Grid.RectGrid): Grid.GridPosition[]{
 
 
   return locations;
+}
+
+export class Car{
+
+}
+
+export class MultiGridObject{
+  width: Int32;
+  height: Int32;
+  active_cells: boolean[];
+  constructor(w: Int32, h: Int32){
+    this.width = w;
+    this.height = h;
+    this.active_cells = [];
+  }
 }
 
 export class WallEngine extends App.BaseEngine{
@@ -101,29 +116,42 @@ export class WallEngine extends App.BaseEngine{
   is_circle_positions: boolean;
 
   key_positions: Grid.GridPosition[];
+  adding_position: Grid.GridPosition | undefined;
+  adding_path_hori_first: boolean;
+
+  selected_key1: Grid.GridPosition | undefined;
+  selected_key2: Grid.GridPosition | undefined;
+
+  test_objects: MultiGridObject[];
 
   constructor(){
     super();
-    const w = 80; const h = 80
+    const w = 10; const h = 10;
+    const s = 80;
     this.grid = new Grid.WallGrid(w,h);
-    this.rect_grid = new Grid.RectGrid(w, h, 10);
+    this.rect_grid = new Grid.RectGrid(w, h, s);
     this.mouse_over = undefined;
     this.highlighted_positions = [];
-    this.key_positions = generateKeyLocations(this.rect_grid);
+    this.key_positions = generateKeyLocations(this.rect_grid, 3);
     this.is_circle_positions = false;
-    console.log(this.grid);
 
     if(this.key_positions.length >= 2){
       for(let i = 1; i < this.key_positions.length; i++){
-        console.log(this.key_positions[i]);
         const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.key_positions[i-1], this.key_positions[i]);
-        console.log(path);
-        console.log(path.toPositions());
         this.grid.addTrack(path);
+        this.grid.grid[this.key_positions[i].y][this.key_positions[i].x].is_key = true;
       }
-
+      this.grid.grid[this.key_positions[0].y][this.key_positions[0].x].is_key = true;
     }
-
+    let arr = [1, 2,3,4,5];
+    ArrayUtils.reverse(arr);
+    console.log(arr);
+    const sh_path = this.grid.shortestPath(this.key_positions[0], this.key_positions[1]);
+    console.log(sh_path);
+    
+    this.test_objects = [];
+    this.adding_path_hori_first = true;
+    /*
     Grid.GridPosition.testEuclidianDistance(3.4);
 
     Grid.GridAlgorithms.generatePositionsAtDistance(4);
@@ -143,6 +171,12 @@ export class WallEngine extends App.BaseEngine{
       return 3-t;
     });
     console.log(ind);
+    */
+  }
+  
+
+  addKeyPosition(x: Int32, y: Int32){
+    this.key_positions.push(new Grid.GridPosition(x, y));
   }
 
   protected override handleKeyDown(ev: KeyboardEvent){
@@ -152,6 +186,12 @@ export class WallEngine extends App.BaseEngine{
       this.is_circle_positions = !this.is_circle_positions;
       if(this.mouse_over != undefined){
         this.setHighlightedPositions(this.mouse_over);
+      }
+    }else if(ev.key == 'w'){
+      //run path closest
+
+      if(this.selected_key1 != undefined && this.selected_key2 != undefined){
+        //todo
       }
     }
   }
@@ -166,6 +206,31 @@ export class WallEngine extends App.BaseEngine{
     }
     this.mouse_over = pos;
     //this.mouse_over = pos;
+  }
+
+  protected override handleMouseDown(ev: MouseEvent){
+    if(this.mouse_over != undefined){
+      if(this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key){
+        if(this.selected_key1 == undefined || !this.selected_key1.equals(this.mouse_over)){
+          this.selected_key1 = this.mouse_over;
+        }else{
+          this.selected_key1 = undefined;
+        }
+      }else{
+        if(this.selected_key1 != undefined){
+          console.log("adding copy");
+          this.key_positions.push(this.mouse_over.copy());
+          this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key = true;
+          const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.mouse_over, this.selected_key1);
+          this.grid.addTrack(path);
+        }
+      }
+    }
+    //this.adding_position
+  }
+
+  protected override handleMouseUp(ev: MouseEvent): void {
+    
   }
 
 
@@ -204,26 +269,64 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.draw_height = h;
     this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
   }
+  drawKeyTile(engine: WallEngine, x: Int32, y: Int32){
+    //expects shader vars setup
+    const gs = engine.rect_grid.size;
+    const tx = x*gs;
+    const ty = y*gs;
+    this.pri_tile_shader.use();
+    if(engine.selected_key1 != undefined && engine.selected_key1.x == x && engine.selected_key1.y == y){
+      this.pri_tile_shader.setColour(1, 0, 1);
+    }else{
+      this.pri_tile_shader.setColour(0, 1, 1);
+    }
+
+    const model = Matrix.TransformationMatrix3x3.translate(tx, ty);
+    model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
+
+    this.setTile(this.pri_tile_shader, engine.grid, x, y);
+    this.pri_tile_shader.setMvp(this.vp.multiplyCopy(model));
+    Shapes.Quad.drawRelative();
+  }
+  drawWallTile(engine: WallEngine, x: Int32, y: Int32){
+    const gs = engine.rect_grid.size;
+    const tx = x*gs;
+    const ty = y*gs;
+    const model = Matrix.TransformationMatrix3x3.translate(tx, ty);
+    model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
+    this.grid_tile_shader.use();
+    this.setTile(this.grid_tile_shader, engine.grid, x, y);
+    this.grid_tile_shader.setSize(0.2);
+    this.grid_tile_shader.setMvp(this.vp.multiplyCopy(model));
+    Shapes.Quad.drawRelative();
+  }
   render(engine: WallEngine){
     //const perspective = Matrix.TransformationMatrix3x3.orthographic(0, 500, 500, 0);
     const gs = engine.rect_grid.size;
     //const ctx = WebGL.gl;
+    //setup shader vars
     this.grid_tile_shader.use();
     this.grid_tile_shader.setBackgroundColour(1.0, 1.0, 0.0);
     this.grid_tile_shader.setColour(0.0, 0.0, 1.0);
+
+    this.pri_tile_shader.use();
+    this.pri_tile_shader.setCircleRadius(0.18);
+    this.pri_tile_shader.setSize(0.2);
+    this.pri_tile_shader.setColour(0, 1, 1);
+    this.pri_tile_shader.setBackgroundColour(1, 1, 0);
+
+
     for(let y = 0; y < engine.grid.height; y++){
       for(let x = 0; x < engine.grid.width; x++){
-        const tx = x*gs;
-        const ty = y*gs;
-        const model = Matrix.TransformationMatrix3x3.translate(tx, ty);
-        model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
-        const mvp = this.vp.multiplyCopy(model);
-        this.grid_tile_shader.setMvp(mvp);
-        this.setTile(this.grid_tile_shader, engine.grid, x, y);
-        this.grid_tile_shader.setSize(0.2);
-        Shapes.Quad.drawRelative();
+        if(engine.grid.grid[y][x].is_key){
+          this.drawKeyTile(engine, x, y);
+        }
+        else{
+          this.drawWallTile(engine, x, y);
+        }
       }
     }
+    /*
     if(engine.mouse_over){
       const model = Matrix.TransformationMatrix3x3.translate(engine.mouse_over.x*gs, engine.mouse_over.y*gs);
       model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
@@ -245,7 +348,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       const model = engine.rect_grid.getTransformation(pos.x, pos.y);
       this.solid_shader.setMvp(this.vp.multiplyCopy(model));
       Shapes.Quad.draw();
-    }
+    }*/
+   /*
     this.pri_tile_shader.use();
     for(const pos of engine.key_positions){
       const model = engine.rect_grid.getTransformation(pos.x, pos.y);
@@ -258,6 +362,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       this.setTile(this.pri_tile_shader, engine.grid, x, y);
       Shapes.Quad.drawRelative();
     }
+      */
     this.drawGridLines(engine);
     requestAnimationFrame(() => this.render(engine));
   }

@@ -18,6 +18,9 @@ export class GridPosition{
   copy(): GridPosition{
     return new GridPosition(this.x, this.y);
   }
+  equals(gp: GridPosition): boolean{
+    return this.x == gp.x && this.y == gp.y;
+  }
 
   static manhattanDistance(p1: GridPosition, p2: GridPosition): Int32{
     return Math.abs(p1.x-p2.x) + Math.abs(p1.y-p2.y);
@@ -142,6 +145,12 @@ export class GridPosition{
     }
 
     return new Track(track_part, p1);
+  }
+  static turnTrackHorizontalFirst(p1: GridPosition, p2: GridPosition): Track{
+    //todo
+  }
+  static turnTrackVerticalFirst(p1: GridPosition, p2: GridPosition): Track{
+    //todo
   }
 
   static filterInsideGrid(positions: GridPosition[], grid: RectGrid): GridPosition[]{
@@ -345,11 +354,13 @@ export class WallTile{
   top: boolean;
   right: boolean;
   bottom: boolean;
+  is_key: boolean;
   constructor(){
     this.left = false;
     this.bottom = false;
     this.right = false;
     this.top = false;
+    this.is_key = false;
   }
  setDirection(direction: GridDirection, value: boolean){
     switch(direction){
@@ -418,6 +429,60 @@ export class WallGrid{
     if(last_direction != undefined){
       this.grid[current.y][current.x].setDirection(DirectionUtil.opposite(last_direction), true); 
     }
+  }
+  shortestPath(start: GridPosition, end: GridPosition): GridPosition[] | undefined{
+    const last_position: (GridPosition | undefined)[][] = Array.from({length: this.height}, () => Array.from({length: this.width}, () => undefined));
+    last_position[start.y][start.x] = start;
+    if(start.equals(end)){
+      return [start];
+    }
+    let queue: GridPosition[] = [];
+    queue.push(start);
+    let times = 0; // can remove
+    while(queue.length > 0){
+      times++;
+      const next_q = [];
+      for(let i = 0; i < queue.length; i++){
+        const curr = queue[i];
+        if(curr.equals(end)){
+          //found path
+          const path: GridPosition[] = [end];
+          let pl = path.at(-1)!;
+          let last = last_position[pl.y][pl.x]!;
+          while(!last.equals(start)){
+            path.push(last);
+            pl = path.at(-1)!;
+            last = last_position[pl.y][pl.x]!;
+          }
+          path.push(start);
+          ArrayUtils.reverse(path);
+          return path;
+          //backtrack
+        }
+        const wall_tile = this.grid[curr.y][curr.x];
+        if(wall_tile.left && last_position[curr.y][curr.x-1] == undefined){
+          const new_pos = new GridPosition(curr.x-1, curr.y);
+          next_q.push(new_pos);
+          last_position[curr.y][curr.x-1] = curr;
+        }if(wall_tile.top && last_position[curr.y-1][curr.x] == undefined){
+          const new_pos = new GridPosition(curr.x, curr.y-1);
+          next_q.push(new_pos);
+          last_position[curr.y-1][curr.x] = curr;
+        }if(wall_tile.right && last_position[curr.y][curr.x+1] == undefined){
+          const new_pos = new GridPosition(curr.x+1, curr.y);
+          next_q.push(new_pos);
+          last_position[curr.y][curr.x+1] = curr;
+          console.log("right");
+        }if(wall_tile.bottom && last_position[curr.y+1][curr.x] == undefined){
+          const new_pos = new GridPosition(curr.x, curr.y+1);
+          next_q.push(new_pos);
+          last_position[curr.y+1][curr.x] = curr;
+          console.log("bot");
+        }
+      }
+      queue = next_q;
+    }
+    return undefined;
   }
 }
 

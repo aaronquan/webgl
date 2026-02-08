@@ -35,9 +35,9 @@ const water_engine = new Water.WaterEngine();
 const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 
 if(gl){
-  //app.addEvents();
-  //app.draw();
-  water_renderer.render(water_engine);
+  app.addEvents();
+  app.draw();
+  //water_renderer.render(water_engine);
 }else{
 
 }

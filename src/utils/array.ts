@@ -17,6 +17,14 @@ export function flatten<T>(arr: T[][]): T[]{
   return flat;
 }
 
+export function reverse<T>(arr: T[]){
+  const h = Math.floor(arr.length/2);
+  for(let i = 0; i < h; i++){
+    [arr[i], arr[arr.length-i-1]] = [arr[arr.length-i-1], arr[i]];
+  }
+  return arr;
+}
+
 export function binarySearch<T>(arr: T[], compare: (t:T) => Float): Int32{
   let i = 0;
   let j = arr.length-1;
