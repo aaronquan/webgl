@@ -3,6 +3,7 @@ import * as App from "./app";
 import * as Grid from "./grid"
 import * as Shader from "./../WebGL/Shaders/custom";
 import * as Shapes from '../WebGL/Shapes/Shapes';
+import * as Texture from "./../WebGL/Texture/texture"
 import WebGL from "../WebGL/globals";
 
 import * as ArrayUtils from "../utils/array";
@@ -124,6 +125,8 @@ export class WallEngine extends App.BaseEngine{
 
   test_objects: MultiGridObject[];
 
+  highlight_path: Grid.GridPosition[];
+
   constructor(){
     super();
     const w = 10; const h = 10;
@@ -151,6 +154,7 @@ export class WallEngine extends App.BaseEngine{
     
     this.test_objects = [];
     this.adding_path_hori_first = true;
+    this.highlight_path = [];
     /*
     Grid.GridPosition.testEuclidianDistance(3.4);
 
@@ -189,9 +193,16 @@ export class WallEngine extends App.BaseEngine{
       }
     }else if(ev.key == 'w'){
       //run path closest
-
-      if(this.selected_key1 != undefined && this.selected_key2 != undefined){
-        //todo
+      if(this.highlight_path.length > 0){
+        this.highlight_path = [];
+      }
+      else if(this.selected_key1 != undefined && this.selected_key2 != undefined){
+        console.log("find path");
+        const path = this.grid.shortestPath(this.selected_key1, this.selected_key2);
+        console.log(path);
+        if(path != undefined){
+          this.highlight_path = path;
+        }
       }
     }
   }
@@ -211,10 +222,29 @@ export class WallEngine extends App.BaseEngine{
   protected override handleMouseDown(ev: MouseEvent){
     if(this.mouse_over != undefined){
       if(this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key){
-        if(this.selected_key1 == undefined || !this.selected_key1.equals(this.mouse_over)){
+        if(this.selected_key1 == undefined){
           this.selected_key1 = this.mouse_over;
-        }else{
-          this.selected_key1 = undefined;
+          console.log("setting1")
+        }
+        else if(this.selected_key2 == undefined && !this.selected_key1.equals(this.mouse_over)){
+          this.selected_key2 = this.mouse_over;
+          console.log("setting2")
+        }
+        else{
+          if(this.selected_key1.equals(this.mouse_over)){
+            if(this.selected_key2 != undefined){
+              this.selected_key1 = this.selected_key2;
+              this.selected_key2 = undefined;
+            }else{
+              this.selected_key1 = undefined;
+            }
+          }
+          else if(this.selected_key2 != undefined && this.selected_key2.equals(this.mouse_over)){
+            this.selected_key2 = undefined;
+          }else{
+            this.selected_key1 = this.selected_key2;
+            this.selected_key2 = this.mouse_over;
+          }
         }
       }else{
         if(this.selected_key1 != undefined){
@@ -258,16 +288,27 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   grid_tile_shader: Shader.MVPSolidPathProgram;
   pri_tile_shader: Shader.MVPPathCenterCircleProgram;
   solid_shader: Shader.MVPColourProgram;
+  sprite_sheet_shader: Shader.MVPSpriteSheetProgram;
+  texture_shader: Shader.MVPTextureProgram;
   vp: Matrix.TransformationMatrix3x3;
   draw_width: Int32;
   draw_height: Int32;
+
+  test_tex: Texture.Texture;
+
   constructor(w: Int32, h: Int32){
     this.grid_tile_shader = new Shader.MVPSolidPathProgram();
     this.pri_tile_shader = new Shader.MVPPathCenterCircleProgram();
     this.solid_shader = new Shader.MVPColourProgram();
+    this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
+    this.texture_shader = new Shader.MVPTextureProgram();
     this.draw_width = w;
     this.draw_height = h;
     this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+    //Texture.Texture.setup();
+    this.test_tex = new Texture.Texture("letters-Sheet.png");
+    this.test_tex.load();
+    this.test_tex.active(0);
   }
   drawKeyTile(engine: WallEngine, x: Int32, y: Int32){
     //expects shader vars setup
@@ -275,7 +316,9 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const tx = x*gs;
     const ty = y*gs;
     this.pri_tile_shader.use();
-    if(engine.selected_key1 != undefined && engine.selected_key1.x == x && engine.selected_key1.y == y){
+    const is_key1 = engine.selected_key1 != undefined && engine.selected_key1.x == x && engine.selected_key1.y == y;
+    const is_key2 = engine.selected_key2 != undefined && engine.selected_key2.x == x && engine.selected_key2.y == y;
+    if(is_key1 || is_key2){
       this.pri_tile_shader.setColour(1, 0, 1);
     }else{
       this.pri_tile_shader.setColour(0, 1, 1);
@@ -303,6 +346,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   render(engine: WallEngine){
     //const perspective = Matrix.TransformationMatrix3x3.orthographic(0, 500, 500, 0);
     const gs = engine.rect_grid.size;
+    
     //const ctx = WebGL.gl;
     //setup shader vars
     this.grid_tile_shader.use();
@@ -316,6 +360,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.pri_tile_shader.setBackgroundColour(1, 1, 0);
 
 
+
     for(let y = 0; y < engine.grid.height; y++){
       for(let x = 0; x < engine.grid.width; x++){
         if(engine.grid.grid[y][x].is_key){
@@ -326,6 +371,37 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
         }
       }
     }
+    this.grid_tile_shader.use();
+    this.grid_tile_shader.setColour(1, 0, 0);
+    for(let i = 1; i < engine.highlight_path.length-1; i++){
+      //this.solid_shader.use();
+      //this.solid_shader.setColour(0.5, 0.5, 0);
+      const cell = engine.highlight_path[i];
+      //const model = WebGL.rectangleModel(cell.x*gs, cell.y*gs, gs, gs);
+      //this.solid_shader.setMvp(this.vp.multiplyCopy(model));
+      //this.grid_tile_shader.setMvp(this.vp.multiplyCopy(model));
+      this.drawWallTile(engine, cell.x, cell.y);
+      //Shapes.Quad.draw();
+    }
+    WebGL.gl?.enable(WebGL.gl.BLEND);
+    WebGL.gl?.blendFunc(WebGL.gl.SRC_ALPHA, WebGL.gl.ONE_MINUS_SRC_ALPHA);
+    const tex_model = Matrix.TransformationMatrix3x3.translate(10, 10);
+    tex_model.multiply(Matrix.TransformationMatrix3x3.scale(50, 50));
+    this.sprite_sheet_shader.use();
+    this.sprite_sheet_shader.setMvp(this.vp.multiplyCopy(tex_model));
+    this.sprite_sheet_shader.setTextureId(0);
+    this.sprite_sheet_shader.setWidth(3);
+    this.sprite_sheet_shader.setHeight(1);
+    this.sprite_sheet_shader.setX(2);
+    this.sprite_sheet_shader.setY(0);
+    WebGL.gl?.enable(WebGL.gl.BLEND);
+    /*
+    this.texture_shader.use();
+    this.texture_shader.setMvp(this.vp.multiplyCopy(tex_model));
+    this.texture_shader.setTextureId(0);*/
+    Shapes.Quad.draw();
+    WebGL.gl?.disable(WebGL.gl.BLEND);
+
     /*
     if(engine.mouse_over){
       const model = Matrix.TransformationMatrix3x3.translate(engine.mouse_over.x*gs, engine.mouse_over.y*gs);

@@ -17,6 +17,7 @@ export class MVPOutlineCircleProgram extends Fragment.CircleOutlineMixin(Vertex.
 export class MVPSolidPathProgram extends Fragment.SolidPathMixin(Vertex.Mvp2dMixin){};
 export class MVPOutlineRectProgram extends Fragment.RectOutlineMixin(Vertex.Mvp2dMixin){};
 export class MVPSolidLineProgram extends Fragment.LineMixin(Vertex.Mvp2dMixin){};
+export class MVPSpriteSheetProgram extends Fragment.SpriteSheetMixin(Vertex.Mvp2dMixin){};
 export class MVPPathCenterCircleProgram extends Fragment.PathCentreCircleMixin(Vertex.Mvp2dMixin){};
 export class MVPTextureProgram extends Fragment.TextureMixin(Vertex.Mvp2dMixin){};
 

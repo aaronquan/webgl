@@ -111,7 +111,7 @@ export function testBasicModel(){
 }
 
 
-export function loadTexture(){
+export function loadTextureTest(){
   if(WebGL.gl){
     const gl = WebGL.gl;
 

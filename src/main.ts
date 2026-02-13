@@ -35,16 +35,13 @@ const water_engine = new Water.WaterEngine();
 const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 
 if(gl){
-<<<<<<< Updated upstream
+  //WebGLGlobals.loadTexture();
   app.addEvents();
   app.draw();
-=======
-  //app.addEvents();
-  //app.draw();
-  WebGLGlobals.loadTexture();
+
   //water_engine.addEvents();
->>>>>>> Stashed changes
   //water_renderer.render(water_engine);
+  
 }else{
 
 }
