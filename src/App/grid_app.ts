@@ -3,13 +3,15 @@ import * as App from "./app";
 import * as Grid from "./grid"
 import * as Shader from "./../WebGL/Shaders/custom";
 import * as Shapes from '../WebGL/Shapes/Shapes';
-import * as Texture from "./../WebGL/Texture/texture"
+import * as Texture from "./../WebGL/Texture/texture";
+import * as Colour from "./../WebGL/colour";
 import WebGL from "../WebGL/globals";
 
 import * as ArrayUtils from "../utils/array";
 
 
 type Int32 = number;
+type Float = number;
 
 function randomPick<T>(arr: T[]): T{
   const p = Math.floor(Math.random()*arr.length);
@@ -146,7 +148,7 @@ export class WallEngine extends App.BaseEngine{
       }
       this.grid.grid[this.key_positions[0].y][this.key_positions[0].x].is_key = true;
     }
-    let arr = [1, 2,3,4,5];
+    let arr = [1,2,3,4,5];
     ArrayUtils.reverse(arr);
     console.log(arr);
     const sh_path = this.grid.shortestPath(this.key_positions[0], this.key_positions[1]);
@@ -277,6 +279,14 @@ export class WallEngine extends App.BaseEngine{
   }
 }
 
+interface MultiColourTileShader{
+  setLeftColour:(r: Float, g: Float, b: Float) => void;
+  setBotColour:(r: Float, g: Float, b: Float) => void;
+  setRightColour:(r: Float, g: Float, b: Float) => void;
+  setTopColour:(r: Float, g: Float, b: Float) => void;
+  setMidColour:(r: Float, g: Float, b: Float) => void;
+}
+
 interface TileShader{
   setLeft:(v: number) => void;
   setBot:(v: number) => void;
@@ -289,16 +299,20 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   pri_tile_shader: Shader.MVPPathCenterCircleProgram;
   solid_shader: Shader.MVPColourProgram;
   sprite_sheet_shader: Shader.MVPSpriteSheetProgram;
+  multi_colour_tile_shader: Shader.MVPMultiColourPathProgram;
   texture_shader: Shader.MVPTextureProgram;
   vp: Matrix.TransformationMatrix3x3;
   draw_width: Int32;
   draw_height: Int32;
 
-  test_tex: Texture.Texture;
+  //test_tex: Texture.Texture;
+  font: Texture.CustomFont;
+  render_string: string;
 
   constructor(w: Int32, h: Int32){
     this.grid_tile_shader = new Shader.MVPSolidPathProgram();
     this.pri_tile_shader = new Shader.MVPPathCenterCircleProgram();
+    this.multi_colour_tile_shader = new Shader.MVPMultiColourPathProgram();
     this.solid_shader = new Shader.MVPColourProgram();
     this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
     this.texture_shader = new Shader.MVPTextureProgram();
@@ -306,9 +320,30 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.draw_height = h;
     this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
     //Texture.Texture.setup();
-    this.test_tex = new Texture.Texture("letters-Sheet.png");
-    this.test_tex.load();
-    this.test_tex.active(0);
+    //this.test_tex = new Texture.Texture("letters_Sheet.png");
+    //this.test_tex.load();
+    //this.test_tex.active(0);
+
+    this.font = new Texture.CustomFont("letters_Sheet.png");
+    this.font.load();
+    this.font.active(0);
+
+    this.render_string = "cabbac";
+  }
+  drawString(s: string, x: Int32, y: Int32, size: Int32){
+    const gl = WebGL.gl!;
+    const scale = Matrix.TransformationMatrix3x3.scale(size, size);
+    this.sprite_sheet_shader.use();
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    for(let i = 0; i < s.length; i++){
+      const translate = Matrix.TransformationMatrix3x3.translate(x+size*i, y);
+      const model = translate.multiplyCopy(scale);
+      this.sprite_sheet_shader.setMvp(this.vp.multiplyCopy(model));
+      this.font.setChar(this.sprite_sheet_shader, s[i]);
+      Shapes.Quad.draw();
+    }
+    gl.disable(gl.BLEND);
   }
   drawKeyTile(engine: WallEngine, x: Int32, y: Int32){
     //expects shader vars setup
@@ -359,8 +394,6 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.pri_tile_shader.setColour(0, 1, 1);
     this.pri_tile_shader.setBackgroundColour(1, 1, 0);
 
-
-
     for(let y = 0; y < engine.grid.height; y++){
       for(let x = 0; x < engine.grid.width; x++){
         if(engine.grid.grid[y][x].is_key){
@@ -383,24 +416,16 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       this.drawWallTile(engine, cell.x, cell.y);
       //Shapes.Quad.draw();
     }
-    WebGL.gl?.enable(WebGL.gl.BLEND);
-    WebGL.gl?.blendFunc(WebGL.gl.SRC_ALPHA, WebGL.gl.ONE_MINUS_SRC_ALPHA);
-    const tex_model = Matrix.TransformationMatrix3x3.translate(10, 10);
-    tex_model.multiply(Matrix.TransformationMatrix3x3.scale(50, 50));
-    this.sprite_sheet_shader.use();
-    this.sprite_sheet_shader.setMvp(this.vp.multiplyCopy(tex_model));
-    this.sprite_sheet_shader.setTextureId(0);
-    this.sprite_sheet_shader.setWidth(3);
-    this.sprite_sheet_shader.setHeight(1);
-    this.sprite_sheet_shader.setX(2);
-    this.sprite_sheet_shader.setY(0);
-    WebGL.gl?.enable(WebGL.gl.BLEND);
-    /*
-    this.texture_shader.use();
-    this.texture_shader.setMvp(this.vp.multiplyCopy(tex_model));
-    this.texture_shader.setTextureId(0);*/
-    Shapes.Quad.draw();
-    WebGL.gl?.disable(WebGL.gl.BLEND);
+
+    this.drawString(this.render_string, 100, 100, 25);
+
+    this.multi_colour_tile_shader.use();
+    this.multi_colour_tile_shader.setBackgroundColour(1.0, 0.5, 0.5);
+    this.setMultiTile(this.multi_colour_tile_shader, false, true, true, false, Colour.ColourUtils.green(), Colour.ColourUtils.white());
+    this.multi_colour_tile_shader.setSize(0.1);
+    const tm = Matrix.TransformationMatrix3x3.scale(gs, gs);
+    this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(tm));
+    Shapes.Quad.drawRelative();
 
     /*
     if(engine.mouse_over){
@@ -438,7 +463,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       this.setTile(this.pri_tile_shader, engine.grid, x, y);
       Shapes.Quad.drawRelative();
     }
-      */
+    */
     this.drawGridLines(engine);
     requestAnimationFrame(() => this.render(engine));
   }
@@ -459,6 +484,33 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       Shapes.Quad.drawRelative();
     }
     Shapes.Quad.draw();
+  }
+  setMultiTile(shader: MultiColourTileShader, left: boolean, top: boolean, right: boolean, bot: boolean, active_colour: Colour.ColourRGB, inactive_colour: Colour.ColourRGB){
+    if(left || top || right || bot){
+      shader.setMidColour(active_colour.red, active_colour.green, active_colour.blue);
+    }else{
+      shader.setMidColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
+    }
+    if(left){
+      shader.setLeftColour(active_colour.red, active_colour.green, active_colour.blue);
+    }else{
+      shader.setLeftColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
+    }
+    if(top){
+      shader.setTopColour(active_colour.red, active_colour.green, active_colour.blue);
+    }else{
+      shader.setTopColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
+    }
+    if(right){
+      shader.setRightColour(active_colour.red, active_colour.green, active_colour.blue);
+    }else{
+      shader.setRightColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
+    }
+    if(bot){
+      shader.setBotColour(active_colour.red, active_colour.green, active_colour.blue);
+    }else{
+      shader.setBotColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
+    }
   }
   setTile(shader: TileShader, grid: Grid.WallGrid, x: Int32, y: Int32){
     if(!grid.isInside(x, y)) return;

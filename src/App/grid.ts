@@ -117,6 +117,9 @@ export class GridPosition{
 
   //generates track from p1 to p2 with one turn only
   static randomPointToPoint1TurnTrack(p1: GridPosition, p2: GridPosition): Track{
+    const rand = Math.random();
+    return this.oneTurnTrackFrom2Points(p1, p2, rand > 0.5);
+    /*
     const track_part = new TrackPart();
     //straight line conditions
     const dir_x = p1.x > p2.x ? DirectionEnum.Left : DirectionEnum.Right;
@@ -133,6 +136,7 @@ export class GridPosition{
       track_part.addMove(dist_x, dir_x);
     }else{ // has turn
       const rand = Math.random();
+      
       if(rand > 0.5){
         //vertical first
         track_part.addMove(dist_y, dir_y);
@@ -144,14 +148,32 @@ export class GridPosition{
       }
     }
 
+    return new Track(track_part, p1);*/
+  }
+  static oneTurnTrackFrom2Points(p1: GridPosition, p2: GridPosition, horizontal_first: boolean=true): Track{
+    const dir_x = p1.x > p2.x ? DirectionEnum.Left : DirectionEnum.Right;
+    const dir_y = p1.y > p2.y ? DirectionEnum.Up : DirectionEnum.Down;
+    const dist_x = Math.abs(p1.x-p2.x);
+    const dist_y= Math.abs(p1.y-p2.y);
+    const track_part = new TrackPart();
+    if(dist_x == 0){
+      if(dist_y != 0){
+        track_part.addMove(dist_y, dir_y);
+      }
+    }else if(dist_y == 0){
+      track_part.addMove(dist_x, dir_x);
+    }else{
+      if(horizontal_first){
+        track_part.addMove(dist_x, dir_x);
+        track_part.addMove(dist_y, dir_y);
+      }else{
+        track_part.addMove(dist_y, dir_y);
+        track_part.addMove(dist_x, dir_x);
+      }
+    }
     return new Track(track_part, p1);
   }
-  static turnTrackHorizontalFirst(p1: GridPosition, p2: GridPosition): Track{
-    const track_part = new TrackPart();
-  }
-  static turnTrackVerticalFirst(p1: GridPosition, p2: GridPosition): Track{
-    //todo
-  }
+
 
   static filterInsideGrid(positions: GridPosition[], grid: RectGrid): GridPosition[]{
     return positions.filter((p) => grid.isInsideGrid(p.x, p.y));
@@ -195,6 +217,19 @@ const DirectionEnum = {
 } as const;
 
 type GridDirection = (typeof DirectionEnum)[keyof typeof DirectionEnum];
+
+
+type ActiveDirections = {
+  left: boolean;
+  up: boolean;
+  right: boolean;
+  down: boolean;
+}
+
+type GridPositionWithDirections = {
+  position: GridPosition;
+  directions: ActiveDirections;
+}
 
 // Track - Physical space an object can move on (cannot go back on itself) e.g. left 2, right 2
 // Path - Movement of an object (can go back on itself)
@@ -242,6 +277,24 @@ class DirectionUtil{
     }else if(dir === DirectionEnum.Down){
       pos.y += move;
     }
+  }
+  static directionsBetween2Points(from: GridPosition, to: GridPosition): GridDirection[]{
+    const dirs: GridDirection[] = [];
+    if(from.x != to.x){
+      if(from.x < to.x){
+        dirs.push(DirectionEnum.Right);
+      }else{
+        dirs.push(DirectionEnum.Left);
+      }
+    }
+    if(from.y != to.y){
+      if(from.y < to.y){
+        dirs.push(DirectionEnum.Down);
+      }else{
+        dirs.push(DirectionEnum.Up);
+      }
+    }
+    return dirs;
   }
   //static isSameDirection(dir)
 }
@@ -575,6 +628,13 @@ export class GridAlgorithms{
         GridAlgorithms.positionsAtDistance.push({positions, distance_squared: top.distance_squared});
       }
     }
+  }
+  static positionPathToDirectionPath(path: GridPosition[]):GridPositionWithDirections[]{
+    const direction_path:GridPositionWithDirections[] = [];
+    for(let i = 0; i < path.length; i++){
+      
+    }
+    return direction_path;
   }
 
   static positionsWithinRange(limit_squared: Float): GridPosition[]{
