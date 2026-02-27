@@ -22,6 +22,7 @@ export class MVPPathCenterCircleProgram extends Fragment.PathCentreCircleMixin(V
 export class MVPTextureProgram extends Fragment.TextureMixin(Vertex.Mvp2dMixin){};
 
 export class MVPMultiColourPathProgram extends Fragment.MultiColourPathMixin(Vertex.Mvp2dMixin){};
+export class MVPMultiColourCentreCirclePathProgram extends Fragment.MultiColourCentreCirclePathMixin(Vertex.Mvp2dMixin){};
 
 /*
 interface Colour{

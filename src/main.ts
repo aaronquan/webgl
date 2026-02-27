@@ -37,11 +37,12 @@ const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 if(gl){
   //WebGLGlobals.loadTexture();
   app.addEvents();
+  //app.update();
   app.draw();
 
   //water_engine.addEvents();
   //water_renderer.render(water_engine);
-  
+
 }else{
 
 }

@@ -119,7 +119,7 @@ export class CustomFont{
   load(){
     this.font_sheet.load();
     //console.log(this.font_name);
-    File.fetchPublicFile(`letters_Sheet.txt`, (txt) => {
+    File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
       const sp = txt.split('\r\n');
       const dims = sp[0].split(' ');
       this.width = parseInt(dims[0]);
@@ -131,7 +131,8 @@ export class CustomFont{
           this.coord_to_sheet_position.set(sp[i][j], {x, y});
         }
       }
-    });
+    }, 
+    (error) => { console.log(error)});
   }
   setChar(shader: Shader.MVPSpriteSheetProgram, char: Char){
     shader.setWidth(this.width);

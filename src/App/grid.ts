@@ -218,15 +218,14 @@ const DirectionEnum = {
 
 type GridDirection = (typeof DirectionEnum)[keyof typeof DirectionEnum];
 
-
-type ActiveDirections = {
+export type ActiveDirections = {
   left: boolean;
   up: boolean;
   right: boolean;
   down: boolean;
 }
 
-type GridPositionWithDirections = {
+export type GridPositionWithDirections = {
   position: GridPosition;
   directions: ActiveDirections;
 }
@@ -234,13 +233,29 @@ type GridPositionWithDirections = {
 // Track - Physical space an object can move on (cannot go back on itself) e.g. left 2, right 2
 // Path - Movement of an object (can go back on itself)
 
-class DirectionUtil{
+export class DirectionUtil{
   static directions: GridPosition[] = [new GridPosition(0, 1), new GridPosition(1, 0), new GridPosition(0, -1), new GridPosition(-1, 0)];
   static isSameAxis(dir1: GridDirection, dir2: GridDirection): boolean{
     if(dir1 == DirectionEnum.Left || dir1 == DirectionEnum.Right){
       return dir2 == DirectionEnum.Left || dir2 == DirectionEnum.Right;
     }
     return dir2 == DirectionEnum.Up || dir2 == DirectionEnum.Down;
+  }
+  static setActiveDirection(active_directions: ActiveDirections, value: boolean, direction: GridDirection){
+    switch(direction){
+      case DirectionEnum.Left:
+        active_directions.left = value;
+        break;
+      case DirectionEnum.Down:
+        active_directions.down = value;
+        break;
+      case DirectionEnum.Right:
+        active_directions.right = value;
+        break;
+      case DirectionEnum.Up:
+        active_directions.up = value;
+        break;
+    }
   }
   static opposite(direction: GridDirection): GridDirection{
     switch(direction){
@@ -295,6 +310,19 @@ class DirectionUtil{
       }
     }
     return dirs;
+  }
+  static toString(dir: GridDirection): string{
+    switch(dir){
+      case DirectionEnum.Down:
+        return "Down";
+      case DirectionEnum.Left:
+        return "Left";
+      case DirectionEnum.Up:
+        return "Up";
+      case DirectionEnum.Right:
+        return "Right";
+    }
+    return "";
   }
   //static isSameDirection(dir)
 }
@@ -402,20 +430,64 @@ export class RectGrid{
   }
 }
 
+export const TileStateEnum = {
+  Nothing: 0, Path: 1, Highlight: 2
+} as const;
+
+export type TileState = (typeof TileStateEnum)[keyof typeof TileStateEnum];
+
+function randomTileState(): TileState{
+  let r = Math.random();
+  return Math.floor(r*Object.keys(TileStateEnum).length) as TileState;
+}
+
 export class WallTile{
-  left: boolean;
-  top: boolean;
-  right: boolean;
-  bottom: boolean;
+  left: TileState;
+  top: TileState;
+  right: TileState;
+  bottom: TileState;
   is_key: boolean;
+  is_selected: boolean;
   constructor(){
-    this.left = false;
-    this.bottom = false;
-    this.right = false;
-    this.top = false;
+    this.left = TileStateEnum.Nothing;
+    this.bottom = TileStateEnum.Nothing;
+    this.right = TileStateEnum.Nothing;
+    this.top = TileStateEnum.Nothing;
     this.is_key = false;
+    this.is_selected = false;
   }
- setDirection(direction: GridDirection, value: boolean){
+  /* no longer a thing
+  setDirection(direction: GridDirection, value: boolean){
+    switch(direction){
+      case DirectionEnum.Down:
+        this.bottom = Tile;
+        break;
+      case DirectionEnum.Left:
+        this.left = TileStateEnum.Nothing;
+        break;
+      case DirectionEnum.Up:
+        this.top = value;
+        break;
+      case DirectionEnum.Right:
+        this.right = TileStateEnum.Nothing;
+        break;
+    }
+  }*/
+  setTileActiveDirection(active: ActiveDirections, value: TileState){
+    if(active.left){
+      this.left = value;
+    }
+    if(active.down){
+      this.bottom = value;
+    }
+    if(active.right){
+      this.right = value;
+    }
+    if(active.up){
+      this.top = value;
+    }
+  }
+  setTileState(direction: GridDirection, value: TileState){
     switch(direction){
       case DirectionEnum.Down:
         this.bottom = value;
@@ -432,14 +504,10 @@ export class WallTile{
     }
   }
   randomise(){
-    let r = Math.random();
-    this.left = r < 0.5;
-    r = Math.random();
-    this.right = r < 0.5;
-    r = Math.random();
-    this.bottom = r < 0.5;
-    r = Math.random();
-    this.top = r < 0.5;
+    this.left = randomTileState();
+    this.right = randomTileState();
+    this.bottom = randomTileState();
+    this.top = randomTileState();
   }
 }
 
@@ -462,25 +530,34 @@ export class WallGrid{
   isInside(x: number, y: number): boolean{
     return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
+  setCellState(x: Int32, y: Int32, direction: GridDirection, state: TileState){
+    this.grid[y][x].setTileState(direction, state);
+  }
+  setCellStateFromActive(x: Int32, y: Int32, active: ActiveDirections, state: TileState){
+    this.grid[y][x].setTileActiveDirection(active, state);
+    /*if(state == TileStateEnum.Highlight){
+      this.grid[y][x].is_selected = true;
+    }else{
+      this.grid[y][x].is_selected = false;
+    }*/
+  }
 
   addTrack(track: Track){
     console.log(track);
     let last_direction: GridDirection | undefined = undefined;
     const current = track.starting_location.copy();
     for(const pt of track.part.getMoves()){
-      //console.log(pt);
       for(let i = 0; i < pt.distance; i++){
-        //console.log(current);
         if(last_direction != undefined){
-          this.grid[current.y][current.x].setDirection(DirectionUtil.opposite(last_direction), true); 
+          this.grid[current.y][current.x].setTileState(DirectionUtil.opposite(last_direction), TileStateEnum.Path); 
         }
-        this.grid[current.y][current.x].setDirection(pt.direction, true);
+        this.grid[current.y][current.x].setTileState(pt.direction, TileStateEnum.Path);
         DirectionUtil.movePosition(pt.direction, current);
         last_direction = pt.direction;
       }
     }
     if(last_direction != undefined){
-      this.grid[current.y][current.x].setDirection(DirectionUtil.opposite(last_direction), true); 
+      this.grid[current.y][current.x].setTileState(DirectionUtil.opposite(last_direction), TileStateEnum.Path); 
     }
   }
   shortestPath(start: GridPosition, end: GridPosition): GridPosition[] | undefined{
@@ -493,6 +570,7 @@ export class WallGrid{
     queue.push(start);
     let times = 0; // can remove
     while(queue.length > 0){
+      console.log(queue);
       times++;
       const next_q = [];
       for(let i = 0; i < queue.length; i++){
@@ -513,7 +591,7 @@ export class WallGrid{
           //backtrack
         }
         const wall_tile = this.grid[curr.y][curr.x];
-        if(wall_tile.left && last_position[curr.y][curr.x-1] == undefined){
+        if(wall_tile.left != TileStateEnum.Nothing && last_position[curr.y][curr.x-1] == undefined){
           const new_pos = new GridPosition(curr.x-1, curr.y);
           next_q.push(new_pos);
           last_position[curr.y][curr.x-1] = curr;
@@ -521,16 +599,16 @@ export class WallGrid{
           const new_pos = new GridPosition(curr.x, curr.y-1);
           next_q.push(new_pos);
           last_position[curr.y-1][curr.x] = curr;
-        }if(wall_tile.right && last_position[curr.y][curr.x+1] == undefined){
+        }if(wall_tile.right != TileStateEnum.Nothing && last_position[curr.y][curr.x+1] == undefined){
           const new_pos = new GridPosition(curr.x+1, curr.y);
           next_q.push(new_pos);
           last_position[curr.y][curr.x+1] = curr;
-          console.log("right");
+          //console.log("right");
         }if(wall_tile.bottom && last_position[curr.y+1][curr.x] == undefined){
           const new_pos = new GridPosition(curr.x, curr.y+1);
           next_q.push(new_pos);
           last_position[curr.y+1][curr.x] = curr;
-          console.log("bot");
+          //console.log("bot");
         }
       }
       queue = next_q;
@@ -632,7 +710,25 @@ export class GridAlgorithms{
   static positionPathToDirectionPath(path: GridPosition[]):GridPositionWithDirections[]{
     const direction_path:GridPositionWithDirections[] = [];
     for(let i = 0; i < path.length; i++){
-      
+      const active = {
+        left: false,
+        down: false,
+        right: false,
+        up: false
+      }
+      if(i != 0){
+        const back_directions = DirectionUtil.directionsBetween2Points(path[i], path[i-1]);
+        for(const dir of back_directions){
+          DirectionUtil.setActiveDirection(active, true, dir);
+        }
+      }
+      if(i != path.length-1){
+        const forward_directions = DirectionUtil.directionsBetween2Points(path[i], path[i+1]);
+        for(const dir of forward_directions){
+          DirectionUtil.setActiveDirection(active, true, dir);
+        }
+      }
+      direction_path.push({position: path[i], directions: active});
     }
     return direction_path;
   }

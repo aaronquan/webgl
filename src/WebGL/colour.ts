@@ -26,4 +26,13 @@ export class ColourUtils{
     static blue():ColourRGB{
         return this.fromRGB(0, 0, 1);
     }
+    static yellow():ColourRGB{
+        return this.fromRGB(1, 1, 0);
+    }
+    static pink():ColourRGB{
+        return this.fromRGB(1, 0, 1);
+    }
+    static cyan():ColourRGB{
+        return this.fromRGB(0, 1, 1);
+    }
 }

@@ -87,15 +87,58 @@ function generateKeyLocations(grid: Grid.RectGrid, n_locations: Int32=5): Grid.G
     away = getLocationsAway(grid, locations.at(-1)!, 7);
 
     const pick = randomPick(away);
-    locations.push(randomPick(away));
+    locations.push(pick);
   }
 
 
   return locations;
 }
 
-export class Car{
+type TrackPosition = {
+  distance_covered: Float,
+  move_index: Int32
+}
 
+export class Car{
+  //coordinates are from top-left corner
+  x: Float; // center point 
+  y: Float;
+  size: Float;
+  plan: Grid.Track | undefined;
+  plan_position: TrackPosition;
+  plan_index: Int32;
+  turn_speed: Float; // per second?
+  speed: Float; // per second
+  direction: Float; // in radians
+  constructor(){
+    this.x = 0;
+    this.y = 0;
+    this.size = 0.2;
+    this.plan = undefined;
+    this.plan_position = {distance_covered: 0, move_index: 0};
+    this.plan_index = 0;
+    this.speed = 0.1;
+    this.turn_speed = 0.05;
+    this.direction = 0;
+  }
+  setPlan(plan: Grid.Track){
+    this.plan = plan;
+    this.x = plan.starting_location.x+0.5;
+    this.y = plan.starting_location.y+0.5;
+    this.plan_position = {distance_covered: 0, move_index: 0};
+  }
+  update(t:Float){
+    if(this.plan){
+       const moves = this.plan.part.getMoves();
+       const dir = moves[this.plan_position.move_index].direction;
+       const dir_movement = Grid.DirectionUtil.directions[dir];
+       //const ms = this.speed;
+       this.x += dir_movement.x*this.speed;
+       this.y -= dir_movement.y*this.speed;
+       this.plan_position.distance_covered += this.speed;
+       //TODO
+    }
+  }
 }
 
 export class MultiGridObject{
@@ -127,7 +170,8 @@ export class WallEngine extends App.BaseEngine{
 
   test_objects: MultiGridObject[];
 
-  highlight_path: Grid.GridPosition[];
+  highlight_path: Grid.GridPositionWithDirections[];
+  car: Car;
 
   constructor(){
     super();
@@ -140,23 +184,26 @@ export class WallEngine extends App.BaseEngine{
     this.key_positions = generateKeyLocations(this.rect_grid, 3);
     this.is_circle_positions = false;
 
+    this.car = new Car();
+
     if(this.key_positions.length >= 2){
       for(let i = 1; i < this.key_positions.length; i++){
         const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.key_positions[i-1], this.key_positions[i]);
         this.grid.addTrack(path);
         this.grid.grid[this.key_positions[i].y][this.key_positions[i].x].is_key = true;
+
+        this.car.setPlan(path);
       }
       this.grid.grid[this.key_positions[0].y][this.key_positions[0].x].is_key = true;
     }
-    let arr = [1,2,3,4,5];
-    ArrayUtils.reverse(arr);
-    console.log(arr);
     const sh_path = this.grid.shortestPath(this.key_positions[0], this.key_positions[1]);
     console.log(sh_path);
     
     this.test_objects = [];
     this.adding_path_hori_first = true;
     this.highlight_path = [];
+
+
     /*
     Grid.GridPosition.testEuclidianDistance(3.4);
 
@@ -196,6 +243,9 @@ export class WallEngine extends App.BaseEngine{
     }else if(ev.key == 'w'){
       //run path closest
       if(this.highlight_path.length > 0){
+        for(const dir_pos of this.highlight_path){
+          this.grid.setCellStateFromActive(dir_pos.position.x, dir_pos.position.y, dir_pos.directions, Grid.TileStateEnum.Path);
+        }
         this.highlight_path = [];
       }
       else if(this.selected_key1 != undefined && this.selected_key2 != undefined){
@@ -203,7 +253,14 @@ export class WallEngine extends App.BaseEngine{
         const path = this.grid.shortestPath(this.selected_key1, this.selected_key2);
         console.log(path);
         if(path != undefined){
-          this.highlight_path = path;
+          //this.highlight_path = path;
+          const dir_path_positions = Grid.GridAlgorithms.positionPathToDirectionPath(path);
+          for(const dir_pos of dir_path_positions){
+            this.grid.setCellStateFromActive(dir_pos.position.x, dir_pos.position.y, dir_pos.directions, Grid.TileStateEnum.Highlight);
+          }
+          this.highlight_path = dir_path_positions;
+          console.log(dir_path_positions);
+          console.log(this.grid);
         }
       }
     }
@@ -225,15 +282,21 @@ export class WallEngine extends App.BaseEngine{
     if(this.mouse_over != undefined){
       if(this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key){
         if(this.selected_key1 == undefined){
+          //set key1
           this.selected_key1 = this.mouse_over;
+          this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_selected = true;
           console.log("setting1")
         }
         else if(this.selected_key2 == undefined && !this.selected_key1.equals(this.mouse_over)){
+          //set key2
           this.selected_key2 = this.mouse_over;
+          this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_selected = true;
           console.log("setting2")
         }
         else{
           if(this.selected_key1.equals(this.mouse_over)){
+            //remove key1
+            this.grid.grid[this.selected_key1.y][this.selected_key1.x].is_selected = false;
             if(this.selected_key2 != undefined){
               this.selected_key1 = this.selected_key2;
               this.selected_key2 = undefined;
@@ -242,8 +305,13 @@ export class WallEngine extends App.BaseEngine{
             }
           }
           else if(this.selected_key2 != undefined && this.selected_key2.equals(this.mouse_over)){
+            //remove key 2
+            this.grid.grid[this.selected_key2.y][this.selected_key2.x].is_selected = false;
             this.selected_key2 = undefined;
           }else{
+            //replace key1
+            this.grid.grid[this.selected_key1.y][this.selected_key1.x].is_selected = false;
+            this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_selected = true;
             this.selected_key1 = this.selected_key2;
             this.selected_key2 = this.mouse_over;
           }
@@ -258,6 +326,7 @@ export class WallEngine extends App.BaseEngine{
         }
       }
     }
+    
     //this.adding_position
   }
 
@@ -277,6 +346,10 @@ export class WallEngine extends App.BaseEngine{
     }
     //console.log(pos);
   }
+
+  update(time: Float){
+    this.car.update(time);
+  }
 }
 
 interface MultiColourTileShader{
@@ -287,11 +360,17 @@ interface MultiColourTileShader{
   setMidColour:(r: Float, g: Float, b: Float) => void;
 }
 
-interface TileShader{
+interface DirectionTileShader extends TileShader{
   setLeft:(v: number) => void;
   setBot:(v: number) => void;
   setRight:(v: number) => void;
   setTop:(v: number) => void;
+}
+
+interface TileShader{
+  use: () => void;
+  setSize: (s: Float) => void;
+  setMvp: (mat: Matrix.Matrix3x3) => void;
 }
 
 export class WallRenderer implements App.IEngineRenderer<WallEngine>{
@@ -300,6 +379,12 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   solid_shader: Shader.MVPColourProgram;
   sprite_sheet_shader: Shader.MVPSpriteSheetProgram;
   multi_colour_tile_shader: Shader.MVPMultiColourPathProgram;
+  multi_colour_centre_circle_shader: Shader.MVPMultiColourCentreCirclePathProgram;
+
+  tile_state_colours: Map<Grid.TileState, Colour.ColourRGB>;
+  background_colour: Colour.ColourRGB;
+  key_colour: Colour.ColourRGB;
+
   texture_shader: Shader.MVPTextureProgram;
   vp: Matrix.TransformationMatrix3x3;
   draw_width: Int32;
@@ -313,22 +398,43 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.grid_tile_shader = new Shader.MVPSolidPathProgram();
     this.pri_tile_shader = new Shader.MVPPathCenterCircleProgram();
     this.multi_colour_tile_shader = new Shader.MVPMultiColourPathProgram();
+    this.multi_colour_centre_circle_shader = new Shader.MVPMultiColourCentreCirclePathProgram();
     this.solid_shader = new Shader.MVPColourProgram();
     this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
     this.texture_shader = new Shader.MVPTextureProgram();
     this.draw_width = w;
     this.draw_height = h;
     this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+
     //Texture.Texture.setup();
     //this.test_tex = new Texture.Texture("letters_Sheet.png");
     //this.test_tex.load();
     //this.test_tex.active(0);
 
-    this.font = new Texture.CustomFont("letters_Sheet.png");
+    this.font = new Texture.CustomFont("letters-Sheet.png");
     this.font.load();
     this.font.active(0);
 
-    this.render_string = "cabbac";
+    this.render_string = "hello world";
+
+    this.tile_state_colours = new Map();
+    this.tile_state_colours.set(Grid.TileStateEnum.Nothing, Colour.ColourUtils.yellow());
+    this.tile_state_colours.set(Grid.TileStateEnum.Highlight, Colour.ColourUtils.red());
+    this.tile_state_colours.set(Grid.TileStateEnum.Path, Colour.ColourUtils.blue());
+
+    this.background_colour = Colour.ColourUtils.yellow();
+    this.key_colour = Colour.ColourUtils.pink();
+
+    //set some default shader properties
+    this.multi_colour_centre_circle_shader.use();
+    this.multi_colour_centre_circle_shader.setSize(0.1);
+    this.multi_colour_centre_circle_shader.setCircleRadius(0.15);
+    this.multi_colour_centre_circle_shader.setBackgroundColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
+
+    this.multi_colour_tile_shader.use();
+    this.multi_colour_tile_shader.setSize(0.1);
+    this.multi_colour_tile_shader.setBackgroundColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
+
   }
   drawString(s: string, x: Int32, y: Int32, size: Int32){
     const gl = WebGL.gl!;
@@ -337,6 +443,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     for(let i = 0; i < s.length; i++){
+      if(s[i] == ' ') continue;
       const translate = Matrix.TransformationMatrix3x3.translate(x+size*i, y);
       const model = translate.multiplyCopy(scale);
       this.sprite_sheet_shader.setMvp(this.vp.multiplyCopy(model));
@@ -366,19 +473,47 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.pri_tile_shader.setMvp(this.vp.multiplyCopy(model));
     Shapes.Quad.drawRelative();
   }
-  drawWallTile(engine: WallEngine, x: Int32, y: Int32){
+  drawMultiKeyTile(engine: WallEngine, x: Int32, y: Int32){
+    this.multi_colour_centre_circle_shader.use();
+    const gs = engine.rect_grid.size;
+    const model = WebGL.rectangleModel(x*gs, y*gs, gs, gs);
+    this.multi_colour_centre_circle_shader.setMvp(this.vp.multiplyCopy(model));
+    this.setMultiTile(engine, this.multi_colour_centre_circle_shader, x, y);
+    Shapes.Quad.draw();
+    //this.setMultiTile(this.multi_colour_centre_circle_shader, engine.grid.grid[y][x].);
+  }
+  drawMultiWallTile(engine: WallEngine, x: Int32, y: Int32){
+    this.multi_colour_tile_shader.use();
+    const gs = engine.rect_grid.size;
+    const model = WebGL.rectangleModel(x*gs, y*gs, gs, gs);
+    this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(model));
+    this.setMultiTile(engine, this.multi_colour_tile_shader, x, y);
+    Shapes.Quad.draw();
+  }
+  drawWallTile(shader: DirectionTileShader, engine: WallEngine, x: Int32, y: Int32){
     const gs = engine.rect_grid.size;
     const tx = x*gs;
     const ty = y*gs;
     const model = Matrix.TransformationMatrix3x3.translate(tx, ty);
     model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
-    this.grid_tile_shader.use();
-    this.setTile(this.grid_tile_shader, engine.grid, x, y);
-    this.grid_tile_shader.setSize(0.2);
-    this.grid_tile_shader.setMvp(this.vp.multiplyCopy(model));
+    shader.use();
+    this.setTile(shader, engine.grid, x, y);
+    shader.setSize(0.2);
+    shader.setMvp(this.vp.multiplyCopy(model));
     Shapes.Quad.drawRelative();
   }
-  render(engine: WallEngine){
+  drawCar(engine: WallEngine){
+    const car = engine.car;
+    const gs = engine.rect_grid.size;
+    const cs = car.size*gs;
+    this.solid_shader.use();
+    this.solid_shader.setColour(0, 1, 0);
+    const model = WebGL.rectangleModel(car.x*gs-(cs/2), car.y*gs-(cs/2), cs, cs);
+    this.solid_shader.setMvp(this.vp.multiplyCopy(model));
+    Shapes.Quad.draw();
+  }
+  render(time: Float, engine: WallEngine){
+    engine.update(time);
     //const perspective = Matrix.TransformationMatrix3x3.orthographic(0, 500, 500, 0);
     const gs = engine.rect_grid.size;
     
@@ -397,15 +532,18 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     for(let y = 0; y < engine.grid.height; y++){
       for(let x = 0; x < engine.grid.width; x++){
         if(engine.grid.grid[y][x].is_key){
-          this.drawKeyTile(engine, x, y);
+          this.drawMultiKeyTile(engine, x, y);
         }
         else{
-          this.drawWallTile(engine, x, y);
+          this.drawMultiWallTile(engine, x, y);
         }
       }
     }
-    this.grid_tile_shader.use();
-    this.grid_tile_shader.setColour(1, 0, 0);
+    //this.grid_tile_shader.use();
+    //this.grid_tile_shader.setColour(1, 0, 0);
+    /*
+    this.multi_colour_tile_shader.use();
+    this.multi_colour_tile_shader.setBackgroundColour(1, 1, 0);
     for(let i = 1; i < engine.highlight_path.length-1; i++){
       //this.solid_shader.use();
       //this.solid_shader.setColour(0.5, 0.5, 0);
@@ -413,20 +551,34 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       //const model = WebGL.rectangleModel(cell.x*gs, cell.y*gs, gs, gs);
       //this.solid_shader.setMvp(this.vp.multiplyCopy(model));
       //this.grid_tile_shader.setMvp(this.vp.multiplyCopy(model));
-      this.drawWallTile(engine, cell.x, cell.y);
+      this.setMultiTile(this.multi_colour_tile_shader, 
+        cell.directions.left, cell.directions.up, 
+        cell.directions.right, cell.directions.down,
+        Colour.ColourUtils.red(), Colour.ColourUtils.yellow()
+      );
+      const tx = cell.position.x*gs;
+      const ty = cell.position.y*gs;
+      const model = Matrix.TransformationMatrix3x3.translate(tx, ty);
+      model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
+      this.multi_colour_tile_shader.use();
+      this.multi_colour_tile_shader.setSize(0.2);
+      this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(model));
+      Shapes.Quad.drawRelative();
       //Shapes.Quad.draw();
-    }
+    }*/
 
     this.drawString(this.render_string, 100, 100, 25);
+    this.drawString("what is going on lets print this hhbbvv", 20, 200, 15);
 
+    /*
     this.multi_colour_tile_shader.use();
     this.multi_colour_tile_shader.setBackgroundColour(1.0, 0.5, 0.5);
     this.setMultiTile(this.multi_colour_tile_shader, false, true, true, false, Colour.ColourUtils.green(), Colour.ColourUtils.white());
     this.multi_colour_tile_shader.setSize(0.1);
     const tm = Matrix.TransformationMatrix3x3.scale(gs, gs);
     this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(tm));
-    Shapes.Quad.drawRelative();
-
+    Shapes.Quad.drawRelative();*/
+    
     /*
     if(engine.mouse_over){
       const model = Matrix.TransformationMatrix3x3.translate(engine.mouse_over.x*gs, engine.mouse_over.y*gs);
@@ -464,8 +616,21 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       Shapes.Quad.drawRelative();
     }
     */
+   /*
+    this.multi_colour_centre_circle_shader.use();
+    //this.multi_colour_centre_circle_shader.setBackgroundColour(0.1, 0.8, 0.2);
+    this.multi_colour_centre_circle_shader.setCircleRadius(0.2);
+    this.multi_colour_centre_circle_shader.setSize(0.2);
+    this.multi_colour_centre_circle_shader.setMidColour(0.8, 0.2, 0.3);
+    this.multi_colour_centre_circle_shader.setBotColour(0.8, 0.2, 0.3);
+    const tm = Matrix.TransformationMatrix3x3.scale(gs, gs);
+    this.multi_colour_centre_circle_shader.setMvp(this.vp.multiplyCopy(tm));
+    Shapes.Quad.drawRelative();
+    */
+
     this.drawGridLines(engine);
-    requestAnimationFrame(() => this.render(engine));
+    this.drawCar(engine);
+    requestAnimationFrame((time) => this.render(time, engine));
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
@@ -485,6 +650,30 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }
     Shapes.Quad.draw();
   }
+  setMultiTile(engine: WallEngine, shader: MultiColourTileShader, x: Int32, y: Int32){
+    const tile = engine.grid.grid[y][x];
+    const direction_tile_functions = [
+      {var: tile.left, colour_func: shader.setLeftColour}, 
+      {var: tile.right, colour_func: shader.setRightColour},
+      {var: tile.bottom, colour_func: shader.setTopColour},
+      {var: tile.top, colour_func: shader.setBotColour}
+    ];
+    for(const var_func of direction_tile_functions){
+      const colour = this.tile_state_colours.get(var_func.var)!;
+      var_func.colour_func.apply(shader, [colour.red, colour.green, colour.blue]);
+    }
+    if(tile.is_selected){
+      shader.setMidColour(this.key_colour.red, this.key_colour.green, this.key_colour.blue);
+    }else if(tile.bottom == Grid.TileStateEnum.Nothing && tile.left == Grid.TileStateEnum.Nothing 
+      && tile.top == Grid.TileStateEnum.Nothing && tile.right == Grid.TileStateEnum.Nothing){
+        shader.setMidColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
+    }else{
+      const c = this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
+      shader.setMidColour(c.red, c.green, c.blue);
+    }
+    //this.setMultiTile(shader, tile.);
+  }
+  /*
   setMultiTile(shader: MultiColourTileShader, left: boolean, top: boolean, right: boolean, bot: boolean, active_colour: Colour.ColourRGB, inactive_colour: Colour.ColourRGB){
     if(left || top || right || bot){
       shader.setMidColour(active_colour.red, active_colour.green, active_colour.blue);
@@ -496,7 +685,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }else{
       shader.setLeftColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
     }
-    if(top){
+    if(bot){
       shader.setTopColour(active_colour.red, active_colour.green, active_colour.blue);
     }else{
       shader.setTopColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
@@ -506,13 +695,13 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }else{
       shader.setRightColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
     }
-    if(bot){
+    if(top){
       shader.setBotColour(active_colour.red, active_colour.green, active_colour.blue);
     }else{
       shader.setBotColour(inactive_colour.red, inactive_colour.green, inactive_colour.blue);
     }
-  }
-  setTile(shader: TileShader, grid: Grid.WallGrid, x: Int32, y: Int32){
+  }*/
+  setTile(shader: DirectionTileShader, grid: Grid.WallGrid, x: Int32, y: Int32){
     if(!grid.isInside(x, y)) return;
     if(grid.grid[y][x].left){
       shader.setLeft(1.0);

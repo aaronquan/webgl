@@ -4,7 +4,7 @@ import * as CustomShader from "../WebGL/Shaders/custom";
 import * as Matrix from "../WebGL/Matrix/matrix";
 import * as Grid from "./grid";
 
-
+type Int32 = number;
 
 interface IEngine{
   addEvents: () => void;
@@ -37,7 +37,7 @@ export class BaseEngine implements IEngine{
 }
 
 export interface IEngineRenderer<E extends IEngine>{
-  render: (engine: E) => void;
+  render: (time: Int32, engine: E) => void;
 }
 
 interface IRenderer{
@@ -56,7 +56,7 @@ export class App<E extends IEngine>{
     this.engine.addEvents();
   }
   draw(){
-    this.renderer.render(this.engine);
+    this.renderer.render(0, this.engine);
   }
 }
 
@@ -154,7 +154,7 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
       }
     }
   }
-  render(engine: MyEngine){
+  render(time: Int32, engine: MyEngine){
     if(WebGL.gl){
       const gl = WebGL.gl;
       
@@ -203,7 +203,7 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
       gl.disable(gl.BLEND);
   
     }
-    requestAnimationFrame(() => this.render(engine));
+    requestAnimationFrame((time) => this.render(time, engine));
   };
   
 }
