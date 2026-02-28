@@ -133,6 +133,7 @@ export class Car{
        const dir = moves[this.plan_position.move_index].direction;
        const dir_movement = Grid.DirectionUtil.directions[dir];
        //const ms = this.speed;
+       //if(this.plan_position += )
        this.x += dir_movement.x*this.speed;
        this.y -= dir_movement.y*this.speed;
        this.plan_position.distance_covered += this.speed;
