@@ -437,6 +437,9 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.multi_colour_tile_shader.setBackgroundColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
 
   }
+  loadResources(){
+    
+  }
   drawString(s: string, x: Int32, y: Int32, size: Int32){
     const gl = WebGL.gl!;
     const scale = Matrix.TransformationMatrix3x3.scale(size, size);

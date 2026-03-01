@@ -10,6 +10,7 @@ import * as Grid from './App/grid_app';
 import * as WebGLGlobals from './WebGL/globals';
 
 import * as Water from './App/water/water'
+import * as Card from "./App/card/card";
 //import * as CustomShaders from './shaders/custom';
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
@@ -28,15 +29,23 @@ const gl = WebGL.gl;
 const engine = new Grid.WallEngine();
 //const renderer = new App.MyRenderer();
 const renderer = new Grid.WallRenderer(canvas.width, canvas.height);
-const app = new App.App(engine, renderer);
+
 
 
 const water_engine = new Water.WaterEngine();
 const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 
+const card_engine = new Card.CardEngine();
+const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
+
+const app = new App.App(card_engine, card_renderer);
+app.loadResources();
+//const app = new App.App(engine, renderer);
+
+
 if(gl){
   //WebGLGlobals.loadTexture();
-  app.addEvents();
+  //app.addEvents();
   //app.update();
   app.draw();
 

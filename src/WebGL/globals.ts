@@ -7,6 +7,7 @@ import * as Shapes from "./Shapes/Shapes"
 import * as Matrix from "./Matrix/matrix";
 import * as Line from "./Shapes/Line";
 import * as Colour from "./colour";
+import * as Texture from "./Texture/texture"
 
 type Float = number;
 
@@ -138,6 +139,38 @@ export function loadTextureTest(){
       texture_shader.setMvp(perspective);
       Shapes.Quad.drawRelative();
     } 
+  }
+}
+
+export class TextDrawer{
+  sprite_sheet_shader: Shader.MVPSpriteSheetProgram;
+  font: Texture.CustomFont;
+  constructor(){
+    this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
+    this.font = new Texture.CustomFont("letters-sheet.png");
+  }
+  loadFont(onLoaded:()=>void=()=>{}){
+    this.font.load(onLoaded);
+    this.font.active(1);
+  }
+  drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float){
+    const gl = WebGL.gl!;
+    this.sprite_sheet_shader.use();
+    this.sprite_sheet_shader.setTextureId(1);
+    const scale = Matrix.TransformationMatrix3x3.scale(size, size);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    for(let i = 0; i < text.length; i++){
+      const cx = x+i*size;
+      const tr = Matrix.TransformationMatrix3x3.translate(cx, y);
+      const model = tr.multiplyCopy(scale);
+      this.sprite_sheet_shader.setMvp(vp.multiplyCopy(model));
+      this.font.setChar(this.sprite_sheet_shader, text[i]);
+      console.log(this.font)
+      Shapes.Quad.draw();
+      console.log("drawing "+text[i]);
+    }
+    gl.disable(gl.BLEND);
   }
 }
 

@@ -116,7 +116,7 @@ export class CustomFont{
   active(id: Int32){
     this.font_sheet.active(id);
   }
-  load(){
+  load(onLoaded:()=>void=()=>{}){
     this.font_sheet.load();
     //console.log(this.font_name);
     File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
@@ -131,6 +131,8 @@ export class CustomFont{
           this.coord_to_sheet_position.set(sp[i][j], {x, y});
         }
       }
+      onLoaded();
+      this.loaded = true;
     }, 
     (error) => { console.log(error)});
   }

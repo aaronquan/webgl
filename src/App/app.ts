@@ -5,13 +5,22 @@ import * as Matrix from "../WebGL/Matrix/matrix";
 import * as Grid from "./grid";
 
 type Int32 = number;
+type Float = number;
+
+type VoidFunction = () => void;
+type TimeTakenFunction = (t:Float) => void
 
 interface IEngine{
   addEvents: () => void;
+  loadResources: () => void;
 }
 
 export class BaseEngine implements IEngine{
   constructor(){};
+
+  //to override
+  loadResources(){};
+
   addEvents(){
     this.addKeyEvents();
   }
@@ -38,10 +47,13 @@ export class BaseEngine implements IEngine{
 
 export interface IEngineRenderer<E extends IEngine>{
   render: (time: Int32, engine: E) => void;
+  loadResources: () => void;
 }
 
 interface IRenderer{
   render: () => void;
+  loadShaders?: () => void;
+  loadTextures?: () => void;
 }
 
 export class App<E extends IEngine>{
@@ -55,6 +67,12 @@ export class App<E extends IEngine>{
   addEvents(){
     this.engine.addEvents();
   }
+
+  //to override
+  loadResources(){
+    this.engine.loadResources();
+    this.renderer.loadResources();
+  }
   draw(){
     this.renderer.render(0, this.engine);
   }
@@ -63,6 +81,37 @@ export class App<E extends IEngine>{
 type Position = {
   x: number, y: number
 };
+
+export class RendererLoader<R extends IRenderer>{
+  renderer: R;
+  constructor(r:R){
+    this.renderer = r;
+  }
+  //to override
+  protected loadTextures(next: VoidFunction){};
+  //to override
+  protected loadShaders(next: VoidFunction){};
+
+  private prLoadTextures(onFinish: VoidFunction){
+    this.loadTextures(() => {
+      console.log("loading textures");
+      if(this.renderer.loadShaders){
+        this.renderer.loadShaders();
+      }
+      this.prLoadShaders(onFinish);
+    });
+  }
+  private prLoadShaders(onFinish: VoidFunction){
+    this.loadShaders(() => {
+      console.log("loading shaders");
+      onFinish();
+    });
+  }
+  load(onFinish: VoidFunction){
+    console.log("booting loader");
+    this.prLoadTextures(onFinish);
+  }
+}
 
 export class MyEngine extends BaseEngine{
   width: number;
@@ -153,6 +202,9 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
         Shapes.Quad.drawRelative();
       }
     }
+  }
+  loadResources(){
+
   }
   render(time: Int32, engine: MyEngine){
     if(WebGL.gl){
