@@ -10,11 +10,12 @@ import * as SolidPath from './Program/solid_path';
 import * as SpriteSheet from './Program/sprite_sheet';
 import * as Texture from './Program/texture';
 import * as MultiColourCentreCirclePath from './Program/multi_colour_centre_circle_path'
+import * as SpriteSheetColour from './Program/sprite_sheet_colour'
 
 export function loadFragmentShaders(){
   Circle.CircleFragmentShader.load();
   CircleOutline.CircleOutlineFragmentShader.load();
-  Colour.ColourFragmentShader.load();
+  //Colour.ColourFragmentShader.load();
   Line.LineFragmentShader.load();
   MultiColourPath.MultiColourPathFragmentShader.load();
   PathCentreCircle.PathCentreCircleFragmentShader.load();
@@ -35,3 +36,4 @@ export const SolidPathMixin = SolidPath.SolidPathShaderProgramMix;
 export const SpriteSheetMixin = SpriteSheet.SpriteSheetShaderProgramMix;
 export const TextureMixin = Texture.TextureShaderProgramMix;
 export const MultiColourCentreCirclePathMixin = MultiColourCentreCirclePath.MultiColourCentreCirclePathShaderProgramMix;
+export const SpriteSheetColourMixin = SpriteSheetColour.SpriteSheetColourShaderProgramMix;
