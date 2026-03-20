@@ -58,7 +58,6 @@ export class WebGL{
 export class BasicModel{
   static colour_shader: Shader.MVPColourProgram;
 
-
   static init(){
     this.colour_shader = new Shader.MVPColourProgram();
   }
@@ -78,6 +77,16 @@ export class BasicModel{
       shader.setColour(model.colour.red, model.colour.green, model.colour.blue);
       Shapes.Quad.drawRelative();
     }
+  }
+  static drawItem(vp: Matrix.TransformationMatrix3x3, item: BasicModelItem2D){
+    const shader = BasicModel.colour_shader;
+    shader.use();
+    shader.setColour(item.colour.red, item.colour.green, item.colour.blue);
+    shader.setMvp(vp.multiplyCopy(item.transformation));
+    Shapes.Quad.draw();
+  }
+  static defaultItem(): BasicModelItem2D{
+    return {colour: Colour.ColourUtils.white(), transformation: Matrix.TransformationMatrix3x3.identity()};
   }
 }
 
