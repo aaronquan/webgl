@@ -5,13 +5,18 @@ import * as Shader from "./../WebGL/Shaders/custom";
 import * as Shapes from '../WebGL/Shapes/Shapes';
 import * as Texture from "./../WebGL/Texture/texture";
 import * as Colour from "./../WebGL/colour";
-import WebGL from "../WebGL/globals";
+import * as WebGL from "../WebGL/globals";
+import * as Button from "./../Interface/button"
 
 import * as ArrayUtils from "../utils/array";
 
 
+interface Point extends Button.Point{};
+
 type Int32 = number;
 type Float = number;
+type VoidFunction = () => void;
+const EmptyFunction: VoidFunction = () => {};
 
 function randomPick<T>(arr: T[]): T{
   const p = Math.floor(Math.random()*arr.length);
@@ -109,7 +114,8 @@ export class Car{
   plan_index: Int32;
   turn_speed: Float; // per second?
   speed: Float; // per second
-  direction: Float; // in radians
+  rotation: Float; // in radians
+  last_key: Grid.GridPosition | undefined;
   constructor(){
     this.x = 0;
     this.y = 0;
@@ -117,27 +123,57 @@ export class Car{
     this.plan = undefined;
     this.plan_position = {distance_covered: 0, move_index: 0};
     this.plan_index = 0;
-    this.speed = 0.1;
+    this.speed = 0.01;
     this.turn_speed = 0.05;
-    this.direction = 0;
+    this.rotation = 0;
+    this.last_key = undefined;
   }
+
   setPlan(plan: Grid.Track){
+    console.log(plan);
     this.plan = plan;
     this.x = plan.starting_location.x+0.5;
     this.y = plan.starting_location.y+0.5;
+    this.last_key = plan.starting_location;
+    //this.rotation = Grid.DirectionUtil.turnDirectionToRadians(plan.part.getMoves()[0].direction);
     this.plan_position = {distance_covered: 0, move_index: 0};
   }
   update(t:Float){
     if(this.plan){
-       const moves = this.plan.part.getMoves();
-       const dir = moves[this.plan_position.move_index].direction;
-       const dir_movement = Grid.DirectionUtil.directions[dir];
-       //const ms = this.speed;
-       //if(this.plan_position += )
-       this.x += dir_movement.x*this.speed;
-       this.y -= dir_movement.y*this.speed;
-       this.plan_position.distance_covered += this.speed;
-       //TODO
+      const moves = this.plan.part.getMoves();
+      const dir = moves[this.plan_position.move_index].direction;
+      const dir_movement = Grid.DirectionUtil.directions[dir];
+      const target_rotation = Grid.DirectionUtil.turnDirectionToRadians(dir);
+      const turn = Grid.DirectionUtil.getTurnDirection(dir, this.rotation);
+      if(turn === Grid.TurnDirectionEnum.Clockwise){
+        if(this.rotation + this.turn_speed > target_rotation && this.rotation < target_rotation){
+          this.rotation = target_rotation;
+        }else{
+          this.rotation += this.turn_speed;
+        }
+      }else if(turn === Grid.TurnDirectionEnum.AntiClockwise){
+        if(this.rotation - this.turn_speed < target_rotation && this.rotation > target_rotation){
+          this.rotation = target_rotation;
+        }else{
+          this.rotation -= this.turn_speed;
+        }
+      }
+      else if(this.plan_position.distance_covered+this.speed >= moves[this.plan_position.move_index].distance){
+        const remaining = moves[this.plan_position.move_index].distance-this.plan_position.distance_covered;
+        this.x += dir_movement.x*remaining;
+        this.y -= dir_movement.y*remaining;
+        if(this.plan_position.move_index+1 >= moves.length){
+          this.plan_position = {distance_covered: 0, move_index: 0};
+          this.last_key = this.plan.endPoint();
+          this.plan = undefined;
+        }else{
+          this.plan_position = {distance_covered: 0, move_index: this.plan_position.move_index+1};
+        }
+      }else{
+        this.x += dir_movement.x*this.speed;
+        this.y -= dir_movement.y*this.speed;
+        this.plan_position.distance_covered += this.speed;
+      }
     }
   }
 }
@@ -158,6 +194,7 @@ export class WallEngine extends App.BaseEngine{
   rect_grid: Grid.RectGrid;
 
   mouse_over: Grid.GridPosition | undefined;
+  true_mouse: Matrix.Point2D | undefined;
 
   highlighted_positions: Grid.GridPosition[];
   is_circle_positions: boolean;
@@ -173,6 +210,8 @@ export class WallEngine extends App.BaseEngine{
 
   highlight_path: Grid.GridPositionWithDirections[];
   car: Car;
+
+  buttons: Button.ButtonSet;
 
   constructor(){
     super();
@@ -204,6 +243,23 @@ export class WallEngine extends App.BaseEngine{
     this.adding_path_hori_first = true;
     this.highlight_path = [];
 
+    this.buttons = new Button.ButtonSet();
+
+    const car_plan_button = new Button.BasicButton(10, 10, 80, 50);
+    car_plan_button.text = "New Plan";
+    car_plan_button.onPressed = () => {
+      console.log(this.car.last_key);
+      if(this.car.last_key){
+        const next_key = this.randomKeyOtherThan1(this.car.last_key);
+        const path = this.grid.shortestPath(this.car.last_key, next_key);
+        //console.log(path);
+        if(path != undefined && this.car.plan == undefined){
+          const track = Grid.GridAlgorithms.pathToTrack(path);
+          this.car.setPlan(track);
+        }
+      }
+    }
+    this.buttons.addButton(car_plan_button);
 
     /*
     Grid.GridPosition.testEuclidianDistance(3.4);
@@ -227,7 +283,12 @@ export class WallEngine extends App.BaseEngine{
     console.log(ind);
     */
   }
-  
+  randomKeyOtherThan1(not_included: Grid.GridPosition){
+    const others = this.key_positions.filter((p) => {
+      return !(not_included.x === p.x && not_included.y === p.y);
+    });
+    return others[Math.floor(Math.random()*others.length)];
+  }
 
   addKeyPosition(x: Int32, y: Int32){
     this.key_positions.push(new Grid.GridPosition(x, y));
@@ -267,11 +328,13 @@ export class WallEngine extends App.BaseEngine{
     }
   }
   protected override handleMouseMove(ev: MouseEvent): void {
+    const true_mouse = new Matrix.Point2D(ev.offsetX, ev.offsetY);
     const pos = this.rect_grid.getPosition(ev.offsetX, ev.offsetY);
     if(pos != undefined){
       if(this.mouse_over == undefined || (this.mouse_over.x != pos.x || this.mouse_over.y != pos.y)){
         this.setHighlightedPositions(pos);
       }
+      this.buttons.updateMouse(true_mouse);
     }else{
       this.highlighted_positions = [];
     }
@@ -326,13 +389,14 @@ export class WallEngine extends App.BaseEngine{
           this.grid.addTrack(path);
         }
       }
+      this.buttons.mouseDown();
     }
     
     //this.adding_position
   }
 
   protected override handleMouseUp(ev: MouseEvent): void {
-    
+    this.buttons.mouseUp();
   }
 
 
@@ -382,6 +446,9 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   multi_colour_tile_shader: Shader.MVPMultiColourPathProgram;
   multi_colour_centre_circle_shader: Shader.MVPMultiColourCentreCirclePathProgram;
 
+  text_drawer: WebGL.TextDrawer;
+  fonts: WebGL.FontLoader;
+
   tile_state_colours: Map<Grid.TileState, Colour.ColourRGB>;
   background_colour: Colour.ColourRGB;
   key_colour: Colour.ColourRGB;
@@ -403,6 +470,10 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.solid_shader = new Shader.MVPColourProgram();
     this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
     this.texture_shader = new Shader.MVPTextureProgram();
+
+    this.text_drawer = new WebGL.TextDrawer();
+    this.fonts = new WebGL.FontLoader();
+
     this.draw_width = w;
     this.draw_height = h;
     this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
@@ -437,11 +508,18 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.multi_colour_tile_shader.setBackgroundColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
 
   }
-  loadResources(){
-    
+  loadTextures(onLoad:VoidFunction=EmptyFunction){
+    const font_name = "letters-Sheet.png";
+    this.fonts.addFont(font_name);
+    this.fonts.loadFonts(() => {
+      this.text_drawer.setFont(this.fonts.getFont(font_name)!);
+      this.text_drawer.loadFont();
+      console.log("finished loading");
+      if(onLoad) onLoad();
+    });
   }
   drawString(s: string, x: Int32, y: Int32, size: Int32){
-    const gl = WebGL.gl!;
+    const gl = WebGL.WebGL.gl!;
     const scale = Matrix.TransformationMatrix3x3.scale(size, size);
     this.sprite_sheet_shader.use();
     gl.enable(gl.BLEND);
@@ -480,7 +558,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   drawMultiKeyTile(engine: WallEngine, x: Int32, y: Int32){
     this.multi_colour_centre_circle_shader.use();
     const gs = engine.rect_grid.size;
-    const model = WebGL.rectangleModel(x*gs, y*gs, gs, gs);
+    const model = WebGL.WebGL.rectangleModel(x*gs, y*gs, gs, gs);
     this.multi_colour_centre_circle_shader.setMvp(this.vp.multiplyCopy(model));
     this.setMultiTile(engine, this.multi_colour_centre_circle_shader, x, y);
     Shapes.Quad.draw();
@@ -489,7 +567,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   drawMultiWallTile(engine: WallEngine, x: Int32, y: Int32){
     this.multi_colour_tile_shader.use();
     const gs = engine.rect_grid.size;
-    const model = WebGL.rectangleModel(x*gs, y*gs, gs, gs);
+    const model = WebGL.WebGL.rectangleModel(x*gs, y*gs, gs, gs);
     this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(model));
     this.setMultiTile(engine, this.multi_colour_tile_shader, x, y);
     Shapes.Quad.draw();
@@ -512,12 +590,12 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const cs = car.size*gs;
     this.solid_shader.use();
     this.solid_shader.setColour(0, 1, 0);
-    const model = WebGL.rectangleModel(car.x*gs-(cs/2), car.y*gs-(cs/2), cs, cs);
+    const model = WebGL.WebGL.rectangleModel(car.x*gs, car.y*gs, cs, cs);
+    model.rotate(car.rotation);
     this.solid_shader.setMvp(this.vp.multiplyCopy(model));
-    Shapes.Quad.draw();
+    Shapes.CenterQuad.draw();
   }
-  render(time: Float, engine: WallEngine){
-    engine.update(time);
+  render(engine: WallEngine){
     //const perspective = Matrix.TransformationMatrix3x3.orthographic(0, 500, 500, 0);
     const gs = engine.rect_grid.size;
     
@@ -634,7 +712,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     this.drawGridLines(engine);
     this.drawCar(engine);
-    requestAnimationFrame((time) => this.render(time, engine));
+    engine.buttons.draw(this.vp, this.solid_shader, this.text_drawer);
+    //requestAnimationFrame((time) => this.render(time, engine));
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
@@ -642,14 +721,13 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const line_thickness = 2;
     const half_thickness = line_thickness/2;
     for(let y = 0; y <= engine.grid.height; y++){
-      const model = WebGL.rectangleModel(0, y*engine.rect_grid.size-half_thickness, engine.rect_grid.pixel_width, line_thickness);
+      const model = WebGL.WebGL.rectangleModel(0, y*engine.rect_grid.size-half_thickness, engine.rect_grid.pixel_width, line_thickness);
       this.solid_shader.setMvp(this.vp.multiplyCopy(model));
       Shapes.Quad.drawRelative();
     }
     for(let x = 0; x <= engine.grid.width; x++){
-      const model = WebGL.rectangleModel(x*engine.rect_grid.size-half_thickness, 0, line_thickness, engine.rect_grid.pixel_height)
-      
-      this.solid_shader.setMvp(this.vp.multiplyCopy(model))
+      const model = WebGL.WebGL.rectangleModel(x*engine.rect_grid.size-half_thickness, 0, line_thickness, engine.rect_grid.pixel_height)
+      this.solid_shader.setMvp(this.vp.multiplyCopy(model));
       Shapes.Quad.drawRelative();
     }
     Shapes.Quad.draw();

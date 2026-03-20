@@ -93,6 +93,13 @@ type SpriteSheetPosition = {
 }
 type Char = string;
 
+interface FontSheetShader{
+  setWidth: (w: Int32) => void;
+  setHeight: (h: Int32) => void;
+  setX: (x: Int32) => void;
+  setY: (y: Int32) => void;
+}
+
 export class CustomFont{
   coord_to_sheet_position: Map<Char, SpriteSheetPosition>
   font_sheet: Texture;
@@ -101,6 +108,7 @@ export class CustomFont{
   width: Int32;
   height: Int32;
   
+  //fn requires extension e.g. .png
   constructor(font_sheet_fn: string){
     this.font_sheet = new Texture(font_sheet_fn);
     this.font_name = font_sheet_fn.split('.')[0];
@@ -116,7 +124,7 @@ export class CustomFont{
   active(id: Int32){
     this.font_sheet.active(id);
   }
-  load(onLoaded:()=>void=()=>{}){
+  load(onLoaded:()=>void=()=>{}, onError?: (e: any) => void){
     this.font_sheet.load();
     //console.log(this.font_name);
     File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
@@ -131,12 +139,18 @@ export class CustomFont{
           this.coord_to_sheet_position.set(sp[i][j], {x, y});
         }
       }
+      console.log(txt);
+      console.log(`Font: loaded success, ${this.font_name}`);
       onLoaded();
       this.loaded = true;
     }, 
-    (error) => { console.log(error)});
+    (error) => { 
+        console.log(error);
+        if(onError) onError(error);
+    });
   }
-  setChar(shader: Shader.MVPSpriteSheetProgram, char: Char){
+
+  setChar(shader: FontSheetShader, char: Char){
     shader.setWidth(this.width);
     shader.setHeight(this.height);
     const coord = this.coord_to_sheet_position.get(char);

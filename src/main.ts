@@ -38,16 +38,21 @@ const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 const card_engine = new Card.CardEngine();
 const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
-const app = new App.App(card_engine, card_renderer);
-app.loadResources();
-//const app = new App.App(engine, renderer);
+//const app = new App.App(card_engine, card_renderer);
+const app = new App.App(engine, renderer);
+
+app.loadResources(() => {
+  console.log("running app");
+  app.initApp();
+  
+});
 
 
 if(gl){
   //WebGLGlobals.loadTexture();
   //app.addEvents();
   //app.update();
-  app.draw();
+  //app.draw();
 
   //water_engine.addEvents();
   //water_renderer.render(water_engine);

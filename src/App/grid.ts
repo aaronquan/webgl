@@ -212,11 +212,11 @@ export class GridPosition{
 
 
 
-const DirectionEnum = {
+export const DirectionEnum = {
   Up: 0, Right: 1, Down: 2, Left: 3
 } as const;
 
-type GridDirection = (typeof DirectionEnum)[keyof typeof DirectionEnum];
+export type GridDirection = (typeof DirectionEnum)[keyof typeof DirectionEnum];
 
 export type ActiveDirections = {
   left: boolean;
@@ -230,11 +230,59 @@ export type GridPositionWithDirections = {
   directions: ActiveDirections;
 }
 
+export const TurnDirectionEnum = {
+  Straight: 0,
+  Clockwise: 1,
+  AntiClockwise: 2
+} as const;
+
+type TurnDirection = (typeof TurnDirectionEnum)[keyof typeof TurnDirectionEnum]
+
 // Track - Physical space an object can move on (cannot go back on itself) e.g. left 2, right 2
 // Path - Movement of an object (can go back on itself)
 
 export class DirectionUtil{
   static directions: GridPosition[] = [new GridPosition(0, 1), new GridPosition(1, 0), new GridPosition(0, -1), new GridPosition(-1, 0)];
+  static turnDirectionToRadians(dir: GridDirection): Float{
+    switch(dir){
+      case DirectionEnum.Up:
+        return 0;
+      case DirectionEnum.Right:
+        return Math.PI*0.5;
+      case DirectionEnum.Down:
+        return Math.PI;
+      case DirectionEnum.Left:
+        return Math.PI*1.5;
+    }
+  }
+  static getTurnDirection(dir: GridDirection, rads: Float): TurnDirection{
+    rads %= (Math.PI*2);
+    switch(dir){
+      case DirectionEnum.Left:
+        rads -= Math.PI*1.5;
+        break;
+      case DirectionEnum.Down:
+        rads -= Math.PI;
+        break;
+      case DirectionEnum.Right:
+        rads -= Math.PI*0.5;
+        break;
+      case DirectionEnum.Up:
+        break;
+      default:
+        break;
+    }
+    if(rads < 0){
+      rads += Math.PI*2;
+    }
+    if(rads === 0){
+      return TurnDirectionEnum.Straight;
+    }
+    //const diff = Math.abs()
+    
+    return rads < Math.PI ? TurnDirectionEnum.AntiClockwise : TurnDirectionEnum.Clockwise;
+  }
+  
   static isSameAxis(dir1: GridDirection, dir2: GridDirection): boolean{
     if(dir1 == DirectionEnum.Left || dir1 == DirectionEnum.Right){
       return dir2 == DirectionEnum.Left || dir2 == DirectionEnum.Right;
@@ -358,6 +406,14 @@ export class Track{
       }
     }
     return positions;
+  }
+  endPoint(): GridPosition{
+    const p = this.starting_location.copy();
+    for(const part of this.part.getMoves()){
+      DirectionUtil.movePosition(part.direction, p, part.distance);
+    }
+    return p;
+
   }
 }
 
@@ -631,6 +687,24 @@ export class GridAlgorithms{
   static positionsAtDistance:PositionsAtDistance[] = [];
   private static distanceQueue = new PQ.PriorityQueue((a:GridEucildianCompare,b:GridEucildianCompare) => a.distance_squared-b.distance_squared);
   private static distancesSeen: number[] = [];
+
+  static pathToTrack(path: GridPosition[]): Track{
+    const part = new TrackPart();
+    let direction = DirectionUtil.directionsBetween2Points(path[0], path[1])[0];
+    let dist = 1;
+    for(let i = 2; i < path.length; i++){
+      const c_dir = DirectionUtil.directionsBetween2Points(path[i-1], path[i])[0];
+      if(c_dir === direction){
+        dist += 1;
+      }else{
+        part.addMove(dist, direction);
+        direction = c_dir;
+        dist = 1;
+      }
+    }
+    const track = new Track(part, path[0]);
+    return track;
+  }
 
   static greatestPositionAtDistance(): Int32 | undefined{
     if(GridAlgorithms.positionsAtDistance.length == 0) return undefined;

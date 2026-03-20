@@ -8,11 +8,14 @@ type Int32 = number;
 type Float = number;
 
 type VoidFunction = () => void;
+const EmptyFunction: VoidFunction = () => {};
 type TimeTakenFunction = (t:Float) => void
+type OnFinishFunction = (onFinish: VoidFunction) => void;
 
 interface IEngine{
   addEvents: () => void;
   loadResources: () => void;
+  update: TimeTakenFunction;
 }
 
 export class BaseEngine implements IEngine{
@@ -20,6 +23,9 @@ export class BaseEngine implements IEngine{
 
   //to override
   loadResources(){};
+  
+  //to override
+  update(t: Float){};
 
   addEvents(){
     this.addKeyEvents();
@@ -46,13 +52,15 @@ export class BaseEngine implements IEngine{
 }
 
 export interface IEngineRenderer<E extends IEngine>{
-  render: (time: Int32, engine: E) => void;
-  loadResources: () => void;
+  render?: (engine: E) => void;
+  renderUpdate?: (time: Int32, engine: E) => void;
+  loadTextures?: OnFinishFunction;
+  //loadResources: () => void;
 }
 
 interface IRenderer{
   render: () => void;
-  loadShaders?: () => void;
+  loadShaders?: () => void; // shaders usually already preloaded (added by raw file and compiled on shader class construction)
   loadTextures?: () => void;
 }
 
@@ -68,13 +76,25 @@ export class App<E extends IEngine>{
     this.engine.addEvents();
   }
 
-  //to override
-  loadResources(){
-    this.engine.loadResources();
-    this.renderer.loadResources();
+  //to override?
+  loadResources(onLoaded:VoidFunction=()=>{}){
+    //this.engine.loadTextures();
+    if(this.renderer.loadTextures) this.renderer.loadTextures(onLoaded);
+  }
+  update(t: Float){
+    this.engine.update(t);
   }
   draw(){
-    this.renderer.render(0, this.engine);
+    //this.renderer.render(this.engine);
+  }
+  initApp(){
+    this.addEvents();
+    this.appCycle(0);
+  }
+  appCycle(t: Float){
+    this.update(t);
+    if(this.renderer.render) this.renderer.render(this.engine);
+    requestAnimationFrame((t) => this.appCycle(t));
   }
 }
 
@@ -82,7 +102,8 @@ type Position = {
   x: number, y: number
 };
 
-export class RendererLoader<R extends IRenderer>{
+/*
+export class RendererLoader<R extends IEngineRenderer<E>>{
   renderer: R;
   constructor(r:R){
     this.renderer = r;
@@ -95,9 +116,7 @@ export class RendererLoader<R extends IRenderer>{
   private prLoadTextures(onFinish: VoidFunction){
     this.loadTextures(() => {
       console.log("loading textures");
-      if(this.renderer.loadShaders){
-        this.renderer.loadShaders();
-      }
+      //this.renderer.loadTextures();
       this.prLoadShaders(onFinish);
     });
   }
@@ -112,7 +131,7 @@ export class RendererLoader<R extends IRenderer>{
     this.prLoadTextures(onFinish);
   }
 }
-
+*/
 export class MyEngine extends BaseEngine{
   width: number;
   height: number
@@ -204,9 +223,9 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
     }
   }
   loadResources(){
-
+    
   }
-  render(time: Int32, engine: MyEngine){
+  render(engine: MyEngine){
     if(WebGL.gl){
       const gl = WebGL.gl;
       
@@ -255,7 +274,7 @@ export class MyRenderer implements IEngineRenderer<MyEngine>{
       gl.disable(gl.BLEND);
   
     }
-    requestAnimationFrame((time) => this.render(time, engine));
+    //requestAnimationFrame((time) => this.render(time, engine));
   };
   
 }
