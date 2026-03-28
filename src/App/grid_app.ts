@@ -104,6 +104,127 @@ type TrackPosition = {
   move_index: Int32
 }
 
+const NodeTypeEnum = {
+  Basic: 0,
+  Resource: 1,
+  Requirement: 2
+} as const;
+
+type NodeType = (typeof NodeTypeEnum)[keyof typeof NodeTypeEnum];
+
+
+//no capacity
+class KeyNode{
+  x: Int32;
+  y: Int32;
+  inventory: Map<Resource, Int32>;
+  type: NodeType;
+  constructor(x: Int32, y: Int32, ty: NodeType=NodeTypeEnum.Basic){
+    this.x = x;
+    this.y = y;
+    this.inventory = new Map();
+    this.type = ty;
+    this.initialiseDefaultInventory();
+  }
+
+  protected initialiseDefaultInventory(){
+    this.inventory.set(ResourceEnum.Water, 0);
+    this.inventory.set(ResourceEnum.Apple, 0);
+  }
+
+  //can override
+  update(t: Float){
+    
+  }
+  distanceSq(p: Point){
+    const dx = p.x - this.x - 0.5;
+    const dy = p.y - this.y - 0.5;
+    return dx*dx + dy*dy;
+  }
+  drawNodeUI(perspective: Matrix.TransformationMatrix3x3, solid_shader: Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer, 
+    x: Float, y: Float){
+    const white = WebGL.Colour.ColourUtils.white();
+    solid_shader.use();
+    const back_model = WebGL.WebGL.rectangleModel(x, y, 70, 70);
+    solid_shader.setColour(0, 0, 0);
+    solid_shader.setMvp(perspective.multiplyCopy(back_model));
+    Shapes.Quad.draw();
+
+    //details
+    text_drawer.drawTextColour(perspective, x, y, this.x.toFixed(0), 15, white);
+    text_drawer.drawTextColour(perspective, x, y+15, this.y.toFixed(0), 15, white);
+  }
+  getResourceInventory(res: Resource): Int32{
+    if(!this.inventory.has(res)) return 0;
+    return this.inventory.get(res)!;
+  }
+  deliverResource(){
+
+  }
+
+  //return number drawn from node
+  drawResource(res: Resource, amount: Int32): Int32{
+    const count = this.inventory.get(res)!;
+    if(count > 0){
+      if(count < amount){
+        this.inventory.set(res, 0);
+        return count;
+      }
+      this.inventory.set(res, count-amount);
+      return amount;
+    }
+    return 0;
+  }
+}
+
+class RequirementNode extends KeyNode{
+  constructor(x: Int32, y: Int32){
+    super(x, y);
+  }
+}
+
+class ResourceGeneratorNode extends KeyNode{
+  current_time: Float;
+  gen_time: Float;
+  resource: Resource;
+  constructor(x: Int32, y: Int32){
+    super(x, y);
+    this.current_time = 0;
+    this.gen_time = 1000;
+    this.resource = ResourceEnum.Water;
+    this.type = NodeTypeEnum.Resource;
+  }
+  update(t: Float){
+    this.current_time += t;
+    if(this.current_time >= this.gen_time){
+      this.current_time -= this.gen_time;
+      const n_resources = this.inventory.get(this.resource)!;
+      this.inventory.set(this.resource, n_resources+1);
+    }
+  }
+  drawNodeUI(perspective: Matrix.TransformationMatrix3x3, solid_shader: Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer, 
+    x: Float, y: Float){
+    const white = WebGL.Colour.ColourUtils.white();
+    solid_shader.use();
+    const back_model = WebGL.WebGL.rectangleModel(x, y, 70, 70);
+    solid_shader.setColour(0, 0, 0);
+    solid_shader.setMvp(perspective.multiplyCopy(back_model));
+    Shapes.Quad.draw();
+
+    //details
+    text_drawer.drawTextColour(perspective, x, y, this.x.toFixed(0), 15, white);
+    text_drawer.drawTextColour(perspective, x, y+15, this.y.toFixed(0), 15, white);
+
+  }
+}
+
+const ResourceEnum = {
+  Water: 0,
+  Apple: 1,
+} as const;
+
+type Resource = (typeof ResourceEnum)[keyof typeof ResourceEnum];
+
 export class Car{
   //coordinates are from top-left corner
   x: Float; // center point 
@@ -116,6 +237,7 @@ export class Car{
   speed: Float; // per second
   rotation: Float; // in radians
   last_key: Grid.GridPosition | undefined;
+  inventory: Resource | undefined;
   constructor(){
     this.x = 0;
     this.y = 0;
@@ -130,13 +252,14 @@ export class Car{
   }
 
   setPlan(plan: Grid.Track){
-    console.log(plan);
+    //console.log(plan);
     this.plan = plan;
     this.x = plan.starting_location.x+0.5;
     this.y = plan.starting_location.y+0.5;
     this.last_key = plan.starting_location;
     //this.rotation = Grid.DirectionUtil.turnDirectionToRadians(plan.part.getMoves()[0].direction);
     this.plan_position = {distance_covered: 0, move_index: 0};
+    //console.log(this.plan.part.getMoves().at(0)?.direction);
   }
   update(t:Float){
     if(this.plan){
@@ -148,14 +271,20 @@ export class Car{
       if(turn === Grid.TurnDirectionEnum.Clockwise){
         if(this.rotation + this.turn_speed > target_rotation && this.rotation < target_rotation){
           this.rotation = target_rotation;
+          //console.log("stop rot clock");
         }else{
           this.rotation += this.turn_speed;
+          this.rotation %= (Math.PI*2);
         }
       }else if(turn === Grid.TurnDirectionEnum.AntiClockwise){
         if(this.rotation - this.turn_speed < target_rotation && this.rotation > target_rotation){
           this.rotation = target_rotation;
+          //console.log("stop rot anti");
         }else{
           this.rotation -= this.turn_speed;
+          if(this.rotation < 0){
+            this.rotation += Math.PI*2;
+          }
         }
       }
       else if(this.plan_position.distance_covered+this.speed >= moves[this.plan_position.move_index].distance){
@@ -178,6 +307,18 @@ export class Car{
   }
 }
 
+class ResourceCar{
+  capacity: Int32;
+  inventory: Map<Resource, Int32>;
+  current_capacity: Int32;
+
+  constructor(){
+    this.capacity = 1;
+    this.inventory = new Map();
+    this.current_capacity = 0;
+  }
+}
+
 export class MultiGridObject{
   width: Int32;
   height: Int32;
@@ -195,6 +336,7 @@ export class WallEngine extends App.BaseEngine{
 
   mouse_over: Grid.GridPosition | undefined;
   true_mouse: Matrix.Point2D | undefined;
+  grid_true_mouse: Matrix.Point2D | undefined;
 
   highlighted_positions: Grid.GridPosition[];
   is_circle_positions: boolean;
@@ -211,7 +353,19 @@ export class WallEngine extends App.BaseEngine{
   highlight_path: Grid.GridPositionWithDirections[];
   car: Car;
 
+  resource_car: ResourceCar;
+
   buttons: Button.ButtonSet;
+
+  hovered_node: KeyNode | undefined;
+  nodes: KeyNode[];
+  node_size: Float;
+
+  view: Matrix.TransformationMatrix3x3;
+
+  overlay_element: HTMLDivElement | undefined;
+
+  last_time: Float;
 
   constructor(){
     super();
@@ -222,17 +376,27 @@ export class WallEngine extends App.BaseEngine{
     this.mouse_over = undefined;
     this.highlighted_positions = [];
     this.key_positions = generateKeyLocations(this.rect_grid, 3);
+
+
+
     this.is_circle_positions = false;
+    this.nodes = [];
+    //this.nodes = this.key_positions.map((pos) => {
+    //  return new KeyNode(pos.x, pos.y);
+    //});
+    this.node_size = 0.15;
 
     this.car = new Car();
+    this.resource_car = new ResourceCar();
 
     if(this.key_positions.length >= 2){
       for(let i = 1; i < this.key_positions.length; i++){
         const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.key_positions[i-1], this.key_positions[i]);
         this.grid.addTrack(path);
         this.grid.grid[this.key_positions[i].y][this.key_positions[i].x].is_key = true;
-
-        this.car.setPlan(path);
+        if(i == this.key_positions.length-1){
+          this.car.setPlan(path);
+        }
       }
       this.grid.grid[this.key_positions[0].y][this.key_positions[0].x].is_key = true;
     }
@@ -261,6 +425,11 @@ export class WallEngine extends App.BaseEngine{
     }
     this.buttons.addButton(car_plan_button);
 
+    this.view = Matrix.TransformationMatrix3x3.identity();
+
+    this.createKeyNodes();
+    this.last_time = 0;
+
     /*
     Grid.GridPosition.testEuclidianDistance(3.4);
 
@@ -282,6 +451,30 @@ export class WallEngine extends App.BaseEngine{
     });
     console.log(ind);
     */
+  }
+  addOverlayElement(overlay: HTMLDivElement){
+    this.overlay_element = overlay;
+  }
+  onFinishLoading(){
+    if(this.overlay_element != undefined){
+      this.overlay_element.textContent = "";
+    }
+  }
+  createKeyNodes(){
+    this.nodes = [];
+    const rand_arr = ArrayUtils.random0ToN(this.key_positions.length);
+    console.log(rand_arr);
+    const res_node = new ResourceGeneratorNode(this.key_positions[rand_arr[0]].x, this.key_positions[rand_arr[0]].y);
+
+    this.nodes.push(res_node);
+
+    const deliver_node = new RequirementNode(this.key_positions[rand_arr[1]].x, this.key_positions[rand_arr[1]].y);
+    this.nodes.push(deliver_node);
+
+    for(let i = 2; i < this.key_positions.length; i++){
+      this.nodes.push(new KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y));
+    }
+    console.log(this.nodes);
   }
   randomKeyOtherThan1(not_included: Grid.GridPosition){
     const others = this.key_positions.filter((p) => {
@@ -325,10 +518,20 @@ export class WallEngine extends App.BaseEngine{
           console.log(this.grid);
         }
       }
+    }else if(ev.key == 'a'){
+      this.view.translate(-this.rect_grid.size, 0);
+    }else if(ev.key == 'd'){
+      this.view.translate(this.rect_grid.size, 0);
     }
   }
   protected override handleMouseMove(ev: MouseEvent): void {
     const true_mouse = new Matrix.Point2D(ev.offsetX, ev.offsetY);
+    this.true_mouse = true_mouse;
+    const inv = this.view.copy();
+    inv.invert();
+    this.grid_true_mouse = inv.transformPoint(true_mouse);
+    this.grid_true_mouse.x/=this.rect_grid.size;
+    this.grid_true_mouse.y/=this.rect_grid.size;
     const pos = this.rect_grid.getPosition(ev.offsetX, ev.offsetY);
     if(pos != undefined){
       if(this.mouse_over == undefined || (this.mouse_over.x != pos.x || this.mouse_over.y != pos.y)){
@@ -339,6 +542,17 @@ export class WallEngine extends App.BaseEngine{
       this.highlighted_positions = [];
     }
     this.mouse_over = pos;
+
+    const true_grid = this.getGridTruePosition(ev.offsetX, ev.offsetY);
+    this.hovered_node = undefined;
+    for(const node of this.nodes){
+      const dist = node.distanceSq(true_grid);
+      //console.log(node);
+      //console.log(dist);
+      if(dist < this.node_size*this.node_size){
+        this.hovered_node = node;
+      }
+    }
     //this.mouse_over = pos;
   }
 
@@ -412,8 +626,22 @@ export class WallEngine extends App.BaseEngine{
     //console.log(pos);
   }
 
+  getGridTruePosition(x: Float, y: Float): Matrix.Point2D{
+    const inv = this.view.copy();
+    inv.invert();
+    this.grid_true_mouse = inv.transformPoint(new Matrix.Point2D(x, y));
+    this.grid_true_mouse.x/=this.rect_grid.size;
+    this.grid_true_mouse.y/=this.rect_grid.size;
+    return this.grid_true_mouse;
+  }
+
   update(time: Float){
-    this.car.update(time);
+    const update_time = time - this.last_time;
+    for(const node of this.nodes){
+      node.update(update_time);
+    }
+    this.car.update(update_time);
+    this.last_time = time;
   }
 }
 
@@ -455,12 +683,17 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
   texture_shader: Shader.MVPTextureProgram;
   vp: Matrix.TransformationMatrix3x3;
+  perspective: Matrix.TransformationMatrix3x3;
   draw_width: Int32;
   draw_height: Int32;
 
-  //test_tex: Texture.Texture;
-  font: Texture.CustomFont;
   render_string: string;
+
+  textures: Texture.TextureCollection;
+
+  white: Colour.ColourRGB;
+
+  overlay_element: HTMLDivElement | undefined;
 
   constructor(w: Int32, h: Int32){
     this.grid_tile_shader = new Shader.MVPSolidPathProgram();
@@ -476,16 +709,20 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     this.draw_width = w;
     this.draw_height = h;
-    this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+    this.perspective = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+    this.vp = Matrix.TransformationMatrix3x3.identity();
+
+    this.textures = new Texture.TextureCollection();
+
 
     //Texture.Texture.setup();
     //this.test_tex = new Texture.Texture("letters_Sheet.png");
     //this.test_tex.load();
     //this.test_tex.active(0);
 
-    this.font = new Texture.CustomFont("letters-Sheet.png");
-    this.font.load();
-    this.font.active(0);
+    //this.font = new Texture.CustomFont("letters-Sheet.png");
+    //this.font.load();
+    //this.font.active(0);
 
     this.render_string = "hello world";
 
@@ -507,17 +744,44 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.multi_colour_tile_shader.setSize(0.1);
     this.multi_colour_tile_shader.setBackgroundColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
 
+    this.white = WebGL.Colour.ColourUtils.white();
+
   }
   loadTextures(onLoad:VoidFunction=EmptyFunction){
-    const font_name = "letters-Sheet.png";
-    this.fonts.addFont(font_name);
-    this.fonts.loadFonts(() => {
-      this.text_drawer.setFont(this.fonts.getFont(font_name)!);
-      this.text_drawer.loadFont();
-      console.log("finished loading");
-      if(onLoad) onLoad();
-    });
+    //load textures
+    if(this.overlay_element != undefined){
+      this.overlay_element.textContent = "Loading Textures...";
+    }
+    setTimeout(() => {
+      const texture_names = ["car.png", "base.png"];
+      this.textures.addFromUrl("car", "car.png");
+      this.textures.addFromUrl("drop", "drop.png");
+      
+      this.textures.load(() => this.loadFonts(onLoad));
+    }, 2000)
   }
+  loadFonts(onLoad:VoidFunction=EmptyFunction){
+    if(this.overlay_element != undefined){
+      this.overlay_element.textContent = "Loading Fonts...";
+    }
+    setTimeout(() => {
+      const font_name = "letters-Sheet.png";
+      const fn = "font16-Sheet.png";
+      //this.fonts.addFont(font_name);
+      this.fonts.addFont(fn);
+      this.fonts.loadFonts(() => {
+        //this.text_drawer.setFont(this.fonts.getFont(font_name)!);
+        this.text_drawer.setFont(this.fonts.getFont(fn)!);
+        this.text_drawer.loadFont();
+        console.log("finished loading");
+        if(onLoad) onLoad();
+      });
+    }, 1000);
+  }
+  addOverlayElement(overlay: HTMLDivElement){
+    this.overlay_element = overlay;
+  }
+  /*
   drawString(s: string, x: Int32, y: Int32, size: Int32){
     const gl = WebGL.WebGL.gl!;
     const scale = Matrix.TransformationMatrix3x3.scale(size, size);
@@ -533,7 +797,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       Shapes.Quad.draw();
     }
     gl.disable(gl.BLEND);
-  }
+  }*/
   drawKeyTile(engine: WallEngine, x: Int32, y: Int32){
     //expects shader vars setup
     const gs = engine.rect_grid.size;
@@ -588,16 +852,18 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const car = engine.car;
     const gs = engine.rect_grid.size;
     const cs = car.size*gs;
-    this.solid_shader.use();
-    this.solid_shader.setColour(0, 1, 0);
+    this.texture_shader.use();
+    this.textures.active("car", 2);
+    this.texture_shader.setTextureId(2);
     const model = WebGL.WebGL.rectangleModel(car.x*gs, car.y*gs, cs, cs);
-    model.rotate(car.rotation);
-    this.solid_shader.setMvp(this.vp.multiplyCopy(model));
+    model.rotate(car.rotation+Math.PI);
+    this.texture_shader.setMvp(this.vp.multiplyCopy(model));
     Shapes.CenterQuad.draw();
   }
   render(engine: WallEngine){
     //const perspective = Matrix.TransformationMatrix3x3.orthographic(0, 500, 500, 0);
     const gs = engine.rect_grid.size;
+    this.vp = this.perspective.multiplyCopy(engine.view);
     
     //const ctx = WebGL.gl;
     //setup shader vars
@@ -649,8 +915,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       //Shapes.Quad.draw();
     }*/
 
-    this.drawString(this.render_string, 100, 100, 25);
-    this.drawString("what is going on lets print this hhbbvv", 20, 200, 15);
+    this.text_drawer.drawText(this.vp, 100, 100, this.render_string, 25);
+    this.text_drawer.drawText(this.vp, 20, 200, "what is going on lets print this hhbbvv", 15);
 
     /*
     this.multi_colour_tile_shader.use();
@@ -712,7 +978,19 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     this.drawGridLines(engine);
     this.drawCar(engine);
-    engine.buttons.draw(this.vp, this.solid_shader, this.text_drawer);
+    this.displayNodeSheet(engine);
+
+    engine.buttons.draw(this.perspective, this.solid_shader, this.text_drawer);
+
+    if(engine.true_mouse){
+      //console.log(engine.true_mouse)
+      const text = `x ${engine.true_mouse.x}, y ${engine.true_mouse.y}`;
+      this.text_drawer.drawText(this.vp, 40, 300, text, 15);
+    }
+    if(engine.grid_true_mouse){
+      const text = `x ${engine.grid_true_mouse.x.toFixed(2)}, y ${engine.grid_true_mouse.y.toFixed(2)}`;
+      this.text_drawer.drawText(this.vp, 40, 400, text, 15);
+    }
     //requestAnimationFrame((time) => this.render(time, engine));
   }
   drawGridLines(engine: WallEngine){
@@ -754,6 +1032,59 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       shader.setMidColour(c.red, c.green, c.blue);
     }
     //this.setMultiTile(shader, tile.);
+  }
+  drawResource(res: Resource, x: Float, y: Float){
+    this.texture_shader.use();
+    switch(res){
+      case ResourceEnum.Water:
+        this.textures.active("drop", 3);
+        this.texture_shader.setTextureId(3);
+        break;
+      case ResourceEnum.Apple:
+        break;
+    }
+    const model = WebGL.WebGL.rectangleModel(x, y, 20, 20);
+    this.texture_shader.setMvp(this.perspective.multiplyCopy(model));
+    Shapes.Quad.draw();
+  }
+  displayNodeSheet(engine: WallEngine){
+    if(engine.hovered_node != undefined && engine.true_mouse != undefined){
+      //background
+      const x = engine.true_mouse.x+20;
+      const y = engine.true_mouse.y;
+      engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y);
+
+      if(engine.hovered_node.type === NodeTypeEnum.Resource){
+        const res_node = engine.hovered_node as ResourceGeneratorNode;
+        //show resources in node //TODO
+        this.text_drawer.drawText(this.perspective, x, y+31, "Res", 15);
+        this.drawResource(res_node.resource, x, y+46);
+        this.text_drawer.drawText(this.perspective, x+15, y+46, res_node.getResourceInventory(res_node.resource).toString(), 15);
+
+      }else if(engine.hovered_node.type == NodeTypeEnum.Requirement){
+        this.text_drawer.drawText(this.perspective, x, y+31, "Req", 15);
+      }
+
+      /*
+      this.solid_shader.use();
+      const back_model = WebGL.WebGL.rectangleModel(x, y, 70, 70);
+      this.solid_shader.setColour(0, 0, 0);
+      this.solid_shader.setMvp(this.perspective.multiplyCopy(back_model));
+      Shapes.Quad.draw();
+
+      //details
+      this.text_drawer.drawTextColour(this.perspective, x, y, engine.hovered_node.x.toFixed(0), 15, this.white);
+      this.text_drawer.drawTextColour(this.perspective, x, y+15, engine.hovered_node.y.toFixed(0), 15, this.white);*/
+    }
+    //engine.
+  }
+  displayResourceNodeSheet(engine: WallEngine){
+    if(engine.hovered_node != undefined && engine.true_mouse != undefined){
+      //background
+      const x = engine.true_mouse.x+20;
+      const y = engine.true_mouse.y;
+      engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y);
+    }
   }
   /*
   setMultiTile(shader: MultiColourTileShader, left: boolean, top: boolean, right: boolean, bot: boolean, active_colour: Colour.ColourRGB, inactive_colour: Colour.ColourRGB){

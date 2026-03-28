@@ -539,7 +539,7 @@ export class CardEngine extends App.BaseEngine{
       if(this.rotation - this.turn_speed < target_radians && this.rotation > target_radians){
         this.vis_card.transformation_matrix.rotate(target_radians - this.rotation);
         this.rotation = target_radians;
-        console.log("end");
+        console.log("end anti");
       }else{
         this.vis_card.transformation_matrix.rotate(-this.turn_speed);
         this.rotation -= this.turn_speed;
@@ -549,6 +549,7 @@ export class CardEngine extends App.BaseEngine{
       if(this.rotation + this.turn_speed > target_radians  && this.rotation < target_radians){
         this.vis_card.transformation_matrix.rotate(target_radians - this.rotation);
         this.rotation = target_radians;
+        console.log("end clock");
       }else{
         this.vis_card.transformation_matrix.rotate(this.turn_speed);
         this.rotation += this.turn_speed;

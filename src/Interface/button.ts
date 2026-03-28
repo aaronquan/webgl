@@ -60,6 +60,12 @@ export class BasicButton{
     this.onPressed = EmptyFunction;
     this.onPressedOut = EmptyFunction;
   }
+  setTextColour(colour: WebGL.Colour.ColourRGB){
+
+  }
+  setButtonColour(){
+
+  }
   private isInside(x: Int32, y: Int32): boolean{
     const sx = x - this.x;
     const sy = y - this.y;

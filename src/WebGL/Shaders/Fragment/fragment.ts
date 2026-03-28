@@ -3,6 +3,7 @@ import * as Circle from './Program/circle';
 import * as CircleOnly from './Program/circle_only'
 import * as CircleOutline from './Program/circle_outline';
 import * as Colour from './Program/colour';
+import * as ColourAlpha from './Program/colour_alpha';
 import * as Line from './Program/line';
 import * as PathCentreCircle from './Program/path_centre_circle';
 import * as MultiColourPath from './Program/multi_colour_path';
@@ -30,6 +31,7 @@ export const CircleMixin = Circle.CircleShaderProgramMix;
 export const CircleOnlyMixin = CircleOnly.CircleOnlyShaderProgramMix;
 export const CircleOutlineMixin = CircleOutline.CircleOutlineShaderProgramMix;
 export const ColourMixin = Colour.ColourShaderProgramMix;
+export const ColourAlphaMixin = ColourAlpha.ColourAlphaShaderProgramMix;
 export const LineMixin = Line.LineShaderProgramMix;
 export const MultiColourPathMixin = MultiColourPath.MultiColourPathShaderProgramMix;
 export const PathCentreCircleMixin = PathCentreCircle.PathCentreCircleShaderProgramMix;

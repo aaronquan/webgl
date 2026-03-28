@@ -42,26 +42,20 @@ export class WebGL{
 
   static rectangleModel(x: Float, y: Float, width: number, height: number): Matrix.TransformationMatrix3x3{
     let model = Matrix.TransformationMatrix3x3.translate(x, y);
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.scale(width, height));
+    model.scale(width, height);
     return model;
   }
   static lineModel(x1: Float, y1: Float, x2: Float, y2: Float, lt: Float){
     const line = new Line.Line(x1, y1, x2, y2);
 
     let model = Matrix.TransformationMatrix3x3.identity();
-    //let model = Matrix.TransformationMatrix3x3.translate(0.5, 0);
-    //model = model.multiplyCopy(Matrix.TransformationMatrix3x3.rotate(line.angleInRadians()-Math.PI/2));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.translate(x1, y1));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.rotate(line.angleInRadians()));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.scale(line.length(), lt));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.translate(0.5, 0));
+    model.translate(x1, y1);
+    model.rotate(-line.angleInRadians());
+    model.scale(line.length(), lt);
+    model.translate(0, -0.5);
     
     return model;
   }
-
-  //static drawBasicModel(tm: Matrix.TransformationMatrix3x3): BasicModelItem[]{
-
-  //}
 }
 
 
@@ -175,9 +169,11 @@ export class FontLoader{
     this.to_load = [];
     this.finished_loading = 0;
   }
-  addFont(name: string){
+  addFont(name: string): boolean{
+    if(this.loading) return false;
     const font = new Texture.CustomFont(name);
     this.fonts.set(name, font);
+    return true;
   }
   loadFonts(onAllLoaded: () => void) {
     function finishLoading(fl: FontLoader){
@@ -188,7 +184,7 @@ export class FontLoader{
       }
     }
     if(!this.loading){
-      console.log("start loading fonts ")
+      console.log("start loading fonts");
       this.loading = true;
       this.to_load = [];
       for(const [name, font] of this.fonts){
@@ -211,7 +207,6 @@ export class FontLoader{
       }
     }
   }
-
   getFont(name: string): Texture.CustomFont | undefined{
     return this.fonts.get(name);
   }

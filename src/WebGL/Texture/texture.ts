@@ -3,36 +3,10 @@ import * as File from "./../Util/file"
 import * as Shader from "./../Shaders/custom"
 
 type Int32 = number;
+type VoidFunction = () => void;
+const EmptyFunction = () => {};
+
 export class Texture{
-    static setup(){
-      //not needed? should be set after each texture load?
-      /*
-      if(WebGL.gl){
-        const gl = WebGL.gl;
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      }*/
-    }
-    static createTextureFromUrl(url: string): Texture{
-      const img = new Image();
-      img.src = url;
-      this.textures_requested++;
-      const gl = WebGL.gl;
-      if(gl){
-        img.onload = () => {
-          if(WebGL.gl){
-            const gl = WebGL.gl;
-            const texture = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-            this.textures_loaded++;
-          }
-        }
-      }
-      return new Texture(url);
-    }
 
     static textures_loaded: Int32 = 0;
     static textures_requested: Int32 = 0;
@@ -48,7 +22,7 @@ export class Texture{
       this.url = Texture.path+fn;
       this.is_loaded = false;
     }
-    load(){
+    load(onLoad:VoidFunction=EmptyFunction, onError:VoidFunction=EmptyFunction){
       if(!this.is_loaded){
         Texture.textures_requested++;
         const gl = WebGL.gl;
@@ -56,7 +30,7 @@ export class Texture{
           const img = new Image();
           img.src = this.url;
           img.onload = () => {
-            console.log(`Loaded ${this.url}`);
+            console.log(`Loaded texture ${this.url}`);
             this.texture = gl.createTexture();
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -67,23 +41,89 @@ export class Texture{
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
             Texture.textures_loaded++;
             this.is_loaded = true;
+            onLoad();
+          }
+          img.onerror = (e) => {
+            onError();
           }
         }
       }
     }
+    //static loadList
     active(id: Int32){
       const gl = WebGL.gl;
-      if(this.texture && gl != undefined){
+      if(this.texture && this.is_loaded && gl != undefined){
         gl.activeTexture(gl.TEXTURE0+id);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        return true;
       }
+
+      return false;
     }
 }
 
 export class TextureCollection{
   textures: Map<string, Texture>;
+  loaded: Int32;
+  loading: boolean;
+  to_load: Texture[]; // active to loading for 
+  finished_loading: Int32;
   constructor(){
     this.textures = new Map();
+    this.loaded = 0;
+    this.loading = false;
+    this.to_load = [];
+    this.finished_loading = 0;
+  }
+  active(key: string, id: Int32): boolean{
+    if(this.textures.has(key)){
+      const tex = this.textures.get(key)!;
+      if(!tex.is_loaded) return false;
+      tex.active(id);
+      return true;
+    }
+    return false;
+  }
+  getTexture(key: string): Texture | undefined{
+    return this.textures.get(key);
+  }
+  addTexture(key: string, texture: Texture){
+    this.textures.set(key, texture);
+  }
+  load(onAllLoaded: VoidFunction=EmptyFunction){
+    function finishLoading(fl: TextureCollection){
+      if(fl.finished_loading == fl.to_load.length){
+        console.log("end loading texture collection");
+        onAllLoaded();
+        fl.loading = false;
+      }
+    }
+    if(!this.loading){
+      console.log("start loading textures");
+      this.loading = true;
+      this.to_load = [];
+      for(const [name, tex] of this.textures){
+        if(!tex.is_loaded) this.to_load.push(tex);
+      }
+
+      for(const tex of this.to_load){
+        tex.load(() => {
+          this.loaded++;
+          this.finished_loading++;
+          console.log(`finished ${tex.url}`);
+          finishLoading(this);
+        },
+        () => {
+          console.log(`error loading ${tex.url}`);
+          this.finished_loading++;
+          finishLoading(this);
+        });
+      }
+    }
+  }
+  addFromUrl(key: string, file: string){
+    const texture = new Texture(file);
+    this.textures.set(key, texture);
   }
 }
 
@@ -125,29 +165,30 @@ export class CustomFont{
     this.font_sheet.active(id);
   }
   load(onLoaded:()=>void=()=>{}, onError?: (e: any) => void){
-    this.font_sheet.load();
-    //console.log(this.font_name);
-    File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
-      const sp = txt.split('\r\n');
-      const dims = sp[0].split(' ');
-      this.width = parseInt(dims[0]);
-      this.height = parseInt(dims[1]);
-      for(let i = 1; i < sp.length; i++){
-        const x = (i-1)%this.width;
-        const y = Math.floor((i-1)/this.width);
-        for(let j = 0; j < sp[i].length; j++){
-          this.coord_to_sheet_position.set(sp[i][j], {x, y});
+    this.font_sheet.load(
+      () =>
+      File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
+        const sp = txt.split('\r\n');
+        const dims = sp[0].split(' ');
+        this.width = parseInt(dims[0]);
+        this.height = parseInt(dims[1]);
+        for(let i = 1; i < sp.length; i++){
+          const x = (i-1)%this.width;
+          const y = Math.floor((i-1)/this.width);
+          for(let j = 0; j < sp[i].length; j++){
+            this.coord_to_sheet_position.set(sp[i][j], {x, y});
+          }
         }
-      }
-      console.log(txt);
-      console.log(`Font: loaded success, ${this.font_name}`);
-      onLoaded();
-      this.loaded = true;
-    }, 
-    (error) => { 
-        console.log(error);
-        if(onError) onError(error);
-    });
+        console.log(txt);
+        console.log(`Font: loaded success, ${this.font_name}`);
+        onLoaded();
+        this.loaded = true;
+      }, 
+      (error) => { 
+          console.log(error);
+          if(onError) onError(error);
+      })
+    );
   }
 
   setChar(shader: FontSheetShader, char: Char){

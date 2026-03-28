@@ -15,6 +15,15 @@ import * as Card from "./App/card/card";
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
 
+const overlay: HTMLDivElement = document.getElementById("overlay") as HTMLDivElement;
+
+overlay.style.position = "absolute";
+overlay.style.left = "50%";
+overlay.style.top = "50%";
+overlay.style.transform = "translate(-50%, -50%)";
+overlay.style.color = "white";
+overlay.textContent = "Loading";
+
 canvas.width = 900;
 canvas.height = 900;
 
@@ -27,9 +36,10 @@ const gl = WebGL.gl;
 
 //const engine = new App.MyEngine();
 const engine = new Grid.WallEngine();
+engine.addOverlayElement(overlay);
 //const renderer = new App.MyRenderer();
 const renderer = new Grid.WallRenderer(canvas.width, canvas.height);
-
+renderer.addOverlayElement(overlay);
 
 
 const water_engine = new Water.WaterEngine();
@@ -44,7 +54,7 @@ const app = new App.App(engine, renderer);
 app.loadResources(() => {
   console.log("running app");
   app.initApp();
-  
+  engine.onFinishLoading();
 });
 
 
