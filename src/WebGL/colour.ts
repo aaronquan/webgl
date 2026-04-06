@@ -12,6 +12,12 @@ export type ColourRGBA = ColourRGB & {
 
 
 export class ColourUtils{
+  static mix(c1: ColourRGB, c2: ColourRGB): ColourRGB{
+    const red = (c1.red+c2.red)*0.5;
+    const green = (c1.green+c2.green)*0.5;
+    const blue = (c1.blue+c2.blue)*0.5;
+    return {red, green, blue};
+  }
   static fromRGB(red: Float, green: Float, blue: Float): ColourRGB{
     return {red, green, blue};
   }
