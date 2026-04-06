@@ -6,8 +6,8 @@ import * as Matrix from "../../WebGL/Matrix/matrix"
 import * as Shapes from "../../WebGL/Shapes/Shapes"
 import * as WebGLGlobals from "../../WebGL/globals"
 import { colour } from "../../WebGL/Shaders/Fragment/Source/fragment_source"
-import { DirectionUtil } from "../grid"
-import * as Grid from "../grid";
+import { DirectionUtil } from "../ResourceSim/grid"
+import * as Grid from "../ResourceSim/grid";
 
 type Int32 = number;
 type Float = number;

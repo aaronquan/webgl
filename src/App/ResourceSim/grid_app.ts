@@ -1,14 +1,19 @@
-import * as Matrix from "../WebGL/Matrix/matrix";
-import * as App from "./app";
-import * as Grid from "./grid"
-import * as Shader from "./../WebGL/Shaders/custom";
-import * as Shapes from '../WebGL/Shapes/Shapes';
-import * as Texture from "./../WebGL/Texture/texture";
-import * as Colour from "./../WebGL/colour";
-import * as WebGL from "../WebGL/globals";
-import * as Button from "./../Interface/button"
+import * as Matrix from "../../WebGL/Matrix/matrix";
+import * as App from "../app";
+import * as Grid from "./grid";
+import * as Shader from "../../WebGL/Shaders/custom";
+import * as Shapes from '../../WebGL/Shapes/Shapes';
+import * as Texture from "../../WebGL/Texture/texture";
+import * as Colour from "../../WebGL/colour";
+import * as WebGL from "../../WebGL/globals";
+import * as Button from "../../Interface/button";
 
-import * as ArrayUtils from "../utils/array";
+import * as Node from "./nodes";
+import * as Resource from "./resource";
+import * as Car from "./car";
+import * as NodeGraph from "./node_graph"
+
+import * as ArrayUtils from "../../utils/array";
 
 
 interface Point extends Button.Point{};
@@ -99,226 +104,6 @@ function generateKeyLocations(grid: Grid.RectGrid, n_locations: Int32=5): Grid.G
   return locations;
 }
 
-type TrackPosition = {
-  distance_covered: Float,
-  move_index: Int32
-}
-
-const NodeTypeEnum = {
-  Basic: 0,
-  Resource: 1,
-  Requirement: 2
-} as const;
-
-type NodeType = (typeof NodeTypeEnum)[keyof typeof NodeTypeEnum];
-
-
-//no capacity
-class KeyNode{
-  x: Int32;
-  y: Int32;
-  inventory: Map<Resource, Int32>;
-  type: NodeType;
-  constructor(x: Int32, y: Int32, ty: NodeType=NodeTypeEnum.Basic){
-    this.x = x;
-    this.y = y;
-    this.inventory = new Map();
-    this.type = ty;
-    this.initialiseDefaultInventory();
-  }
-
-  protected initialiseDefaultInventory(){
-    this.inventory.set(ResourceEnum.Water, 0);
-    this.inventory.set(ResourceEnum.Apple, 0);
-  }
-
-  //can override
-  update(t: Float){
-    
-  }
-  distanceSq(p: Point){
-    const dx = p.x - this.x - 0.5;
-    const dy = p.y - this.y - 0.5;
-    return dx*dx + dy*dy;
-  }
-  drawNodeUI(perspective: Matrix.TransformationMatrix3x3, solid_shader: Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer, 
-    x: Float, y: Float){
-    const white = WebGL.Colour.ColourUtils.white();
-    solid_shader.use();
-    const back_model = WebGL.WebGL.rectangleModel(x, y, 70, 70);
-    solid_shader.setColour(0, 0, 0);
-    solid_shader.setMvp(perspective.multiplyCopy(back_model));
-    Shapes.Quad.draw();
-
-    //details
-    text_drawer.drawTextColour(perspective, x, y, this.x.toFixed(0), 15, white);
-    text_drawer.drawTextColour(perspective, x, y+15, this.y.toFixed(0), 15, white);
-  }
-  getResourceInventory(res: Resource): Int32{
-    if(!this.inventory.has(res)) return 0;
-    return this.inventory.get(res)!;
-  }
-  deliverResource(){
-
-  }
-
-  //return number drawn from node
-  drawResource(res: Resource, amount: Int32): Int32{
-    const count = this.inventory.get(res)!;
-    if(count > 0){
-      if(count < amount){
-        this.inventory.set(res, 0);
-        return count;
-      }
-      this.inventory.set(res, count-amount);
-      return amount;
-    }
-    return 0;
-  }
-}
-
-class RequirementNode extends KeyNode{
-  constructor(x: Int32, y: Int32){
-    super(x, y);
-  }
-}
-
-class ResourceGeneratorNode extends KeyNode{
-  current_time: Float;
-  gen_time: Float;
-  resource: Resource;
-  constructor(x: Int32, y: Int32){
-    super(x, y);
-    this.current_time = 0;
-    this.gen_time = 1000;
-    this.resource = ResourceEnum.Water;
-    this.type = NodeTypeEnum.Resource;
-  }
-  update(t: Float){
-    this.current_time += t;
-    if(this.current_time >= this.gen_time){
-      this.current_time -= this.gen_time;
-      const n_resources = this.inventory.get(this.resource)!;
-      this.inventory.set(this.resource, n_resources+1);
-    }
-  }
-  drawNodeUI(perspective: Matrix.TransformationMatrix3x3, solid_shader: Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer, 
-    x: Float, y: Float){
-    const white = WebGL.Colour.ColourUtils.white();
-    solid_shader.use();
-    const back_model = WebGL.WebGL.rectangleModel(x, y, 70, 70);
-    solid_shader.setColour(0, 0, 0);
-    solid_shader.setMvp(perspective.multiplyCopy(back_model));
-    Shapes.Quad.draw();
-
-    //details
-    text_drawer.drawTextColour(perspective, x, y, this.x.toFixed(0), 15, white);
-    text_drawer.drawTextColour(perspective, x, y+15, this.y.toFixed(0), 15, white);
-
-  }
-}
-
-const ResourceEnum = {
-  Water: 0,
-  Apple: 1,
-} as const;
-
-type Resource = (typeof ResourceEnum)[keyof typeof ResourceEnum];
-
-export class Car{
-  //coordinates are from top-left corner
-  x: Float; // center point 
-  y: Float;
-  size: Float;
-  plan: Grid.Track | undefined;
-  plan_position: TrackPosition;
-  plan_index: Int32;
-  turn_speed: Float; // per second?
-  speed: Float; // per second
-  rotation: Float; // in radians
-  last_key: Grid.GridPosition | undefined;
-  inventory: Resource | undefined;
-  constructor(){
-    this.x = 0;
-    this.y = 0;
-    this.size = 0.2;
-    this.plan = undefined;
-    this.plan_position = {distance_covered: 0, move_index: 0};
-    this.plan_index = 0;
-    this.speed = 0.01;
-    this.turn_speed = 0.05;
-    this.rotation = 0;
-    this.last_key = undefined;
-  }
-
-  setPlan(plan: Grid.Track){
-    //console.log(plan);
-    this.plan = plan;
-    this.x = plan.starting_location.x+0.5;
-    this.y = plan.starting_location.y+0.5;
-    this.last_key = plan.starting_location;
-    //this.rotation = Grid.DirectionUtil.turnDirectionToRadians(plan.part.getMoves()[0].direction);
-    this.plan_position = {distance_covered: 0, move_index: 0};
-    //console.log(this.plan.part.getMoves().at(0)?.direction);
-  }
-  update(t:Float){
-    if(this.plan){
-      const moves = this.plan.part.getMoves();
-      const dir = moves[this.plan_position.move_index].direction;
-      const dir_movement = Grid.DirectionUtil.directions[dir];
-      const target_rotation = Grid.DirectionUtil.turnDirectionToRadians(dir);
-      const turn = Grid.DirectionUtil.getTurnDirection(dir, this.rotation);
-      if(turn === Grid.TurnDirectionEnum.Clockwise){
-        if(this.rotation + this.turn_speed > target_rotation && this.rotation < target_rotation){
-          this.rotation = target_rotation;
-          //console.log("stop rot clock");
-        }else{
-          this.rotation += this.turn_speed;
-          this.rotation %= (Math.PI*2);
-        }
-      }else if(turn === Grid.TurnDirectionEnum.AntiClockwise){
-        if(this.rotation - this.turn_speed < target_rotation && this.rotation > target_rotation){
-          this.rotation = target_rotation;
-          //console.log("stop rot anti");
-        }else{
-          this.rotation -= this.turn_speed;
-          if(this.rotation < 0){
-            this.rotation += Math.PI*2;
-          }
-        }
-      }
-      else if(this.plan_position.distance_covered+this.speed >= moves[this.plan_position.move_index].distance){
-        const remaining = moves[this.plan_position.move_index].distance-this.plan_position.distance_covered;
-        this.x += dir_movement.x*remaining;
-        this.y -= dir_movement.y*remaining;
-        if(this.plan_position.move_index+1 >= moves.length){
-          this.plan_position = {distance_covered: 0, move_index: 0};
-          this.last_key = this.plan.endPoint();
-          this.plan = undefined;
-        }else{
-          this.plan_position = {distance_covered: 0, move_index: this.plan_position.move_index+1};
-        }
-      }else{
-        this.x += dir_movement.x*this.speed;
-        this.y -= dir_movement.y*this.speed;
-        this.plan_position.distance_covered += this.speed;
-      }
-    }
-  }
-}
-
-class ResourceCar{
-  capacity: Int32;
-  inventory: Map<Resource, Int32>;
-  current_capacity: Int32;
-
-  constructor(){
-    this.capacity = 1;
-    this.inventory = new Map();
-    this.current_capacity = 0;
-  }
-}
-
 export class MultiGridObject{
   width: Int32;
   height: Int32;
@@ -351,14 +136,14 @@ export class WallEngine extends App.BaseEngine{
   test_objects: MultiGridObject[];
 
   highlight_path: Grid.GridPositionWithDirections[];
-  car: Car;
+  car: Car.Car;
 
-  resource_car: ResourceCar;
+  resource_car: Car.ResourceCar;
 
   buttons: Button.ButtonSet;
 
-  hovered_node: KeyNode | undefined;
-  nodes: KeyNode[];
+  hovered_node: Node.KeyNode | undefined;
+  nodes: Node.KeyNode[];
   node_size: Float;
 
   view: Matrix.TransformationMatrix3x3;
@@ -366,6 +151,8 @@ export class WallEngine extends App.BaseEngine{
   overlay_element: HTMLDivElement | undefined;
 
   last_time: Float;
+
+  node_graph: NodeGraph.RoadGraph;
 
   constructor(){
     super();
@@ -386,8 +173,7 @@ export class WallEngine extends App.BaseEngine{
     //});
     this.node_size = 0.15;
 
-    this.car = new Car();
-    this.resource_car = new ResourceCar();
+    this.car = new Car.Car();
 
     if(this.key_positions.length >= 2){
       for(let i = 1; i < this.key_positions.length; i++){
@@ -409,7 +195,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.buttons = new Button.ButtonSet();
 
-    const car_plan_button = new Button.BasicButton(10, 10, 80, 50);
+    const car_plan_button = new Button.BasicButton(810, 10, 100, 30, 12);
     car_plan_button.text = "New Plan";
     car_plan_button.onPressed = () => {
       console.log(this.car.last_key);
@@ -428,7 +214,11 @@ export class WallEngine extends App.BaseEngine{
     this.view = Matrix.TransformationMatrix3x3.identity();
 
     this.createKeyNodes();
+    this.resource_car = new Car.ResourceCar(this.nodes[0]);
     this.last_time = 0;
+
+    this.node_graph = new NodeGraph.RoadGraph();
+    this.node_graph.generate(this.grid, this.nodes);
 
     /*
     Grid.GridPosition.testEuclidianDistance(3.4);
@@ -464,15 +254,15 @@ export class WallEngine extends App.BaseEngine{
     this.nodes = [];
     const rand_arr = ArrayUtils.random0ToN(this.key_positions.length);
     console.log(rand_arr);
-    const res_node = new ResourceGeneratorNode(this.key_positions[rand_arr[0]].x, this.key_positions[rand_arr[0]].y);
+    const res_node = new Node.ResourceGeneratorNode(this.key_positions[rand_arr[0]].x, this.key_positions[rand_arr[0]].y);
 
     this.nodes.push(res_node);
 
-    const deliver_node = new RequirementNode(this.key_positions[rand_arr[1]].x, this.key_positions[rand_arr[1]].y);
+    const deliver_node = new Node.RequirementNode(this.key_positions[rand_arr[1]].x, this.key_positions[rand_arr[1]].y);
     this.nodes.push(deliver_node);
 
     for(let i = 2; i < this.key_positions.length; i++){
-      this.nodes.push(new KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y));
+      this.nodes.push(new Node.KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y));
     }
     console.log(this.nodes);
   }
@@ -756,9 +546,10 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       const texture_names = ["car.png", "base.png"];
       this.textures.addFromUrl("car", "car.png");
       this.textures.addFromUrl("drop", "drop.png");
+      this.textures.addFromUrl("apple", "apple.png");
       
       this.textures.load(() => this.loadFonts(onLoad));
-    }, 2000)
+    }, 200)
   }
   loadFonts(onLoad:VoidFunction=EmptyFunction){
     if(this.overlay_element != undefined){
@@ -776,7 +567,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
         console.log("finished loading");
         if(onLoad) onLoad();
       });
-    }, 1000);
+    }, 100);
   }
   addOverlayElement(overlay: HTMLDivElement){
     this.overlay_element = overlay;
@@ -848,8 +639,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     shader.setMvp(this.vp.multiplyCopy(model));
     Shapes.Quad.drawRelative();
   }
-  drawCar(engine: WallEngine){
-    const car = engine.car;
+  drawCar(car: Car.Car, engine: WallEngine){
+    //const car = engine.car;
     const gs = engine.rect_grid.size;
     const cs = car.size*gs;
     this.texture_shader.use();
@@ -977,7 +768,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     */
 
     this.drawGridLines(engine);
-    this.drawCar(engine);
+    this.drawCar(engine.car, engine);
     this.displayNodeSheet(engine);
 
     engine.buttons.draw(this.perspective, this.solid_shader, this.text_drawer);
@@ -991,6 +782,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       const text = `x ${engine.grid_true_mouse.x.toFixed(2)}, y ${engine.grid_true_mouse.y.toFixed(2)}`;
       this.text_drawer.drawText(this.vp, 40, 400, text, 15);
     }
+
+    this.drawCar(engine.resource_car, engine);
     //requestAnimationFrame((time) => this.render(time, engine));
   }
   drawGridLines(engine: WallEngine){
@@ -1033,14 +826,14 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }
     //this.setMultiTile(shader, tile.);
   }
-  drawResource(res: Resource, x: Float, y: Float){
+  drawResource(res: Resource.Resource, x: Float, y: Float){
     this.texture_shader.use();
     switch(res){
-      case ResourceEnum.Water:
+      case Resource.ResourceEnum.Water:
         this.textures.active("drop", 3);
         this.texture_shader.setTextureId(3);
         break;
-      case ResourceEnum.Apple:
+      case Resource.ResourceEnum.Apple:
         break;
     }
     const model = WebGL.WebGL.rectangleModel(x, y, 20, 20);
@@ -1054,15 +847,17 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       const y = engine.true_mouse.y;
       engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y);
 
-      if(engine.hovered_node.type === NodeTypeEnum.Resource){
-        const res_node = engine.hovered_node as ResourceGeneratorNode;
+      if(engine.hovered_node.type === Node.NodeTypeEnum.Resource){
+        const res_node = engine.hovered_node as Node.ResourceGeneratorNode;
         //show resources in node //TODO
         this.text_drawer.drawText(this.perspective, x, y+31, "Res", 15);
         this.drawResource(res_node.resource, x, y+46);
         this.text_drawer.drawText(this.perspective, x+15, y+46, res_node.getResourceInventory(res_node.resource).toString(), 15);
 
-      }else if(engine.hovered_node.type == NodeTypeEnum.Requirement){
+      }else if(engine.hovered_node.type === Node.NodeTypeEnum.Requirement){
+        const req_node = engine.hovered_node as Node.RequirementNode;
         this.text_drawer.drawText(this.perspective, x, y+31, "Req", 15);
+        this.drawResource(req_node.require_resource, x, y+46);
       }
 
       /*

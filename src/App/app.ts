@@ -2,7 +2,7 @@ import WebGL from "../WebGL/globals";
 import * as Shapes from '../WebGL/Shapes/Shapes';
 import * as CustomShader from "../WebGL/Shaders/custom";
 import * as Matrix from "../WebGL/Matrix/matrix";
-import * as Grid from "./grid";
+import * as Grid from "./ResourceSim/grid";
 
 type Int32 = number;
 type Float = number;

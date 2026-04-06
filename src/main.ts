@@ -6,7 +6,7 @@ import * as Matrix from "./WebGL/Matrix/matrix";
 
 import * as Mixin from './utils/mixin';
 import * as App from './App/app';
-import * as Grid from './App/grid_app';
+import * as Grid from './App/ResourceSim/grid_app';
 import * as WebGLGlobals from './WebGL/globals';
 
 import * as Water from './App/water/water'

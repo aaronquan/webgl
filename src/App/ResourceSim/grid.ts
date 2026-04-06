@@ -1,5 +1,5 @@
-import * as Matrix from "../WebGL/Matrix/matrix";
-import * as ArrayUtils from "../utils/array";
+import * as Matrix from "../../WebGL/Matrix/matrix";
+import * as ArrayUtils from "../../utils/array";
 import * as PQ from "@datastructures-js/priority-queue"
 
 type Int32 = number;
@@ -529,6 +529,38 @@ export class WallTile{
         break;
     }
   }*/
+  getDirections(): GridDirection[]{
+    const dirs: GridDirection[] = [];
+    if(this.left !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Left);
+    }
+    if(this.top !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Up);
+    }
+    if(this.right !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Right);
+    }
+    if(this.bottom !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Down);
+    }
+    return dirs;
+  }
+  getDirectionsOtherThan(not_dir: GridDirection): GridDirection[]{
+    const dirs: GridDirection[] = [];
+    if(not_dir !== DirectionEnum.Left && this.left !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Left);
+    }
+    if(not_dir !== DirectionEnum.Up && this.top !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Up);
+    }
+    if(not_dir !== DirectionEnum.Right && this.right !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Right);
+    }
+    if(not_dir !== DirectionEnum.Down && this.bottom !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Down);
+    }
+    return dirs;
+  }
   setTileActiveDirection(active: ActiveDirections, value: TileState){
     if(active.left){
       this.left = value;
@@ -568,13 +600,20 @@ export class WallTile{
 }
 
 export class WallGrid{
-  width: number;
-  height: number;
+  width: Int32;
+  height: Int32;
   grid: WallTile[][];
-  constructor(w: number, h: number){
+  constructor(w: Int32, h: Int32){
     this.width = w;
     this.height = h;
     this.grid = Array.from({length: h}, () => Array.from({length: w}, () => new WallTile()));
+  }
+  getTile(x: Int32, y: Int32): WallTile | undefined{
+    if(!this.isInside(x, y)) return undefined;
+    return this.grid[y][x];
+  }
+  getTileFromPosition(pos: GridPosition): WallTile | undefined{
+    return this.getTile(pos.x, pos.y);
   }
   randomise(){
     for(let y = 0; y < this.height; y++){
@@ -583,7 +622,7 @@ export class WallGrid{
       }
     }
   }
-  isInside(x: number, y: number): boolean{
+  isInside(x: Int32, y: Int32): boolean{
     return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
   setCellState(x: Int32, y: Int32, direction: GridDirection, state: TileState){
