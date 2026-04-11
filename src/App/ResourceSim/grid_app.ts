@@ -14,6 +14,7 @@ import * as Car from "./car";
 import * as NodeGraph from "./node_graph"
 
 import * as ArrayUtils from "../../utils/array";
+import * as NumberUtils from "../../utils/numbers";
 
 
 interface Point extends Button.Point{};
@@ -115,6 +116,21 @@ export class MultiGridObject{
   }
 }
 
+const WallEditStateEnum = {
+  Default: 0,
+  Adding: 1,
+  Deleting: 2
+} as const;
+
+type WallEditState = (typeof WallEditStateEnum)[keyof typeof WallEditStateEnum];
+
+const GridCellSectionEnum =  {
+  ...Grid.DirectionEnum,
+  Center: 4
+} as const;
+
+type GridCellSection = (typeof GridCellSectionEnum)[keyof typeof GridCellSectionEnum];
+
 export class WallEngine extends App.BaseEngine{
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
@@ -136,11 +152,13 @@ export class WallEngine extends App.BaseEngine{
   test_objects: MultiGridObject[];
 
   highlight_path: Grid.GridPositionWithDirections[];
-  car: Car.Car;
+  //car: Car.Car;
 
-  resource_car: Car.ResourceCar;
+  //resource_car: Car.ResourceCar;
+  cars: Car.Car[];
 
   buttons: Button.ButtonSet;
+  toggle_buttons: Button.ToggleButtonSet;
 
   hovered_node: Node.KeyNode | undefined;
   nodes: Node.KeyNode[];
@@ -154,6 +172,12 @@ export class WallEngine extends App.BaseEngine{
 
   node_graph: NodeGraph.RoadGraph;
 
+  active_nodes: Map<Int32, Node.KeyNode>;
+  node_id: Int32;
+
+  edit_state: WallEditState;
+  hover_grid_side: GridCellSection | undefined;
+
   constructor(){
     super();
     const w = 10; const h = 10;
@@ -162,9 +186,10 @@ export class WallEngine extends App.BaseEngine{
     this.rect_grid = new Grid.RectGrid(w, h, s);
     this.mouse_over = undefined;
     this.highlighted_positions = [];
-    this.key_positions = generateKeyLocations(this.rect_grid, 3);
+    this.key_positions = [];
 
-
+    this.active_nodes = new Map();
+    this.node_id = 0;
 
     this.is_circle_positions = false;
     this.nodes = [];
@@ -173,32 +198,21 @@ export class WallEngine extends App.BaseEngine{
     //});
     this.node_size = 0.15;
 
-    this.car = new Car.Car();
-
-    if(this.key_positions.length >= 2){
-      for(let i = 1; i < this.key_positions.length; i++){
-        const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.key_positions[i-1], this.key_positions[i]);
-        this.grid.addTrack(path);
-        this.grid.grid[this.key_positions[i].y][this.key_positions[i].x].is_key = true;
-        if(i == this.key_positions.length-1){
-          this.car.setPlan(path);
-        }
-      }
-      this.grid.grid[this.key_positions[0].y][this.key_positions[0].x].is_key = true;
-    }
-    const sh_path = this.grid.shortestPath(this.key_positions[0], this.key_positions[1]);
-    console.log(sh_path);
+    this.cars = [];
     
     this.test_objects = [];
     this.adding_path_hori_first = true;
     this.highlight_path = [];
 
     this.buttons = new Button.ButtonSet();
+    this.toggle_buttons = new Button.ToggleButtonSet();
 
     const car_plan_button = new Button.BasicButton(810, 10, 100, 30, 12);
     car_plan_button.text = "New Plan";
     car_plan_button.onPressed = () => {
-      console.log(this.car.last_key);
+      //console.log(this.car.last_key);
+      this.key_positions = generateKeyLocations(this.rect_grid, 3);
+      /*
       if(this.car.last_key){
         const next_key = this.randomKeyOtherThan1(this.car.last_key);
         const path = this.grid.shortestPath(this.car.last_key, next_key);
@@ -207,18 +221,75 @@ export class WallEngine extends App.BaseEngine{
           const track = Grid.GridAlgorithms.pathToTrack(path);
           this.car.setPlan(track);
         }
-      }
+      }*/
     }
     this.buttons.addButton(car_plan_button);
 
+    const example_plan_button = new Button.BasicButton(810, 130, 80, 25, 7);
+    example_plan_button.text = "New Example";
+    example_plan_button.onPressed = () => {
+      this.clearGrid();
+      this.key_positions = generateKeyLocations(this.rect_grid, 3);
+      if(this.key_positions.length >= 2){
+        for(let i = 1; i < this.key_positions.length; i++){
+          const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.key_positions[i-1], this.key_positions[i]);
+          this.grid.addTrack(path);
+          this.grid.grid[this.key_positions[i].y][this.key_positions[i].x].is_key = true;
+          if(i == this.key_positions.length-1){
+            //this.car.setPlan(path);
+          }
+        }
+        this.grid.grid[this.key_positions[0].y][this.key_positions[0].x].is_key = true;
+      }
+      const sh_path = this.grid.shortestPath(this.key_positions[0], this.key_positions[1]);
+      this.createKeyNodes();
+    }
+
+    this.buttons.addButton(example_plan_button);
+
+    const generate_graph_button = new Button.BasicButton(810, 160, 80, 25, 8);
+    generate_graph_button.text = "Gen Graph";
+    generate_graph_button.onPressed = () => {
+      this.node_graph.generate(this.grid, this.active_nodes);
+    }
+
+    this.buttons.addButton(generate_graph_button);
+
+    const add_button = new Button.ToggleButton(810, 60, 80, 25, 10);
+    add_button.on_text = "Add On";
+    add_button.off_text = "Add Off";
+    add_button.onToggleOn = () => {
+      delete_button.toggleOff();
+      this.edit_state = WallEditStateEnum.Adding;
+    };
+    add_button.onToggleOff = () => {
+      this.edit_state = WallEditStateEnum.Default;
+    };
+
+    this.toggle_buttons.addButton(add_button);
+
+    const delete_button = new Button.ToggleButton(810, 100, 80, 25, 10);
+    delete_button.on_text = "Del On";
+    delete_button.off_text = "Del Off";
+    delete_button.onToggleOn = () => {
+      add_button.toggleOff();
+      this.edit_state = WallEditStateEnum.Deleting;
+    };
+    delete_button.onToggleOff = () => {
+      this.edit_state = WallEditStateEnum.Default;
+    }
+    this.toggle_buttons.addButton(delete_button);
+
     this.view = Matrix.TransformationMatrix3x3.identity();
 
-    this.createKeyNodes();
-    this.resource_car = new Car.ResourceCar(this.nodes[0]);
+    //this.resource_car = new Car.ResourceCar(this.nodes[0]);
     this.last_time = 0;
 
     this.node_graph = new NodeGraph.RoadGraph();
-    this.node_graph.generate(this.grid, this.nodes);
+    //this.node_graph.generate(this.grid, this.a); // now generated by button press
+
+    this.edit_state = WallEditStateEnum.Default;
+    this.hover_grid_side = undefined;
 
     /*
     Grid.GridPosition.testEuclidianDistance(3.4);
@@ -242,6 +313,33 @@ export class WallEngine extends App.BaseEngine{
     console.log(ind);
     */
   }
+  addKeyNode(node: Node.KeyNode){
+    //console.log(node);
+    this.grid.setNodeId(node.x, node.y, this.node_id);
+    //console.log(this.grid.getTile(node.x, node.y));
+    //this.nodes.push(node);
+    node.setId(this.node_id);
+    this.active_nodes.set(this.node_id, node);
+    console.log(node);
+    this.node_id++;
+    this.updateHoveredNode();
+  }
+  deleteKeyNode(node: Node.KeyNode){
+    this.grid.setCellKeyNode(node.x, node.y, false);
+    console.log(node);
+    this.active_nodes.delete(node.getId());
+    this.updateHoveredNode();
+  }
+  clearGrid(){
+    this.grid.clear();
+    this.clearKeyNodes();
+  }
+  clearKeyNodes(){
+    for(const [id, node] of this.active_nodes){
+      this.deleteKeyNode(node);
+    }
+    this.active_nodes.clear();
+  }
   addOverlayElement(overlay: HTMLDivElement){
     this.overlay_element = overlay;
   }
@@ -253,18 +351,19 @@ export class WallEngine extends App.BaseEngine{
   createKeyNodes(){
     this.nodes = [];
     const rand_arr = ArrayUtils.random0ToN(this.key_positions.length);
-    console.log(rand_arr);
+    //console.log(rand_arr);
     const res_node = new Node.ResourceGeneratorNode(this.key_positions[rand_arr[0]].x, this.key_positions[rand_arr[0]].y);
-
-    this.nodes.push(res_node);
+    this.addKeyNode(res_node);
 
     const deliver_node = new Node.RequirementNode(this.key_positions[rand_arr[1]].x, this.key_positions[rand_arr[1]].y);
-    this.nodes.push(deliver_node);
+    this.addKeyNode(deliver_node);
 
     for(let i = 2; i < this.key_positions.length; i++){
-      this.nodes.push(new Node.KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y));
+      const node = new Node.KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y);
+      //this.nodes.push(new Node.KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y));
+      this.addKeyNode(node);
     }
-    console.log(this.nodes);
+    
   }
   randomKeyOtherThan1(not_included: Grid.GridPosition){
     const others = this.key_positions.filter((p) => {
@@ -275,6 +374,25 @@ export class WallEngine extends App.BaseEngine{
 
   addKeyPosition(x: Int32, y: Int32){
     this.key_positions.push(new Grid.GridPosition(x, y));
+  }
+
+  sideOnGrid(pos: WebGL.Matrix.Point2D | undefined): GridCellSection | undefined{
+    if(pos != undefined){
+      const dx = pos.x % 1;
+      const dy = pos.y % 1;
+
+
+      const dist = 0.015;
+      if(NumberUtils.distanceSq(dx, dy, 0.5, 0.5) < dist){
+        this.hover_grid_side = GridCellSectionEnum.Center;
+      }else{
+        const dir = Grid.DirectionUtil.fromFloatsInGridDecimal(dx, dy);
+        this.hover_grid_side = dir;
+      }
+    }else{
+      this.hover_grid_side = undefined;
+    }
+    return this.hover_grid_side;
   }
 
   protected override handleKeyDown(ev: KeyboardEvent){
@@ -322,32 +440,39 @@ export class WallEngine extends App.BaseEngine{
     this.grid_true_mouse = inv.transformPoint(true_mouse);
     this.grid_true_mouse.x/=this.rect_grid.size;
     this.grid_true_mouse.y/=this.rect_grid.size;
+    const side = this.sideOnGrid(this.grid_true_mouse);
     const pos = this.rect_grid.getPosition(ev.offsetX, ev.offsetY);
     if(pos != undefined){
       if(this.mouse_over == undefined || (this.mouse_over.x != pos.x || this.mouse_over.y != pos.y)){
         this.setHighlightedPositions(pos);
       }
-      this.buttons.updateMouse(true_mouse);
     }else{
       this.highlighted_positions = [];
     }
+    this.buttons.updateMouse(true_mouse);
+    this.toggle_buttons.updateMouse(true_mouse);
     this.mouse_over = pos;
 
     const true_grid = this.getGridTruePosition(ev.offsetX, ev.offsetY);
+
+    this.updateHoveredNode();
+  }
+
+  updateHoveredNode(){
     this.hovered_node = undefined;
-    for(const node of this.nodes){
-      const dist = node.distanceSq(true_grid);
-      //console.log(node);
-      //console.log(dist);
-      if(dist < this.node_size*this.node_size){
-        this.hovered_node = node;
+    if(this.grid_true_mouse != undefined){
+      for(const [id, node] of this.active_nodes){
+        const dist = node.distanceSq(this.grid_true_mouse);
+        if(dist < this.node_size*this.node_size){
+          this.hovered_node = node;
+        }
       }
     }
-    //this.mouse_over = pos;
   }
 
   protected override handleMouseDown(ev: MouseEvent){
     if(this.mouse_over != undefined){
+      /*
       if(this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key){
         if(this.selected_key1 == undefined){
           //set key1
@@ -392,15 +517,67 @@ export class WallEngine extends App.BaseEngine{
           const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.mouse_over, this.selected_key1);
           this.grid.addTrack(path);
         }
+      }*/
+
+
+      // edit walls with mouse input
+      const cell = this.mouse_over;
+      if(this.edit_state === WallEditStateEnum.Adding){
+        switch(this.hover_grid_side){
+          case GridCellSectionEnum.Left:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
+            break;
+          case GridCellSectionEnum.Down:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Down, Grid.TileStateEnum.Path);
+            break;
+          case GridCellSectionEnum.Right:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Right, Grid.TileStateEnum.Path);
+            break;
+          case GridCellSectionEnum.Up:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Up, Grid.TileStateEnum.Path);
+            break;
+          case GridCellSectionEnum.Center:
+            const new_node = new Node.KeyNode(cell.x, cell.y);
+            this.addKeyNode(new_node);
+            break;
+          default:
+            break;
+        }
+      }else if(this.edit_state === WallEditStateEnum.Deleting){
+        switch(this.hover_grid_side){
+          case GridCellSectionEnum.Left:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Left, Grid.TileStateEnum.Nothing);
+            break;
+          case GridCellSectionEnum.Down:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Down, Grid.TileStateEnum.Nothing);
+            break;
+          case GridCellSectionEnum.Right:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Right, Grid.TileStateEnum.Nothing);
+            break;
+          case GridCellSectionEnum.Up:
+            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Up, Grid.TileStateEnum.Nothing);
+            break;
+          case GridCellSectionEnum.Center:
+            console.log(cell);
+            const node_id = this.grid.getNodeId(cell.x, cell.y);
+            if(node_id != undefined){
+              const node = this.active_nodes.get(node_id);
+              if(node != undefined) this.deleteKeyNode(node);
+            }
+            console.log(node_id);
+            break;
+          default:
+            break;
+        }
       }
-      this.buttons.mouseDown();
     }
-    
-    //this.adding_position
+    this.buttons.mouseDown();
+    this.toggle_buttons.mouseDown();
   }
 
   protected override handleMouseUp(ev: MouseEvent): void {
     this.buttons.mouseUp();
+    this.toggle_buttons.mouseUp();
   }
 
 
@@ -413,7 +590,6 @@ export class WallEngine extends App.BaseEngine{
       this.highlighted_positions = Grid.GridPosition.filterInsideGrid(this.highlighted_positions, this.rect_grid);
       this.highlighted_positions = filterPositionsTooClose(this.highlighted_positions, new Grid.GridPosition(0, 0), 3);
     }
-    //console.log(pos);
   }
 
   getGridTruePosition(x: Float, y: Float): Matrix.Point2D{
@@ -427,10 +603,12 @@ export class WallEngine extends App.BaseEngine{
 
   update(time: Float){
     const update_time = time - this.last_time;
-    for(const node of this.nodes){
+    for(const [id, node] of this.active_nodes){
       node.update(update_time);
     }
-    this.car.update(update_time);
+    for(const car of this.cars){
+      car.update(update_time);
+    }
     this.last_time = time;
   }
 }
@@ -477,8 +655,6 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   draw_width: Int32;
   draw_height: Int32;
 
-  render_string: string;
-
   textures: Texture.TextureCollection;
 
   white: Colour.ColourRGB;
@@ -504,22 +680,11 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     this.textures = new Texture.TextureCollection();
 
-
-    //Texture.Texture.setup();
-    //this.test_tex = new Texture.Texture("letters_Sheet.png");
-    //this.test_tex.load();
-    //this.test_tex.active(0);
-
-    //this.font = new Texture.CustomFont("letters-Sheet.png");
-    //this.font.load();
-    //this.font.active(0);
-
-    this.render_string = "hello world";
-
     this.tile_state_colours = new Map();
     this.tile_state_colours.set(Grid.TileStateEnum.Nothing, Colour.ColourUtils.yellow());
     this.tile_state_colours.set(Grid.TileStateEnum.Highlight, Colour.ColourUtils.red());
     this.tile_state_colours.set(Grid.TileStateEnum.Path, Colour.ColourUtils.blue());
+    this.tile_state_colours.set(Grid.TileStateEnum.Preview, Colour.ColourUtils.fromRGB(0.3, 0.4, 1));
 
     this.background_colour = Colour.ColourUtils.yellow();
     this.key_colour = Colour.ColourUtils.pink();
@@ -572,23 +737,6 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   addOverlayElement(overlay: HTMLDivElement){
     this.overlay_element = overlay;
   }
-  /*
-  drawString(s: string, x: Int32, y: Int32, size: Int32){
-    const gl = WebGL.WebGL.gl!;
-    const scale = Matrix.TransformationMatrix3x3.scale(size, size);
-    this.sprite_sheet_shader.use();
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    for(let i = 0; i < s.length; i++){
-      if(s[i] == ' ') continue;
-      const translate = Matrix.TransformationMatrix3x3.translate(x+size*i, y);
-      const model = translate.multiplyCopy(scale);
-      this.sprite_sheet_shader.setMvp(this.vp.multiplyCopy(model));
-      this.font.setChar(this.sprite_sheet_shader, s[i]);
-      Shapes.Quad.draw();
-    }
-    gl.disable(gl.BLEND);
-  }*/
   drawKeyTile(engine: WallEngine, x: Int32, y: Int32){
     //expects shader vars setup
     const gs = engine.rect_grid.size;
@@ -615,7 +763,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const gs = engine.rect_grid.size;
     const model = WebGL.WebGL.rectangleModel(x*gs, y*gs, gs, gs);
     this.multi_colour_centre_circle_shader.setMvp(this.vp.multiplyCopy(model));
-    this.setMultiTile(engine, this.multi_colour_centre_circle_shader, x, y);
+    this.multi_colour_centre_circle_shader.setCircleRadius(0.1);
+    this.setMultiTile(engine, this.multi_colour_centre_circle_shader, x, y, true);
     Shapes.Quad.draw();
     //this.setMultiTile(this.multi_colour_centre_circle_shader, engine.grid.grid[y][x].);
   }
@@ -624,7 +773,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const gs = engine.rect_grid.size;
     const model = WebGL.WebGL.rectangleModel(x*gs, y*gs, gs, gs);
     this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(model));
-    this.setMultiTile(engine, this.multi_colour_tile_shader, x, y);
+    this.setMultiTile(engine, this.multi_colour_tile_shader, x, y, false);
     Shapes.Quad.draw();
   }
   drawWallTile(shader: DirectionTileShader, engine: WallEngine, x: Int32, y: Int32){
@@ -706,8 +855,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       //Shapes.Quad.draw();
     }*/
 
-    this.text_drawer.drawText(this.vp, 100, 100, this.render_string, 25);
-    this.text_drawer.drawText(this.vp, 20, 200, "what is going on lets print this hhbbvv", 15);
+    //this.text_drawer.drawText(this.vp, 100, 100, this.render_string, 25);
+    //this.text_drawer.drawText(this.vp, 20, 200, "what is going on lets print this hhbbvv", 15);
 
     /*
     this.multi_colour_tile_shader.use();
@@ -768,10 +917,15 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     */
 
     this.drawGridLines(engine);
-    this.drawCar(engine.car, engine);
+    for(const car of engine.cars){
+      this.drawCar(car, engine);
+    }
     this.displayNodeSheet(engine);
 
+
+    //draw buttons
     engine.buttons.draw(this.perspective, this.solid_shader, this.text_drawer);
+    engine.toggle_buttons.draw(this.perspective, this.solid_shader, this.text_drawer);
 
     if(engine.true_mouse){
       //console.log(engine.true_mouse)
@@ -783,7 +937,13 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       this.text_drawer.drawText(this.vp, 40, 400, text, 15);
     }
 
-    this.drawCar(engine.resource_car, engine);
+    if(engine.hover_grid_side != undefined){
+      const text = engine.hover_grid_side === GridCellSectionEnum.Center ? "Center" 
+      : Grid.DirectionUtil.toString(engine.hover_grid_side as Grid.GridDirection);
+      this.text_drawer.drawText(this.vp, 20, 700, text, 15);
+    }
+
+    //this.drawCar(engine.resource_car, engine);
     //requestAnimationFrame((time) => this.render(time, engine));
   }
   drawGridLines(engine: WallEngine){
@@ -803,7 +963,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }
     Shapes.Quad.draw();
   }
-  setMultiTile(engine: WallEngine, shader: MultiColourTileShader, x: Int32, y: Int32){
+  setMultiTile(engine: WallEngine, shader: MultiColourTileShader, x: Int32, y: Int32, center_circle: boolean=false){
     const tile = engine.grid.grid[y][x];
     const direction_tile_functions = [
       {var: tile.left, colour_func: shader.setLeftColour}, 
@@ -817,7 +977,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }
     if(tile.is_selected){
       shader.setMidColour(this.key_colour.red, this.key_colour.green, this.key_colour.blue);
-    }else if(tile.bottom == Grid.TileStateEnum.Nothing && tile.left == Grid.TileStateEnum.Nothing 
+    }else if(!center_circle && tile.bottom == Grid.TileStateEnum.Nothing && tile.left == Grid.TileStateEnum.Nothing 
       && tile.top == Grid.TileStateEnum.Nothing && tile.right == Grid.TileStateEnum.Nothing){
         shader.setMidColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
     }else{
@@ -826,7 +986,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }
     //this.setMultiTile(shader, tile.);
   }
-  drawResource(res: Resource.Resource, x: Float, y: Float){
+  drawResource(res: Resource.Resource, x: Float, y: Float, size: Float){
     this.texture_shader.use();
     switch(res){
       case Resource.ResourceEnum.Water:
@@ -836,17 +996,32 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       case Resource.ResourceEnum.Apple:
         break;
     }
-    const model = WebGL.WebGL.rectangleModel(x, y, 20, 20);
+    const model = WebGL.WebGL.rectangleModel(x, y, size, size);
     this.texture_shader.setMvp(this.perspective.multiplyCopy(model));
     Shapes.Quad.draw();
+  }
+  drawResourceInventory(node: Node.KeyNode, x: Int32, y: Int32, res_size: Int32, num_size: Int32){
+    let rx = x;
+    //const res_size = 15;
+    //const num_size = 5;
+    for(const [res, amount] of node.inventory){
+      this.drawResource(res, rx, y, res_size);
+      const str = amount.toString()
+      const offset = str.length*num_size;
+      this.text_drawer.drawText(this.perspective, rx+res_size-offset, y+res_size-num_size, str, num_size);
+      rx += res_size;
+    }
   }
   displayNodeSheet(engine: WallEngine){
     if(engine.hovered_node != undefined && engine.true_mouse != undefined){
       //background
+      const text_size = 12;
       const x = engine.true_mouse.x+20;
       const y = engine.true_mouse.y;
-      engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y);
+      const ui_height = engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y, text_size);
+      this.drawResourceInventory(engine.hovered_node, x, y+ui_height, 20, 10);
 
+      /*
       if(engine.hovered_node.type === Node.NodeTypeEnum.Resource){
         const res_node = engine.hovered_node as Node.ResourceGeneratorNode;
         //show resources in node //TODO
@@ -858,7 +1033,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
         const req_node = engine.hovered_node as Node.RequirementNode;
         this.text_drawer.drawText(this.perspective, x, y+31, "Req", 15);
         this.drawResource(req_node.require_resource, x, y+46);
-      }
+      }*/
 
       /*
       this.solid_shader.use();

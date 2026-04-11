@@ -278,8 +278,6 @@ export class DirectionUtil{
     if(rads === 0){
       return TurnDirectionEnum.Straight;
     }
-    //const diff = Math.abs()
-    
     return rads < Math.PI ? TurnDirectionEnum.AntiClockwise : TurnDirectionEnum.Clockwise;
   }
   
@@ -288,22 +286,6 @@ export class DirectionUtil{
       return dir2 == DirectionEnum.Left || dir2 == DirectionEnum.Right;
     }
     return dir2 == DirectionEnum.Up || dir2 == DirectionEnum.Down;
-  }
-  static setActiveDirection(active_directions: ActiveDirections, value: boolean, direction: GridDirection){
-    switch(direction){
-      case DirectionEnum.Left:
-        active_directions.left = value;
-        break;
-      case DirectionEnum.Down:
-        active_directions.down = value;
-        break;
-      case DirectionEnum.Right:
-        active_directions.right = value;
-        break;
-      case DirectionEnum.Up:
-        active_directions.up = value;
-        break;
-    }
   }
   static opposite(direction: GridDirection): GridDirection{
     switch(direction){
@@ -359,6 +341,15 @@ export class DirectionUtil{
     }
     return dirs;
   }
+  static fromFloatsInGridDecimal(x: Float, y: Float): GridDirection {
+    if(x < 0) x = 1 + x;
+    if(y < 0) y = 1 + y;
+    const diag = 1 - x < y;
+    if(x > y){
+      return diag ? DirectionEnum.Right : DirectionEnum.Up;
+    }
+    return diag ? DirectionEnum.Down : DirectionEnum.Left;
+  }
   static toString(dir: GridDirection): string{
     switch(dir){
       case DirectionEnum.Down:
@@ -371,6 +362,37 @@ export class DirectionUtil{
         return "Right";
     }
     return "";
+  }
+  static blankActiveDirections(): ActiveDirections{
+    return {left: false, up: false, right: false, down: false};
+  }
+  static setActiveDirection(active_directions: ActiveDirections, value: boolean, direction: GridDirection){
+    switch(direction){
+      case DirectionEnum.Left:
+        active_directions.left = value;
+        break;
+      case DirectionEnum.Down:
+        active_directions.down = value;
+        break;
+      case DirectionEnum.Right:
+        active_directions.right = value;
+        break;
+      case DirectionEnum.Up:
+        active_directions.up = value;
+        break;
+    }
+  }
+  static isActiveDirection(active_directions: ActiveDirections, direction:GridDirection): boolean{
+    switch(direction){
+      case DirectionEnum.Left:
+        return active_directions.left;
+      case DirectionEnum.Down:
+        return active_directions.down;
+      case DirectionEnum.Right:
+        return active_directions.right;
+      case DirectionEnum.Up:
+        return active_directions.up;
+    }
   }
   //static isSameDirection(dir)
 }
@@ -487,7 +509,7 @@ export class RectGrid{
 }
 
 export const TileStateEnum = {
-  Nothing: 0, Path: 1, Highlight: 2
+  Nothing: 0, Path: 1, Highlight: 2, Preview: 3
 } as const;
 
 export type TileState = (typeof TileStateEnum)[keyof typeof TileStateEnum];
@@ -503,6 +525,7 @@ export class WallTile{
   right: TileState;
   bottom: TileState;
   is_key: boolean;
+  node_id: Int32 | undefined;
   is_selected: boolean;
   constructor(){
     this.left = TileStateEnum.Nothing;
@@ -529,6 +552,14 @@ export class WallTile{
         break;
     }
   }*/
+  clear(){
+    this.left = TileStateEnum.Nothing;
+    this.bottom = TileStateEnum.Nothing;
+    this.right = TileStateEnum.Nothing;
+    this.top = TileStateEnum.Nothing;
+    this.is_key = false;
+    this.is_selected = false;
+  }
   getDirections(): GridDirection[]{
     const dirs: GridDirection[] = [];
     if(this.left !== TileStateEnum.Nothing){
@@ -560,6 +591,14 @@ export class WallTile{
       dirs.push(DirectionEnum.Down);
     }
     return dirs;
+  }
+  setNodeId(id: Int32){
+    this.is_key = true;
+    this.node_id = id;
+  }
+  clearNode(){
+    this.is_key = false;
+    this.node_id = undefined;
   }
   setTileActiveDirection(active: ActiveDirections, value: TileState){
     if(active.left){
@@ -607,6 +646,25 @@ export class WallGrid{
     this.width = w;
     this.height = h;
     this.grid = Array.from({length: h}, () => Array.from({length: w}, () => new WallTile()));
+  }
+  clear(){
+    for(let x = 0; x < this.width; x++){
+      for(let y = 0; y < this.height; y++){
+        this.grid[y][x].clear();
+      }
+    }
+  }
+  setNodeId(x: Int32, y: Int32, id: Int32){
+    this.grid[y][x].setNodeId(id);
+  }
+  getNodeId(x: Int32, y: Int32): Int32 | undefined{
+    return this.grid[y][x].node_id;
+  }
+  clearNode(x: Int32, y: Int32){
+    this.grid[y][x].clearNode();
+  }
+  setCellKeyNode(x: Int32, y: Int32, val: boolean){
+    this.grid[y][x].is_key = val;
   }
   getTile(x: Int32, y: Int32): WallTile | undefined{
     if(!this.isInside(x, y)) return undefined;
