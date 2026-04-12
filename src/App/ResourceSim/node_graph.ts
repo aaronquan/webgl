@@ -1,6 +1,7 @@
 import * as Grid from './grid';
 import * as Node from './nodes';
 import * as ArrayUtil from './../../utils/array';
+import { PriorityQueue } from '@datastructures-js/priority-queue';
 
 type Int32 = number;
 
@@ -23,17 +24,32 @@ class RoadConnection{
 }
 
 class RoadNode{
-  connections: Map<Int32, RoadConnection>;
+  //connections: Map<Int32, RoadConnection>;
+  connections: RoadConnection[];
   position: Grid.GridPosition;
   key_node_id: Int32 | undefined;
   id: Int32;
 
 
   constructor(pos: Grid.GridPosition, id: Int32, key_id: Int32 | undefined=undefined){
-    this.connections = new Map();
+    //this.connections = new Map();
+    this.connections = [];
     this.position = pos;
     this.id = id;
     this.key_node_id = key_id;
+  }
+  addConnection(conn: RoadConnection){
+    this.connections.push(conn);
+  }
+
+  static unpackGridPositionPath(conns: RoadConnection[]): Grid.GridPosition[]{
+    const positions: Grid.GridPosition[] = [];
+    for(const conn of conns){
+      for(const pos of conn.path){
+        positions.push(pos);
+      }
+    }
+    return positions;
   }
 }
 
@@ -122,16 +138,16 @@ export class RoadGraph{
           const opp = Grid.DirectionUtil.opposite(next_directions[0]);
           next_directions = tile.getDirectionsOtherThan(opp);
           key = getKey(position.x, position.y);
-          is_node = node_map[key] != undefined || next_directions.length > 1;
+          is_node = node_map[key] != undefined || next_directions.length != 1;
           times++;
           console.log(position);
           connection.push(position.copy());
         }while(!is_node);
 
 
-
+        const current_road_node = this.nodes[current_road_node_index];
+        const last_opposite_direction = Grid.DirectionUtil.opposite(last_direction);
         if(road_node_reference[key] == undefined){
-          const current_road_node = this.nodes[current_road_node_index];
           road_node_index++;
           const connected_node = road_node_reference[key] == undefined ? new RoadNode(position, road_node_index, node_map[key]) : this.nodes[road_node_reference[key]!];
           const connected_index = road_node_reference[key] == undefined ? road_node_index : road_node_reference[key]!;
@@ -143,8 +159,10 @@ export class RoadGraph{
           backwards.push(current_road_node.position.copy());
           const road_connection = new RoadConnection(backwards, connected_index, current_road_node_index);
 
-          connected_node.connections.set(current_road_node_index, road_connection);
-          current_road_node.connections.set(road_node_index, road_connection_backwards);
+          connected_node.addConnection(road_connection);
+          current_road_node.addConnection(road_connection_backwards);
+          //connected_node.connections.set(current_road_node_index, road_connection);
+          //current_road_node.connections.set(road_node_index, road_connection_backwards);
 
           road_node_reference[key] = road_node_index;
 
@@ -156,20 +174,38 @@ export class RoadGraph{
           this.nodes.push(connected_node);
 
           //setting directions;
-          const last_opposite_direction = Grid.DirectionUtil.opposite(last_direction);
-          Grid.DirectionUtil.setActiveDirection(road_node_directions[key], true, Grid.DirectionUtil.opposite(last_direction));
-          console.log(`added direction to new node ${Grid.DirectionUtil.toString(last_opposite_direction)}`);
+          //const last_opposite_direction = Grid.DirectionUtil.opposite(last_direction);
+          //Grid.DirectionUtil.setActiveDirection(road_node_directions[key], true, Grid.DirectionUtil.opposite(last_direction));
+          //console.log(`added direction to new node ${Grid.DirectionUtil.toString(last_opposite_direction)}`);
 
-          Grid.DirectionUtil.setActiveDirection
+          //Grid.DirectionUtil.setActiveDirection(road_node_directions[starting_key], true, dir);
+          //console.log(`added direction to current node ${dir}`);
 
           console.log(`position added as key node ${position.x}, ${position.y}`);
         }else{
-          console.log(`dir from source should be added: ${Grid.DirectionUtil.toString(dir)}`);
+          console.log(`dir from source added: ${Grid.DirectionUtil.toString(dir)}`);
           const connected_index = road_node_reference[key]!;
           const connected_node = this.nodes[connected_index];
 
+          console.log(connected_index);
+          console.log(connected_node);
+          const road_connection_backwards = new RoadConnection(connection, current_road_node_index, connected_index);
+
+          const backwards = [...connection];
+          backwards.pop();
+          ArrayUtil.reverse(backwards);
+          backwards.push(current_road_node.position.copy());
+          const road_connection = new RoadConnection(backwards, connected_index, current_road_node_index);
+          //connected_node.connections.set(current_road_node_index, road_connection);
+          //current_road_node.connections.set(road_node_index, road_connection_backwards);
+          connected_node.addConnection(road_connection);
+          current_road_node.addConnection(road_connection_backwards);
           
         }
+        Grid.DirectionUtil.setActiveDirection(road_node_directions[key], true, Grid.DirectionUtil.opposite(last_direction));
+        console.log(`added direction to new node ${Grid.DirectionUtil.toString(last_opposite_direction)}`);
+        Grid.DirectionUtil.setActiveDirection(road_node_directions[starting_key], true, dir);
+        console.log(`added direction to current node ${dir}`);
 
       }
       current_road_node_index++;
@@ -178,10 +214,80 @@ export class RoadGraph{
     console.log(this.nodes);
     console.log(this.key_map);
   }
-  shortestPath(from: Int32, to: Int32){
+  shortestPath(from: Int32, to: Int32): RoadConnection[] | undefined{
+    type PathTo = {
+      node: RoadNode;
+      distance: Int32;
+      last_connection: RoadConnection | undefined;
+    }
 
+    const seen = new Set();
+
+    const from_id = this.key_map.get(from);
+    const to_id = this.key_map.get(to);
+    if(from_id == undefined || to_id == undefined) return;
+    
+    const from_node = this.nodes[from_id];
+    const to_node = this.nodes[to_id];
+
+    console.log(from_node);
+    console.log(to_node);
+
+    //run bfs until to_node
+
+    const node_queue = new PriorityQueue<PathTo>((a, b) => {
+      return a.distance - b.distance;
+    })
+
+    node_queue.push({node: from_node, distance: 0, last_connection: undefined});
+
+    const backtrack_map: (RoadConnection | undefined)[] = Array.from({length: this.nodes.length}, () => undefined);
+
+    while(!node_queue.isEmpty()){
+
+      const curr = node_queue.pop()!;
+      if(seen.has(curr.node.id)){
+        //node_id++;
+        continue;
+      }
+      backtrack_map[curr.node.id] = curr.last_connection;
+      seen.add(curr.node.id);
+      if(curr.node.id === to_id){
+        const moves = curr.distance;
+        
+        console.log(`found to in ${moves} moves`);
+        //run backtrack 
+        const connections: RoadConnection[] = [];
+        let id = curr.node.id;
+        let t = 0;
+        while(backtrack_map[id] != undefined && t < 3){
+          console.log(id);
+          connections.push(backtrack_map[id]!)
+          id = backtrack_map[id]!.from;
+          t++;
+        }
+        ArrayUtil.reverse(connections);
+        console.log(connections);
+        return connections;
+      }
+      console.log(curr);
+      //console.log(curr.node.connections);
+      for(const conn of curr.node.connections){
+        if(!seen.has(conn.to)){
+          node_queue.push({node: this.nodes[conn.to], distance: curr.distance + conn.length(), last_connection: conn});
+        }
+      }
+      //node_id++;
+    }
+    //console.log(node_heap);
+
+    return undefined;
   }
 }
 class ClosestNodeGraph{
+
+}
+
+class NodeGraph{
 
 }

@@ -20,12 +20,3 @@ function Add1<TBase extends Vable>(Base: TBase){
     }
   }
 }
-
-
-
-const Inc = Add1(V);
-
-const i = new Inc();
-console.log(i.v);
-i.add1();
-console.log(i.v);

@@ -119,7 +119,8 @@ export class MultiGridObject{
 const WallEditStateEnum = {
   Default: 0,
   Adding: 1,
-  Deleting: 2
+  Deleting: 2,
+  Selecting: 3
 } as const;
 
 type WallEditState = (typeof WallEditStateEnum)[keyof typeof WallEditStateEnum];
@@ -135,7 +136,7 @@ export class WallEngine extends App.BaseEngine{
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
 
-  mouse_over: Grid.GridPosition | undefined;
+  mouse_over_cell: Grid.GridPosition | undefined;
   true_mouse: Matrix.Point2D | undefined;
   grid_true_mouse: Matrix.Point2D | undefined;
 
@@ -178,13 +179,15 @@ export class WallEngine extends App.BaseEngine{
   edit_state: WallEditState;
   hover_grid_side: GridCellSection | undefined;
 
+  selected_nodes: Set<Int32>;
+
   constructor(){
     super();
     const w = 10; const h = 10;
     const s = 80;
     this.grid = new Grid.WallGrid(w,h);
     this.rect_grid = new Grid.RectGrid(w, h, s);
-    this.mouse_over = undefined;
+    this.mouse_over_cell = undefined;
     this.highlighted_positions = [];
     this.key_positions = [];
 
@@ -207,7 +210,11 @@ export class WallEngine extends App.BaseEngine{
     this.buttons = new Button.ButtonSet();
     this.toggle_buttons = new Button.ToggleButtonSet();
 
-    const car_plan_button = new Button.BasicButton(810, 10, 100, 30, 12);
+
+    // adding buttons
+    const butt_x = 810;
+
+    const car_plan_button = new Button.BasicButton(butt_x, 10, 80, 25, 9);
     car_plan_button.text = "New Plan";
     car_plan_button.onPressed = () => {
       //console.log(this.car.last_key);
@@ -225,7 +232,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.buttons.addButton(car_plan_button);
 
-    const example_plan_button = new Button.BasicButton(810, 130, 80, 25, 7);
+    const example_plan_button = new Button.BasicButton(butt_x, 130, 80, 25, 7);
     example_plan_button.text = "New Example";
     example_plan_button.onPressed = () => {
       this.clearGrid();
@@ -247,19 +254,57 @@ export class WallEngine extends App.BaseEngine{
 
     this.buttons.addButton(example_plan_button);
 
-    const generate_graph_button = new Button.BasicButton(810, 160, 80, 25, 8);
+    const generate_graph_button = new Button.BasicButton(butt_x, 160, 80, 25, 8);
     generate_graph_button.text = "Gen Graph";
     generate_graph_button.onPressed = () => {
       this.node_graph.generate(this.grid, this.active_nodes);
-    }
+    };
 
     this.buttons.addButton(generate_graph_button);
 
-    const add_button = new Button.ToggleButton(810, 60, 80, 25, 10);
+    const validate_button = new Button.BasicButton(butt_x, 190, 80, 25, 8);
+    validate_button.text = "Validate";
+    validate_button.onPressed = () => {
+      const valid = this.validateGrid();
+      console.log(valid);
+    };
+    this.buttons.addButton(validate_button);
+
+    const clear_button = new Button.BasicButton(butt_x, 220, 80, 25, 8);
+    clear_button.text = "Clear Grid";
+    clear_button.onPressed = () => {
+      this.clearGrid();
+    };
+    this.buttons.addButton(clear_button);
+
+    const short_path_button = new Button.BasicButton(butt_x, 250, 80, 25, 8);
+    short_path_button.text = "Shortest Path";
+    short_path_button.onPressed = () => {
+      if(this.selected_nodes.size == 2){
+        const it = this.selected_nodes.values();
+        const first = it.next().value!;
+        const second = it.next().value!;
+        console.log(`finding shortest path from ${first} to ${second}`);
+        const path = this.node_graph.shortestPath(first, second);
+        if(path != undefined){
+
+        }
+      }else{
+        console.log("needs 2 nodes selected");
+      }
+    }
+    this.buttons.addButton(short_path_button);
+
+    const add_car_button = new Button.BasicButton(butt_x, 280, 80, 25, 8);
+    //Todo
+    this.buttons.addButton(add_car_button);
+
+    const add_button = new Button.ToggleButton(butt_x, 45, 80, 20, 10);
     add_button.on_text = "Add On";
     add_button.off_text = "Add Off";
     add_button.onToggleOn = () => {
       delete_button.toggleOff();
+      select_button.toggleOff();
       this.edit_state = WallEditStateEnum.Adding;
     };
     add_button.onToggleOff = () => {
@@ -268,17 +313,32 @@ export class WallEngine extends App.BaseEngine{
 
     this.toggle_buttons.addButton(add_button);
 
-    const delete_button = new Button.ToggleButton(810, 100, 80, 25, 10);
+    const delete_button = new Button.ToggleButton(butt_x, 70, 80, 20, 10);
     delete_button.on_text = "Del On";
     delete_button.off_text = "Del Off";
     delete_button.onToggleOn = () => {
       add_button.toggleOff();
+      select_button.toggleOff();
       this.edit_state = WallEditStateEnum.Deleting;
     };
     delete_button.onToggleOff = () => {
       this.edit_state = WallEditStateEnum.Default;
     }
     this.toggle_buttons.addButton(delete_button);
+
+    const select_button = new Button.ToggleButton(butt_x, 95, 80, 20, 10);
+    select_button.on_text = "Sel On";
+    select_button.off_text = "Sel Off";
+    select_button.onToggleOn = () => {
+      delete_button.toggleOff();
+      add_button.toggleOff();
+      this.edit_state = WallEditStateEnum.Selecting;
+    }
+    select_button.onToggleOff = () => {
+      this.edit_state = WallEditStateEnum.Default;
+    }
+
+    this.toggle_buttons.addButton(select_button);
 
     this.view = Matrix.TransformationMatrix3x3.identity();
 
@@ -291,43 +351,31 @@ export class WallEngine extends App.BaseEngine{
     this.edit_state = WallEditStateEnum.Default;
     this.hover_grid_side = undefined;
 
-    /*
-    Grid.GridPosition.testEuclidianDistance(3.4);
+    this.selected_nodes = new Set();
 
-    Grid.GridAlgorithms.generatePositionsAtDistance(4);
-    Grid.GridAlgorithms.generatePositionsAtDistance(6);
-    console.log(Grid.GridAlgorithms.positionsAtDistance);
-    Grid.GridAlgorithms.generatePositionsAtDistance(20);
-    console.log(Grid.GridAlgorithms.positionsAtDistance);
-
-    Grid.GridAlgorithms.positionsWithinRange(10);
-    Grid.GridAlgorithms.positionsWithin2Ranges(6, 13);
-
-    const out = ArrayUtils.binarySearch([1,2,3], (t: number) => {
-      return 1-t;
-    });
-    console.log(out);
-    const ind = ArrayUtils.binarySearchUpperBound([1,2,3], (t: number) => {
-      return 3-t;
-    });
-    console.log(ind);
-    */
   }
   addKeyNode(node: Node.KeyNode){
+    if(this.grid.getNodeId(node.x, node.y) != undefined){
+      console.log("node already here");
+      return;
+    }
     //console.log(node);
     this.grid.setNodeId(node.x, node.y, this.node_id);
     //console.log(this.grid.getTile(node.x, node.y));
     //this.nodes.push(node);
     node.setId(this.node_id);
     this.active_nodes.set(this.node_id, node);
-    console.log(node);
+    console.log(`adding node ${this.node_id.toString()}`);
     this.node_id++;
     this.updateHoveredNode();
   }
   deleteKeyNode(node: Node.KeyNode){
-    this.grid.setCellKeyNode(node.x, node.y, false);
-    console.log(node);
+    this.selected_nodes.delete(node.getId());
+    this.grid.getTile(node.x, node.y)!.clearNode();
+    //this.grid.setCellKeyNode(node.x, node.y, false);
+    console.log(`clearing node ${this.node_id.toString()}`);
     this.active_nodes.delete(node.getId());
+    console.log(`deleting node ${this.node_id.toString()}`);
     this.updateHoveredNode();
   }
   clearGrid(){
@@ -339,6 +387,52 @@ export class WallEngine extends App.BaseEngine{
       this.deleteKeyNode(node);
     }
     this.active_nodes.clear();
+  }
+
+  //a valid grid has nodes on all nodes with one direction attached. 
+  //also requires neighbouring nodes to have opposite directions active
+  validateGrid(): boolean{
+    for(let y = 0; y < this.grid.width; y++){
+      for(let x = 0; x < this.grid.height; x++){
+        const tile = this.grid.getTile(x, y)!;
+        if(x == 0 && tile.directionHasPath(Grid.DirectionEnum.Left)){
+          console.log("Outside map left");
+          return false;
+        }
+        if(y == 0 && tile.directionHasPath(Grid.DirectionEnum.Up)){
+          console.log("Outside map up");
+          return false;
+        }
+        if(y == this.grid.height-1 && tile.directionHasPath(Grid.DirectionEnum.Down)){
+          console.log("Outside map down");
+          return false;
+        }
+        if(x == this.grid.width-1 && tile.directionHasPath(Grid.DirectionEnum.Right)){
+          console.log("Outside map right");
+          return false
+        }
+        for(const dir of tile.getDirections()){
+          const pos = new Grid.GridPosition(x, y);
+          const next_position = Grid.DirectionUtil.copyMovePosition(dir, pos);
+          const next_tile = this.grid.getTile(next_position.x, next_position.y)!;
+          const opp = Grid.DirectionUtil.opposite(dir);
+          if(!next_tile.directionHasPath(opp)){
+            //no connecting 
+            console.log(`No connecting path from ${pos.x}, ${pos.y} to ${next_position.x}, ${next_position.y}`);
+            return false;
+          }
+        }
+        if(tile.getDirections().length == 1 && tile.node_id == undefined){
+          console.log(`Position: ${x} ${y} has no key node with only one exit path`);
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  quickFixGrid(){
+    //adds unfinished paths, adds nodes on deadends, and removes paths on map edges
+    //TODO
   }
   addOverlayElement(overlay: HTMLDivElement){
     this.overlay_element = overlay;
@@ -400,8 +494,8 @@ export class WallEngine extends App.BaseEngine{
     console.log(ev.key);
     if(ev.key == 'q'){
       this.is_circle_positions = !this.is_circle_positions;
-      if(this.mouse_over != undefined){
-        this.setHighlightedPositions(this.mouse_over);
+      if(this.mouse_over_cell != undefined){
+        this.setHighlightedPositions(this.mouse_over_cell);
       }
     }else if(ev.key == 'w'){
       //run path closest
@@ -443,7 +537,7 @@ export class WallEngine extends App.BaseEngine{
     const side = this.sideOnGrid(this.grid_true_mouse);
     const pos = this.rect_grid.getPosition(ev.offsetX, ev.offsetY);
     if(pos != undefined){
-      if(this.mouse_over == undefined || (this.mouse_over.x != pos.x || this.mouse_over.y != pos.y)){
+      if(this.mouse_over_cell == undefined || (this.mouse_over_cell.x != pos.x || this.mouse_over_cell.y != pos.y)){
         this.setHighlightedPositions(pos);
       }
     }else{
@@ -451,7 +545,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.buttons.updateMouse(true_mouse);
     this.toggle_buttons.updateMouse(true_mouse);
-    this.mouse_over = pos;
+    this.mouse_over_cell = pos;
 
     const true_grid = this.getGridTruePosition(ev.offsetX, ev.offsetY);
 
@@ -471,7 +565,7 @@ export class WallEngine extends App.BaseEngine{
   }
 
   protected override handleMouseDown(ev: MouseEvent){
-    if(this.mouse_over != undefined){
+    if(this.mouse_over_cell != undefined){
       /*
       if(this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key){
         if(this.selected_key1 == undefined){
@@ -519,9 +613,24 @@ export class WallEngine extends App.BaseEngine{
         }
       }*/
 
+      //node selection
+      if(this.edit_state === WallEditStateEnum.Selecting){
+        const grid_tile = this.grid.getTile(this.mouse_over_cell.x, this.mouse_over_cell.y);
+        console.log("selecting")
+        console.log(grid_tile);
+        if(grid_tile != undefined && grid_tile.isKeyNode()){
+          if(this.selected_nodes.has(grid_tile.node_id!)){
+            grid_tile.is_selected = false;
+            this.selected_nodes.delete(grid_tile.node_id!);
+          }else{
+            grid_tile.is_selected = true;
+            this.selected_nodes.add(grid_tile.node_id!);
+          }
+        }
+      }
 
       // edit walls with mouse input
-      const cell = this.mouse_over;
+      const cell = this.mouse_over_cell;
       if(this.edit_state === WallEditStateEnum.Adding){
         switch(this.hover_grid_side){
           case GridCellSectionEnum.Left:

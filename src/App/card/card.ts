@@ -457,7 +457,6 @@ export class CardEngine extends App.BaseEngine{
     this.vis_card = new VisualCard(this.base_card_model, new VirtualCard());
     this.vis_card.translate(300, 300);
     //this.vis_card.transformation_matrix.rotate(DirectionUtil.turnDirectionToRadians(Grid.DirectionEnum.Right));
-    console.log(this.vis_card)
     this.card_model = Matrix.TransformationMatrix3x3.translate(300, 300);
     this.deck = new Deck();
     this.button1 = new BasicButton(20, 20, 100, 50);

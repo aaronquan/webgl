@@ -179,7 +179,6 @@ export class CustomFont{
             this.coord_to_sheet_position.set(sp[i][j], {x, y});
           }
         }
-        console.log(txt);
         console.log(`Font: loaded success, ${this.font_name}`);
         onLoaded();
         this.loaded = true;

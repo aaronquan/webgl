@@ -108,6 +108,14 @@ export class KeyNode{
     }
     return 0;
   }
+  serialise(): string{
+    //TODO
+    return "";
+  }
+  static deserialise(s: string): KeyNode{
+    //TODO
+    return new KeyNode(0, 0);
+  }
 }
 
 export class RequirementNode extends KeyNode{

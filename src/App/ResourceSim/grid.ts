@@ -599,6 +599,11 @@ export class WallTile{
   clearNode(){
     this.is_key = false;
     this.node_id = undefined;
+    this.is_selected = false;
+    this.left = TileStateEnum.Nothing;
+    this.top = TileStateEnum.Nothing;
+    this.bottom = TileStateEnum.Nothing;
+    this.right = TileStateEnum.Nothing;
   }
   setTileActiveDirection(active: ActiveDirections, value: TileState){
     if(active.left){
@@ -630,17 +635,35 @@ export class WallTile{
         break;
     }
   }
+  static tileStateIsPath(state: TileState): boolean{
+    return state == TileStateEnum.Highlight || state == TileStateEnum.Path;
+  }
+  directionHasPath(dir: GridDirection): boolean{
+    switch(dir){
+      case DirectionEnum.Left:
+        return WallTile.tileStateIsPath(this.left);
+      case DirectionEnum.Up:
+        return WallTile.tileStateIsPath(this.top);
+      case DirectionEnum.Right:
+        return WallTile.tileStateIsPath(this.right);
+      case DirectionEnum.Down:
+        return WallTile.tileStateIsPath(this.bottom);
+    }
+  }
   randomise(){
     this.left = randomTileState();
     this.right = randomTileState();
     this.bottom = randomTileState();
     this.top = randomTileState();
   }
+  isKeyNode(): boolean{
+    return this.node_id != undefined;
+  }
 }
 
 export class WallGrid{
-  width: Int32;
-  height: Int32;
+  width: Int32; //num squares across
+  height: Int32; // num squares down
   grid: WallTile[][];
   constructor(w: Int32, h: Int32){
     this.width = w;
