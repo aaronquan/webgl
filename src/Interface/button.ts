@@ -308,3 +308,38 @@ export class ToggleButtonSet{
     }
   }
 }
+
+export class SingleSelectToggleButtonSet extends ToggleButtonSet{
+  selected_button: Int32 | undefined;
+  //hovered_button: ToggleButton | undefined;
+  constructor(){
+    super();
+    this.selected_button = undefined;
+  }
+  mouseDown(){
+    for(let i = 0; i < this.buttons.length; i++){
+      const button = this.buttons[i];
+      button.mouseDown();
+      if(button.isOn()){
+        if(this.selected_button != undefined){
+          this.buttons[this.selected_button].toggleOff();
+        }
+        this.selected_button = i;
+      }else if(this.selected_button == i){
+        this.selected_button = undefined;
+      }
+    }
+  }
+}
+
+export class GridButtonSet{
+  buttons: Button[];
+  rows: Int32;
+  cols: Int32;
+  constructor(){
+    this.buttons = [];
+    this.rows = 1;
+    this.cols = 1;
+  }
+  
+}

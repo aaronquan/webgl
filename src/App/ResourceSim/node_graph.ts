@@ -259,8 +259,8 @@ export class RoadGraph{
         //run backtrack 
         const connections: RoadConnection[] = [];
         let id = curr.node.id;
-        let t = 0;
-        while(backtrack_map[id] != undefined && t < 3){
+        let t = 0; // remove after fully tested
+        while(backtrack_map[id] != undefined && t < 10){
           console.log(id);
           connections.push(backtrack_map[id]!)
           id = backtrack_map[id]!.from;

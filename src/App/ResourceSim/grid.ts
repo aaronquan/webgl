@@ -458,13 +458,13 @@ export class TrackPart{
 
 
 export class RectGrid{
-  width: Int32;
-  height: Int32;
+  width: Int32; // cells across
+  height: Int32; // cells down
   size: number;
 
   half_size: number;
 
-  pixel_width: number;
+  pixel_width: number; // 
   pixel_height: number;
 
   x: number;
@@ -592,9 +592,26 @@ export class WallTile{
     }
     return dirs;
   }
+  getSideState(side: GridDirection): TileState{
+    switch(side){
+      case DirectionEnum.Left:
+        return this.left;
+      case DirectionEnum.Down:
+        return this.bottom;
+      case DirectionEnum.Right:
+        return this.right;
+      case DirectionEnum.Up:
+        return this.top;
+    }
+    return TileStateEnum.Nothing;
+  }
   setNodeId(id: Int32){
     this.is_key = true;
     this.node_id = id;
+  }
+  clearKey(){
+    this.is_key = false;
+    this.node_id = undefined;
   }
   clearNode(){
     this.is_key = false;
@@ -676,6 +693,9 @@ export class WallGrid{
         this.grid[y][x].clear();
       }
     }
+  }
+  setSelected(x: Int32, y: Int32, select: boolean){
+    this.grid[y][x].is_selected = select;
   }
   setNodeId(x: Int32, y: Int32, id: Int32){
     this.grid[y][x].setNodeId(id);

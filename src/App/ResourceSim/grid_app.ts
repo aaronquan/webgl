@@ -16,6 +16,8 @@ import * as NodeGraph from "./node_graph"
 import * as ArrayUtils from "../../utils/array";
 import * as NumberUtils from "../../utils/numbers";
 
+import * as Texts from "./texts";
+
 
 interface Point extends Button.Point{};
 
@@ -153,10 +155,8 @@ export class WallEngine extends App.BaseEngine{
   test_objects: MultiGridObject[];
 
   highlight_path: Grid.GridPositionWithDirections[];
-  //car: Car.Car;
 
-  //resource_car: Car.ResourceCar;
-  cars: Car.Car[];
+  car_collection: Car.CarCollection;
 
   buttons: Button.ButtonSet;
   toggle_buttons: Button.ToggleButtonSet;
@@ -181,6 +181,12 @@ export class WallEngine extends App.BaseEngine{
 
   selected_nodes: Set<Int32>;
 
+  hovered_car: Int32 | undefined;
+  selected_car: Int32 | undefined;
+  car_buttons: Button.SingleSelectToggleButtonSet;
+
+  graph_updated_status: boolean;
+
   constructor(){
     super();
     const w = 10; const h = 10;
@@ -196,12 +202,10 @@ export class WallEngine extends App.BaseEngine{
 
     this.is_circle_positions = false;
     this.nodes = [];
-    //this.nodes = this.key_positions.map((pos) => {
-    //  return new KeyNode(pos.x, pos.y);
-    //});
+    
     this.node_size = 0.15;
 
-    this.cars = [];
+    this.car_collection = new Car.CarCollection();
     
     this.test_objects = [];
     this.adding_path_hori_first = true;
@@ -209,7 +213,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.buttons = new Button.ButtonSet();
     this.toggle_buttons = new Button.ToggleButtonSet();
-
+    this.graph_updated_status = false;
 
     // adding buttons
     const butt_x = 810;
@@ -258,6 +262,7 @@ export class WallEngine extends App.BaseEngine{
     generate_graph_button.text = "Gen Graph";
     generate_graph_button.onPressed = () => {
       this.node_graph.generate(this.grid, this.active_nodes);
+      this.graph_updated_status = true;
     };
 
     this.buttons.addButton(generate_graph_button);
@@ -274,10 +279,11 @@ export class WallEngine extends App.BaseEngine{
     clear_button.text = "Clear Grid";
     clear_button.onPressed = () => {
       this.clearGrid();
+      this.graph_updated_status = false;
     };
     this.buttons.addButton(clear_button);
 
-    const short_path_button = new Button.BasicButton(butt_x, 250, 80, 25, 8);
+    const short_path_button = new Button.BasicButton(butt_x, 250, 80, 25, 6);
     short_path_button.text = "Shortest Path";
     short_path_button.onPressed = () => {
       if(this.selected_nodes.size == 2){
@@ -287,7 +293,7 @@ export class WallEngine extends App.BaseEngine{
         console.log(`finding shortest path from ${first} to ${second}`);
         const path = this.node_graph.shortestPath(first, second);
         if(path != undefined){
-
+          //todo
         }
       }else{
         console.log("needs 2 nodes selected");
@@ -296,8 +302,46 @@ export class WallEngine extends App.BaseEngine{
     this.buttons.addButton(short_path_button);
 
     const add_car_button = new Button.BasicButton(butt_x, 280, 80, 25, 8);
-    //Todo
+    add_car_button.text = "Add car";
+    add_car_button.onPressed = () => {
+      if(this.selected_nodes.size == 1){
+        const id = this.selected_nodes.values().next().value!;
+        const node = this.active_nodes.get(id)!;
+        console.log(node);
+        this.addCar(node);
+        //const car = new Car.ResourceCar(node);
+        //this.cars.push(car);
+        console.log("adding car");
+      }
+    }
     this.buttons.addButton(add_car_button);
+
+    const car_path_button = new Button.BasicButton(butt_x, 310, 80, 25, 8);
+    car_path_button.text = "Car Path To";
+    car_path_button.onPressed = () => {
+      if(this.selected_nodes.size == 1 && this.selected_car != undefined){
+        const car = this.car_collection.get(this.selected_car)!;
+        if(!car.isReadyToGo()){
+          console.log("car already on journey");
+          
+        }else if(this.graph_updated_status){
+          console.log("Graph not updated to visuals");
+        
+        }else{
+          //check graph path to node
+        }
+      }else{
+        console.log("requires selected node and selected car");
+      }
+    };
+    this.buttons.addButton(car_path_button);
+
+    const car_delete_button = new Button.BasicButton(butt_x, 340, 80, 25, 8);
+    car_delete_button.text = "Car Del";
+    car_delete_button.onPressed = () => {
+
+    };
+    this.buttons.addButton(car_delete_button);
 
     const add_button = new Button.ToggleButton(butt_x, 45, 80, 20, 10);
     add_button.on_text = "Add On";
@@ -340,9 +384,10 @@ export class WallEngine extends App.BaseEngine{
 
     this.toggle_buttons.addButton(select_button);
 
+    this.car_buttons = new Button.SingleSelectToggleButtonSet();
+
     this.view = Matrix.TransformationMatrix3x3.identity();
 
-    //this.resource_car = new Car.ResourceCar(this.nodes[0]);
     this.last_time = 0;
 
     this.node_graph = new NodeGraph.RoadGraph();
@@ -352,6 +397,9 @@ export class WallEngine extends App.BaseEngine{
     this.hover_grid_side = undefined;
 
     this.selected_nodes = new Set();
+
+    this.hovered_car = undefined;
+    this.selected_car = undefined;
 
   }
   addKeyNode(node: Node.KeyNode){
@@ -368,25 +416,39 @@ export class WallEngine extends App.BaseEngine{
     console.log(`adding node ${this.node_id.toString()}`);
     this.node_id++;
     this.updateHoveredNode();
+
+    this.graph_updated_status = false;
   }
   deleteKeyNode(node: Node.KeyNode){
     this.selected_nodes.delete(node.getId());
-    this.grid.getTile(node.x, node.y)!.clearNode();
+    this.grid.getTile(node.x, node.y)!.clearKey();
     //this.grid.setCellKeyNode(node.x, node.y, false);
     console.log(`clearing node ${this.node_id.toString()}`);
     this.active_nodes.delete(node.getId());
     console.log(`deleting node ${this.node_id.toString()}`);
     this.updateHoveredNode();
+    this.graph_updated_status = false;
   }
   clearGrid(){
     this.grid.clear();
     this.clearKeyNodes();
+    this.clearCars();
+    this.graph_updated_status = false;
   }
   clearKeyNodes(){
     for(const [id, node] of this.active_nodes){
       this.deleteKeyNode(node);
+      //todo delete car on node
     }
     this.active_nodes.clear();
+    this.graph_updated_status = false;
+  }
+  clearCars(){
+    this.car_collection.clear();
+  }
+
+  addCar(node: Node.KeyNode){
+    this.car_collection.addCarOnNode(node);
   }
 
   //a valid grid has nodes on all nodes with one direction attached. 
@@ -524,6 +586,9 @@ export class WallEngine extends App.BaseEngine{
       this.view.translate(-this.rect_grid.size, 0);
     }else if(ev.key == 'd'){
       this.view.translate(this.rect_grid.size, 0);
+    }else if(ev.key == 'Escape'){
+      this.deselectKeyNodes();
+      this.deselectCar();
     }
   }
   protected override handleMouseMove(ev: MouseEvent): void {
@@ -562,6 +627,24 @@ export class WallEngine extends App.BaseEngine{
         }
       }
     }
+  }
+
+  deselectKeyNodes(){
+    for(const [id, node] of this.active_nodes){
+      this.grid.setSelected(node.x, node.y, false);
+    }
+    this.selected_nodes.clear();
+  }
+  deselectCar(){
+    if(this.selected_car != undefined){
+      this.car_collection.get(this.selected_car)!.is_selected = false;
+      this.selected_car = undefined;
+    }
+  }
+  selectCar(car_id: Int32){
+    //console.log("select");
+    this.car_collection.select(car_id);
+    this.selected_car = car_id;
   }
 
   protected override handleMouseDown(ev: MouseEvent){
@@ -612,12 +695,15 @@ export class WallEngine extends App.BaseEngine{
           this.grid.addTrack(path);
         }
       }*/
+     const cell = this.mouse_over_cell;
+
+      if(this.hovered_car != undefined){
+        this.selectCar(this.hovered_car);
+      }
 
       //node selection
-      if(this.edit_state === WallEditStateEnum.Selecting){
+      else if(this.edit_state === WallEditStateEnum.Selecting){
         const grid_tile = this.grid.getTile(this.mouse_over_cell.x, this.mouse_over_cell.y);
-        console.log("selecting")
-        console.log(grid_tile);
         if(grid_tile != undefined && grid_tile.isKeyNode()){
           if(this.selected_nodes.has(grid_tile.node_id!)){
             grid_tile.is_selected = false;
@@ -630,8 +716,13 @@ export class WallEngine extends App.BaseEngine{
       }
 
       // edit walls with mouse input
-      const cell = this.mouse_over_cell;
-      if(this.edit_state === WallEditStateEnum.Adding){
+      else if(this.edit_state === WallEditStateEnum.Adding){
+        if(this.hover_grid_side != undefined){
+          const changed = this.editSide(cell, this.hover_grid_side, Grid.TileStateEnum.Path);
+          console.log(changed);
+          //todo use changed
+        }
+        /*
         switch(this.hover_grid_side){
           case GridCellSectionEnum.Left:
             this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
@@ -651,8 +742,14 @@ export class WallEngine extends App.BaseEngine{
             break;
           default:
             break;
-        }
+        }*/
       }else if(this.edit_state === WallEditStateEnum.Deleting){
+        if(this.hover_grid_side != undefined){
+          const changed = this.editSide(cell, this.hover_grid_side, Grid.TileStateEnum.Nothing);
+          console.log(changed);
+          //todo use changed
+        }
+        /*
         switch(this.hover_grid_side){
           case GridCellSectionEnum.Left:
             this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Left, Grid.TileStateEnum.Nothing);
@@ -677,11 +774,41 @@ export class WallEngine extends App.BaseEngine{
             break;
           default:
             break;
-        }
+        }*/
       }
     }
+
     this.buttons.mouseDown();
     this.toggle_buttons.mouseDown();
+  }
+
+  editSide(cell: Grid.GridPosition, side: GridCellSection, value: Grid.TileState): boolean{
+    const side_to_direction = {
+      [GridCellSectionEnum.Left]: Grid.DirectionEnum.Left,
+      [GridCellSectionEnum.Down]: Grid.DirectionEnum.Down,
+      [GridCellSectionEnum.Right]: Grid.DirectionEnum.Right,
+      [GridCellSectionEnum.Up]: Grid.DirectionEnum.Up
+    }
+    const tile = this.grid.getTileFromPosition(cell)!;
+    let changed = false; 
+    if(side === GridCellSectionEnum.Center){
+      //todo
+      const node_id = this.grid.getNodeId(cell.x, cell.y);
+      if(value === Grid.TileStateEnum.Path){
+        //adding node
+        changed = node_id == undefined;
+        const new_node = new Node.KeyNode(cell.x, cell.y);
+        this.addKeyNode(new_node);
+      }else{
+        //deleting node
+        changed = node_id != undefined;
+        //todo
+      }
+    }else{
+      changed = tile.getSideState(side) != value;
+      this.grid.setCellState(cell.x, cell.y, side_to_direction[side], value);
+    }
+    return changed;
   }
 
   protected override handleMouseUp(ev: MouseEvent): void {
@@ -710,15 +837,34 @@ export class WallEngine extends App.BaseEngine{
     return this.grid_true_mouse;
   }
 
+  gridPointCarCollision(grid_point: Matrix.Point2D): Int32 | undefined{
+    for(const [id, car] of this.car_collection.cars){
+      const left = car.x-car.size*0.5;
+      const right = car.x+car.size*0.5;
+      const top = car.y-car.size*0.5;
+      const bot = car.y+car.size*0.5;
+
+      if(left < grid_point.x && grid_point.x < right && top < grid_point.y && grid_point.y < bot){
+        return id;
+      }
+    }
+    return undefined;
+  }
+
   update(time: Float){
     const update_time = time - this.last_time;
     for(const [id, node] of this.active_nodes){
       node.update(update_time);
     }
-    for(const car of this.cars){
-      car.update(update_time);
-    }
+    this.car_collection.update(update_time)
     this.last_time = time;
+    if(this.grid_true_mouse != undefined){
+      const highlighted_car = this.gridPointCarCollision(this.grid_true_mouse);
+      this.hovered_car = highlighted_car;
+      //console.log(highlighted_car);
+    }else{
+      this.hovered_car = undefined;
+    }
   }
 }
 
@@ -801,7 +947,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     //set some default shader properties
     this.multi_colour_centre_circle_shader.use();
     this.multi_colour_centre_circle_shader.setSize(0.1);
-    this.multi_colour_centre_circle_shader.setCircleRadius(0.15);
+    this.multi_colour_centre_circle_shader.setCircleRadius(0.17);
     this.multi_colour_centre_circle_shader.setBackgroundColour(this.background_colour.red, this.background_colour.green, this.background_colour.blue);
 
     this.multi_colour_tile_shader.use();
@@ -872,7 +1018,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const gs = engine.rect_grid.size;
     const model = WebGL.WebGL.rectangleModel(x*gs, y*gs, gs, gs);
     this.multi_colour_centre_circle_shader.setMvp(this.vp.multiplyCopy(model));
-    this.multi_colour_centre_circle_shader.setCircleRadius(0.1);
+    //this.multi_colour_centre_circle_shader.setCircleRadius(0.1);
     this.setMultiTile(engine, this.multi_colour_centre_circle_shader, x, y, true);
     Shapes.Quad.draw();
     //this.setMultiTile(this.multi_colour_centre_circle_shader, engine.grid.grid[y][x].);
@@ -897,10 +1043,26 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     shader.setMvp(this.vp.multiplyCopy(model));
     Shapes.Quad.drawRelative();
   }
-  drawCar(car: Car.Car, engine: WallEngine){
-    //const car = engine.car;
+  drawCar(car: Car.ResourceCar, engine: WallEngine){
     const gs = engine.rect_grid.size;
     const cs = car.size*gs;
+
+    if(car.is_selected){
+      const outline_size = 4;
+      //const half_outline = outline_size*0.5;
+      //draw outline
+      this.solid_shader.use();
+      this.solid_shader.setColour(1, 1, 1);
+
+      const outline_model = WebGL.WebGL.rectangleModel(
+        car.x*gs, car.y*gs, 
+        cs+outline_size, cs+outline_size
+      );
+      this.solid_shader.setMvp(this.perspective.multiplyCopy(outline_model));
+
+      WebGL.Shapes.CenterQuad.draw();
+    }
+
     this.texture_shader.use();
     this.textures.active("car", 2);
     this.texture_shader.setTextureId(2);
@@ -936,99 +1098,13 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
         }
       }
     }
-    //this.grid_tile_shader.use();
-    //this.grid_tile_shader.setColour(1, 0, 0);
-    /*
-    this.multi_colour_tile_shader.use();
-    this.multi_colour_tile_shader.setBackgroundColour(1, 1, 0);
-    for(let i = 1; i < engine.highlight_path.length-1; i++){
-      //this.solid_shader.use();
-      //this.solid_shader.setColour(0.5, 0.5, 0);
-      const cell = engine.highlight_path[i];
-      //const model = WebGL.rectangleModel(cell.x*gs, cell.y*gs, gs, gs);
-      //this.solid_shader.setMvp(this.vp.multiplyCopy(model));
-      //this.grid_tile_shader.setMvp(this.vp.multiplyCopy(model));
-      this.setMultiTile(this.multi_colour_tile_shader, 
-        cell.directions.left, cell.directions.up, 
-        cell.directions.right, cell.directions.down,
-        Colour.ColourUtils.red(), Colour.ColourUtils.yellow()
-      );
-      const tx = cell.position.x*gs;
-      const ty = cell.position.y*gs;
-      const model = Matrix.TransformationMatrix3x3.translate(tx, ty);
-      model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
-      this.multi_colour_tile_shader.use();
-      this.multi_colour_tile_shader.setSize(0.2);
-      this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(model));
-      Shapes.Quad.drawRelative();
-      //Shapes.Quad.draw();
-    }*/
-
-    //this.text_drawer.drawText(this.vp, 100, 100, this.render_string, 25);
-    //this.text_drawer.drawText(this.vp, 20, 200, "what is going on lets print this hhbbvv", 15);
-
-    /*
-    this.multi_colour_tile_shader.use();
-    this.multi_colour_tile_shader.setBackgroundColour(1.0, 0.5, 0.5);
-    this.setMultiTile(this.multi_colour_tile_shader, false, true, true, false, Colour.ColourUtils.green(), Colour.ColourUtils.white());
-    this.multi_colour_tile_shader.setSize(0.1);
-    const tm = Matrix.TransformationMatrix3x3.scale(gs, gs);
-    this.multi_colour_tile_shader.setMvp(this.vp.multiplyCopy(tm));
-    Shapes.Quad.drawRelative();*/
-    
-    /*
-    if(engine.mouse_over){
-      const model = Matrix.TransformationMatrix3x3.translate(engine.mouse_over.x*gs, engine.mouse_over.y*gs);
-      model.multiply(Matrix.TransformationMatrix3x3.scale(gs, gs));
-      this.pri_tile_shader.use();
-      this.pri_tile_shader.setCircleRadius(0.18);
-      this.pri_tile_shader.setColour(0, 1, 1);
-      this.pri_tile_shader.setBackgroundColour(1,1,0);
-      //this.pri_tile_shader.setRight(1.0);
-      this.pri_tile_shader.setSize(0.2);
-      this.pri_tile_shader.setMvp(this.vp.multiplyCopy(model));
-      this.setTile(this.pri_tile_shader, engine.grid, engine.mouse_over.x, engine.mouse_over.y);
-      this.pri_tile_shader.setBot(1.0);
-      Shapes.Quad.drawRelative();
-    }
-    this.solid_shader.use();
-    this.solid_shader.setColour(0,0,1);
-    for(let i = 0; i < engine.highlighted_positions.length; i++){
-      const pos = engine.highlighted_positions[i];
-      const model = engine.rect_grid.getTransformation(pos.x, pos.y);
-      this.solid_shader.setMvp(this.vp.multiplyCopy(model));
-      Shapes.Quad.draw();
-    }*/
-   /*
-    this.pri_tile_shader.use();
-    for(const pos of engine.key_positions){
-      const model = engine.rect_grid.getTransformation(pos.x, pos.y);
-      const x = pos.x; const y = pos.y;
-      this.pri_tile_shader.setCircleRadius(0.18);
-      this.pri_tile_shader.setColour(0, 1, 1);
-      this.pri_tile_shader.setBackgroundColour(1,1,0);
-      this.pri_tile_shader.setSize(0.2);
-      this.pri_tile_shader.setMvp(this.vp.multiplyCopy(model));
-      this.setTile(this.pri_tile_shader, engine.grid, x, y);
-      Shapes.Quad.drawRelative();
-    }
-    */
-   /*
-    this.multi_colour_centre_circle_shader.use();
-    //this.multi_colour_centre_circle_shader.setBackgroundColour(0.1, 0.8, 0.2);
-    this.multi_colour_centre_circle_shader.setCircleRadius(0.2);
-    this.multi_colour_centre_circle_shader.setSize(0.2);
-    this.multi_colour_centre_circle_shader.setMidColour(0.8, 0.2, 0.3);
-    this.multi_colour_centre_circle_shader.setBotColour(0.8, 0.2, 0.3);
-    const tm = Matrix.TransformationMatrix3x3.scale(gs, gs);
-    this.multi_colour_centre_circle_shader.setMvp(this.vp.multiplyCopy(tm));
-    Shapes.Quad.drawRelative();
-    */
 
     this.drawGridLines(engine);
-    for(const car of engine.cars){
+
+    for(const [id, car] of engine.car_collection.cars){
       this.drawCar(car, engine);
     }
+
     this.displayNodeSheet(engine);
 
 
@@ -1052,8 +1128,14 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       this.text_drawer.drawText(this.vp, 20, 700, text, 15);
     }
 
-    //this.drawCar(engine.resource_car, engine);
-    //requestAnimationFrame((time) => this.render(time, engine));
+    if(engine.hovered_car != undefined){
+      this.displayCarDetails(engine.car_collection.get(engine.hovered_car)!, engine);
+    }
+
+
+    // status texts
+    const graph_status_text = engine.graph_updated_status ? Texts.SimStatus.graph_is_update : Texts.SimStatus.graph_needs_update;
+    this.text_drawer.drawText(this.perspective, 0, 0, graph_status_text, 10);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
@@ -1164,6 +1246,28 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       const y = engine.true_mouse.y;
       engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y);
     }
+  }
+  displayCarDetails(car: Car.ResourceCar, engine: WallEngine){
+    //displaying on bottom left
+    const y = engine.rect_grid.pixel_height + 10;
+    const text_size = 10;
+    let car_text = `id ${car.id.toString()}`;
+    if(car.is_selected){
+      car_text += " selected";
+    }
+    this.text_drawer.drawText(this.perspective, 10, y, car_text, text_size);
+    const x_text = `x ${car.x.toFixed(2)}`;
+    this.text_drawer.drawText(this.perspective, 10, y+text_size, x_text, text_size);
+    const y_text = `y ${car.y.toFixed(2)}`;
+    this.text_drawer.drawText(this.perspective, 10, y+(text_size*2), y_text, text_size);
+
+    const car_node_id = car.starting_node.getId();
+    const st_node_text = `Start node id ${car_node_id.toString()}`;
+    this.text_drawer.drawText(this.perspective, 10, y+(text_size*3), st_node_text, text_size);
+
+    const target_node_text = car.target_node != undefined ? 
+    `Target node id ${car.target_node.getId().toString()}` : "No Target";
+    this.text_drawer.drawText(this.perspective, 10, y+(text_size*4), target_node_text, text_size);
   }
   /*
   setMultiTile(shader: MultiColourTileShader, left: boolean, top: boolean, right: boolean, bot: boolean, active_colour: Colour.ColourRGB, inactive_colour: Colour.ColourRGB){

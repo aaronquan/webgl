@@ -12,6 +12,7 @@ type TrackPosition = {
 
 export class Car{
   //coordinates are from top-left corner
+  id: Int32;
   x: Float; // center point 
   y: Float;
   size: Float;
@@ -23,7 +24,8 @@ export class Car{
   rotation: Float; // in radians
   last_key: Grid.GridPosition | undefined;
   //inventory: Resource | undefined;
-  constructor(){
+  constructor(id: Int32){
+    this.id = id;
     this.x = 0;
     this.y = 0;
     this.size = 0.2;
@@ -108,16 +110,22 @@ export class ResourceCar extends Car{
 
   car_state: CarState;
 
-  current_node: Node.KeyNode;
+  starting_node: Node.KeyNode;
+  target_node: Node.KeyNode | undefined;
+  is_selected: boolean;
 
-  constructor(starting_node: Node.KeyNode){
-    super();
+  constructor(id: Int32, starting_node: Node.KeyNode){
+    super(id);
     this.capacity = 1;
     this.inventory = new Map();
     this.current_capacity = 0;
     this.car_state = CarStateEnum.Waiting;
-    this.current_node = starting_node;
-    this.centerCarOnNode(this.current_node);
+    this.starting_node = starting_node;
+    this.is_selected = false;
+    this.centerCarOnNode(this.starting_node);
+  }
+  isReadyToGo(): boolean{
+    return this.car_state == CarStateEnum.Waiting;
   }
   centerCarOnNode(node: Node.KeyNode){
     this.x = node.x+0.5;
@@ -126,4 +134,36 @@ export class ResourceCar extends Car{
   //findClosestResourceNode(engine: WallEngine){
     
   ///}
+}
+
+
+export class CarCollection{
+  cars: Map<Int32, ResourceCar>;
+  private current_id: Int32;
+  constructor(){
+    this.cars = new Map();
+    this.current_id = 0;
+  }
+  addCarOnNode(node: Node.KeyNode){
+    this.cars.set(this.current_id, new ResourceCar(this.current_id, node));
+    this.current_id++;
+  }
+  get(i: Int32): ResourceCar | undefined{
+    return this.cars.get(i);
+  }
+  select(id: Int32){
+    const car = this.get(id);
+    if(car != undefined){
+      car.is_selected = true;
+    }
+  }
+  update(t: Float){
+    for(const [id, car] of this.cars){
+      car.update(t);
+    }
+  }
+  clear(){
+    this.cars.clear();
+    this.current_id = 0;
+  }
 }
