@@ -7,6 +7,7 @@ import * as Texture from "../../WebGL/Texture/texture";
 import * as Colour from "../../WebGL/colour";
 import * as WebGL from "../../WebGL/globals";
 import * as Button from "../../Interface/button";
+import * as TextInput from "../../Interface/text_input";
 
 import * as Node from "./nodes";
 import * as Resource from "./resource";
@@ -184,6 +185,8 @@ export class WallEngine extends App.BaseEngine{
   hovered_car: Int32 | undefined;
   selected_car: Int32 | undefined;
   car_buttons: Button.SingleSelectToggleButtonSet;
+
+  test_text_box: TextInput.TextInput;
 
   graph_updated_status: boolean;
 
@@ -401,6 +404,7 @@ export class WallEngine extends App.BaseEngine{
     this.hovered_car = undefined;
     this.selected_car = undefined;
 
+    this.test_text_box = new TextInput.TextInput(200, 810, 100, 20);
   }
   addKeyNode(node: Node.KeyNode){
     if(this.grid.getNodeId(node.x, node.y) != undefined){
@@ -590,6 +594,7 @@ export class WallEngine extends App.BaseEngine{
       this.deselectKeyNodes();
       this.deselectCar();
     }
+    this.test_text_box.onKeyDown(ev);
   }
   protected override handleMouseMove(ev: MouseEvent): void {
     const true_mouse = new Matrix.Point2D(ev.offsetX, ev.offsetY);
@@ -615,6 +620,7 @@ export class WallEngine extends App.BaseEngine{
     const true_grid = this.getGridTruePosition(ev.offsetX, ev.offsetY);
 
     this.updateHoveredNode();
+    this.test_text_box.onMouseMove(true_mouse);
   }
 
   updateHoveredNode(){
@@ -780,6 +786,9 @@ export class WallEngine extends App.BaseEngine{
 
     this.buttons.mouseDown();
     this.toggle_buttons.mouseDown();
+    if(this.true_mouse != undefined){
+      this.test_text_box.onMouseDown(this.true_mouse);
+    }
   }
 
   editSide(cell: Grid.GridPosition, side: GridCellSection, value: Grid.TileState): boolean{
@@ -792,7 +801,6 @@ export class WallEngine extends App.BaseEngine{
     const tile = this.grid.getTileFromPosition(cell)!;
     let changed = false; 
     if(side === GridCellSectionEnum.Center){
-      //todo
       const node_id = this.grid.getNodeId(cell.x, cell.y);
       if(value === Grid.TileStateEnum.Path){
         //adding node
@@ -802,7 +810,10 @@ export class WallEngine extends App.BaseEngine{
       }else{
         //deleting node
         changed = node_id != undefined;
-        //todo
+        if(node_id != undefined){
+          const node = this.active_nodes.get(node_id);
+          if(node != undefined) this.deleteKeyNode(node);
+        }
       }
     }else{
       changed = tile.getSideState(side) != value;
@@ -814,6 +825,7 @@ export class WallEngine extends App.BaseEngine{
   protected override handleMouseUp(ev: MouseEvent): void {
     this.buttons.mouseUp();
     this.toggle_buttons.mouseUp();
+    this.test_text_box.onMouseUp();
   }
 
 
@@ -857,7 +869,6 @@ export class WallEngine extends App.BaseEngine{
       node.update(update_time);
     }
     this.car_collection.update(update_time)
-    this.last_time = time;
     if(this.grid_true_mouse != undefined){
       const highlighted_car = this.gridPointCarCollision(this.grid_true_mouse);
       this.hovered_car = highlighted_car;
@@ -865,6 +876,10 @@ export class WallEngine extends App.BaseEngine{
     }else{
       this.hovered_car = undefined;
     }
+
+    TextInput.TextGlobals.update(update_time);
+
+    this.last_time = time;
   }
 }
 
@@ -1136,6 +1151,8 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     // status texts
     const graph_status_text = engine.graph_updated_status ? Texts.SimStatus.graph_is_update : Texts.SimStatus.graph_needs_update;
     this.text_drawer.drawText(this.perspective, 0, 0, graph_status_text, 10);
+
+    engine.test_text_box.draw(this.perspective, this.solid_shader, this.text_drawer);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
