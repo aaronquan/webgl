@@ -317,6 +317,10 @@ export class TextDrawer{
       throw "TextDrawer: No font set";
     }
   }
+  //expects that all characters are of same width
+  getTextWidth(text: string, size: Float): Float{
+    return text.length*size;
+  }
 }
 
 export default WebGL;

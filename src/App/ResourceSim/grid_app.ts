@@ -18,6 +18,7 @@ import * as ArrayUtils from "../../utils/array";
 import * as NumberUtils from "../../utils/numbers";
 
 import * as Texts from "./texts";
+import * as Options from "./../../Interface/options";
 
 
 interface Point extends Button.Point{};
@@ -189,6 +190,8 @@ export class WallEngine extends App.BaseEngine{
   test_text_box: TextInput.TextInput;
 
   graph_updated_status: boolean;
+
+  test_options: Options.SingleSelectOptions;
 
   constructor(){
     super();
@@ -405,6 +408,10 @@ export class WallEngine extends App.BaseEngine{
     this.selected_car = undefined;
 
     this.test_text_box = new TextInput.TextInput(200, 810, 100, 20);
+
+    this.test_options = new Options.SingleSelectOptions();
+    this.test_options.addOption("opt1");
+    this.test_options.addOption("opt2 is2");
   }
   addKeyNode(node: Node.KeyNode){
     if(this.grid.getNodeId(node.x, node.y) != undefined){
@@ -1153,6 +1160,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.text_drawer.drawText(this.perspective, 0, 0, graph_status_text, 10);
 
     engine.test_text_box.draw(this.perspective, this.solid_shader, this.text_drawer);
+    engine.test_options.draw(this.perspective, this.solid_shader, this.text_drawer);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
