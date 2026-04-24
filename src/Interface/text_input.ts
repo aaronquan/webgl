@@ -138,6 +138,7 @@ export class TextInput{
         colour_shader.setMvp(vp.multiplyCopy(cursor_model));
         WebGL.Shapes.Quad.draw();
       }
+      
 
       //draw text
       text_drawer.drawTextColour(vp, this.x+this.text_offset, y, this.text, this.text_size, this.text_colour);

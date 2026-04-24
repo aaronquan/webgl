@@ -409,9 +409,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.test_text_box = new TextInput.TextInput(200, 810, 100, 20);
 
-    this.test_options = new Options.SingleSelectOptions();
-    this.test_options.addOption("opt1");
-    this.test_options.addOption("opt2 is2");
+    this.test_options = new Options.SingleSelectOptions(["opt1", "opt2 a", "t", "more", "another", "b"], 650, 200, 15);
   }
   addKeyNode(node: Node.KeyNode){
     if(this.grid.getNodeId(node.x, node.y) != undefined){
@@ -628,6 +626,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.updateHoveredNode();
     this.test_text_box.onMouseMove(true_mouse);
+    this.test_options.onMouseMove(true_mouse);
   }
 
   updateHoveredNode(){
@@ -795,6 +794,7 @@ export class WallEngine extends App.BaseEngine{
     this.toggle_buttons.mouseDown();
     if(this.true_mouse != undefined){
       this.test_text_box.onMouseDown(this.true_mouse);
+      this.test_options.onMouseDown();
     }
   }
 
@@ -833,6 +833,7 @@ export class WallEngine extends App.BaseEngine{
     this.buttons.mouseUp();
     this.toggle_buttons.mouseUp();
     this.test_text_box.onMouseUp();
+    this.test_options.onMouseUp();
   }
 
 
