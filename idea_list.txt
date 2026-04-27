@@ -1,0 +1,5 @@
+fix resizing - fixed by adding gl viewport in initialise ( can change )
+draggable window inside canvas - mostly finished 
+car move to destination - TODO
+save grid configurations - TODO
+car traffic - TODO

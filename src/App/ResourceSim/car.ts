@@ -166,4 +166,7 @@ export class CarCollection{
     this.cars.clear();
     this.current_id = 0;
   }
+  delete(id: Int32){
+    this.cars.delete(id);
+  }
 }

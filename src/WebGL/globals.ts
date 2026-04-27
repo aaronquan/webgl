@@ -32,6 +32,7 @@ export class WebGL{
   }
   static initialise(canvas: HTMLCanvasElement){
     this.gl = canvas.getContext("webgl2", {alpha: false});
+    this.gl?.viewport(0, 0, canvas.width, canvas.height);
     if(this.gl && !this.initialised){
       loadVertexShaders();
       loadFragmentShaders();
@@ -193,6 +194,7 @@ export class FontLoader{
       console.log(this.to_load);
 
       for(const font of this.to_load){
+        console.log(font);
         font.load(() => {
           this.loaded++;
           this.finished_loading++;

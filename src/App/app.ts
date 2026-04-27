@@ -16,6 +16,7 @@ interface IEngine{
   addEvents: () => void;
   loadResources: () => void;
   update: TimeTakenFunction;
+  resize: (w: Int32, h:Int32) => void
 }
 
 export class BaseEngine implements IEngine{
@@ -37,6 +38,9 @@ export class BaseEngine implements IEngine{
     window.addEventListener("mousedown", (ev) => this.handleMouseDown(ev));
     window.addEventListener("mouseup", (ev) => this.handleMouseUp(ev));
   }
+  resize(w: Int32, h:Int32){
+
+  }
 
   //to override
   protected handleKeyDown(ev: KeyboardEvent){};
@@ -55,6 +59,7 @@ export interface IEngineRenderer<E extends IEngine>{
   render?: (engine: E) => void;
   renderUpdate?: (time: Int32, engine: E) => void;
   loadTextures?: OnFinishFunction;
+  resize?: (w: Int32, h: Int32) => void;
   //loadResources: () => void;
 }
 
@@ -74,6 +79,15 @@ export class App<E extends IEngine>{
   }
   addEvents(){
     this.engine.addEvents();
+  }
+  getRenderer(): IEngineRenderer<E>{
+    return this.renderer;
+  }
+  resize(w: Int32, h: Int32, canvas: HTMLCanvasElement){
+    this.engine.resize(w, h);
+    if(this.renderer.resize) this.renderer.resize(w, h);
+
+    WebGL.initialise(canvas);
   }
 
   //to override?

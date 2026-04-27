@@ -1,13 +1,13 @@
 import * as Matrix from "../../WebGL/Matrix/matrix";
 import * as App from "../app";
 import * as Grid from "./grid";
+
+//webgl imports
 import * as Shader from "../../WebGL/Shaders/custom";
 import * as Shapes from '../../WebGL/Shapes/Shapes';
 import * as Texture from "../../WebGL/Texture/texture";
 import * as Colour from "../../WebGL/colour";
 import * as WebGL from "../../WebGL/globals";
-import * as Button from "../../Interface/button";
-import * as TextInput from "../../Interface/text_input";
 
 import * as Node from "./nodes";
 import * as Resource from "./resource";
@@ -18,7 +18,12 @@ import * as ArrayUtils from "../../utils/array";
 import * as NumberUtils from "../../utils/numbers";
 
 import * as Texts from "./texts";
+
+//interface imports
 import * as Options from "./../../Interface/options";
+import * as InternalWindow from "./../../Interface/internal_window";
+import * as Button from "../../Interface/button";
+import * as TextInput from "../../Interface/text_input";
 
 
 interface Point extends Button.Point{};
@@ -191,7 +196,11 @@ export class WallEngine extends App.BaseEngine{
 
   graph_updated_status: boolean;
 
-  test_options: Options.SingleSelectOptions;
+  //test_options: Options.SingleSelectOptions;
+  //edit_state_options: Options.SingleSelectOptions;
+  select_options: Options.SingleSelectOptions[];
+
+  test_internal_window: InternalWindow.InternalWindow;
 
   constructor(){
     super();
@@ -220,9 +229,33 @@ export class WallEngine extends App.BaseEngine{
     this.buttons = new Button.ButtonSet();
     this.toggle_buttons = new Button.ToggleButtonSet();
     this.graph_updated_status = false;
+    this.test_internal_window = new InternalWindow.InternalWindow(100, 50, 200, 200);
 
     // adding buttons
     const butt_x = 810;
+
+    this.select_options = [];
+    const edit_state_options = new Options.SingleSelectOptions(["Off", "Add", "Del", "Sel"], butt_x+90, 80, 15);
+    edit_state_options.onSelected = (id: Int32) => {
+      switch(id){
+        case 0:
+          this.edit_state = WallEditStateEnum.Default;
+          break;
+        case 1:
+          this.edit_state = WallEditStateEnum.Adding;
+          break;
+        case 2:
+          this.edit_state = WallEditStateEnum.Deleting;
+          break;
+        case 3:
+          this.edit_state = WallEditStateEnum.Selecting;
+          break;
+        default:
+          break;
+      }
+    }
+
+    this.select_options.push(edit_state_options);
 
     const car_plan_button = new Button.BasicButton(butt_x, 10, 80, 25, 9);
     car_plan_button.text = "New Plan";
@@ -335,6 +368,15 @@ export class WallEngine extends App.BaseEngine{
         
         }else{
           //check graph path to node
+          const from_id = car.starting_node.getId();
+          const to_id = this.selected_nodes.values().next().value!;
+          if(from_id === to_id){
+            console.log("car already at location");
+          }else{
+            const shortest_path = this.node_graph.shortestPath(from_id, to_id);
+            console.log(shortest_path);
+            
+          }
         }
       }else{
         console.log("requires selected node and selected car");
@@ -345,7 +387,7 @@ export class WallEngine extends App.BaseEngine{
     const car_delete_button = new Button.BasicButton(butt_x, 340, 80, 25, 8);
     car_delete_button.text = "Car Del";
     car_delete_button.onPressed = () => {
-
+      this.deleteSelectedCar();
     };
     this.buttons.addButton(car_delete_button);
 
@@ -408,8 +450,6 @@ export class WallEngine extends App.BaseEngine{
     this.selected_car = undefined;
 
     this.test_text_box = new TextInput.TextInput(200, 810, 100, 20);
-
-    this.test_options = new Options.SingleSelectOptions(["opt1", "opt2 a", "t", "more", "another", "b"], 650, 200, 15);
   }
   addKeyNode(node: Node.KeyNode){
     if(this.grid.getNodeId(node.x, node.y) != undefined){
@@ -454,6 +494,11 @@ export class WallEngine extends App.BaseEngine{
   }
   clearCars(){
     this.car_collection.clear();
+  }
+
+  deleteSelectedCar(){
+    if(this.selected_car != undefined)
+      this.car_collection.delete(this.selected_car);
   }
 
   addCar(node: Node.KeyNode){
@@ -626,89 +671,15 @@ export class WallEngine extends App.BaseEngine{
 
     this.updateHoveredNode();
     this.test_text_box.onMouseMove(true_mouse);
-    this.test_options.onMouseMove(true_mouse);
-  }
-
-  updateHoveredNode(){
-    this.hovered_node = undefined;
-    if(this.grid_true_mouse != undefined){
-      for(const [id, node] of this.active_nodes){
-        const dist = node.distanceSq(this.grid_true_mouse);
-        if(dist < this.node_size*this.node_size){
-          this.hovered_node = node;
-        }
-      }
+    for(const opt of this.select_options){
+      opt.onMouseMove(true_mouse);
     }
-  }
-
-  deselectKeyNodes(){
-    for(const [id, node] of this.active_nodes){
-      this.grid.setSelected(node.x, node.y, false);
-    }
-    this.selected_nodes.clear();
-  }
-  deselectCar(){
-    if(this.selected_car != undefined){
-      this.car_collection.get(this.selected_car)!.is_selected = false;
-      this.selected_car = undefined;
-    }
-  }
-  selectCar(car_id: Int32){
-    //console.log("select");
-    this.car_collection.select(car_id);
-    this.selected_car = car_id;
+    this.test_internal_window.mouseMove(true_mouse);
   }
 
   protected override handleMouseDown(ev: MouseEvent){
     if(this.mouse_over_cell != undefined){
-      /*
-      if(this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key){
-        if(this.selected_key1 == undefined){
-          //set key1
-          this.selected_key1 = this.mouse_over;
-          this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_selected = true;
-          console.log("setting1")
-        }
-        else if(this.selected_key2 == undefined && !this.selected_key1.equals(this.mouse_over)){
-          //set key2
-          this.selected_key2 = this.mouse_over;
-          this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_selected = true;
-          console.log("setting2")
-        }
-        else{
-          if(this.selected_key1.equals(this.mouse_over)){
-            //remove key1
-            this.grid.grid[this.selected_key1.y][this.selected_key1.x].is_selected = false;
-            if(this.selected_key2 != undefined){
-              this.selected_key1 = this.selected_key2;
-              this.selected_key2 = undefined;
-            }else{
-              this.selected_key1 = undefined;
-            }
-          }
-          else if(this.selected_key2 != undefined && this.selected_key2.equals(this.mouse_over)){
-            //remove key 2
-            this.grid.grid[this.selected_key2.y][this.selected_key2.x].is_selected = false;
-            this.selected_key2 = undefined;
-          }else{
-            //replace key1
-            this.grid.grid[this.selected_key1.y][this.selected_key1.x].is_selected = false;
-            this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_selected = true;
-            this.selected_key1 = this.selected_key2;
-            this.selected_key2 = this.mouse_over;
-          }
-        }
-      }else{
-        if(this.selected_key1 != undefined){
-          console.log("adding copy");
-          this.key_positions.push(this.mouse_over.copy());
-          this.grid.grid[this.mouse_over.y][this.mouse_over.x].is_key = true;
-          const path = Grid.GridPosition.randomPointToPoint1TurnTrack(this.mouse_over, this.selected_key1);
-          this.grid.addTrack(path);
-        }
-      }*/
      const cell = this.mouse_over_cell;
-
       if(this.hovered_car != undefined){
         this.selectCar(this.hovered_car);
       }
@@ -732,61 +703,15 @@ export class WallEngine extends App.BaseEngine{
         if(this.hover_grid_side != undefined){
           const changed = this.editSide(cell, this.hover_grid_side, Grid.TileStateEnum.Path);
           console.log(changed);
-          //todo use changed
+          //todo use changed, i.e. devalidates graph
         }
-        /*
-        switch(this.hover_grid_side){
-          case GridCellSectionEnum.Left:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
-            break;
-          case GridCellSectionEnum.Down:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Down, Grid.TileStateEnum.Path);
-            break;
-          case GridCellSectionEnum.Right:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Right, Grid.TileStateEnum.Path);
-            break;
-          case GridCellSectionEnum.Up:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Up, Grid.TileStateEnum.Path);
-            break;
-          case GridCellSectionEnum.Center:
-            const new_node = new Node.KeyNode(cell.x, cell.y);
-            this.addKeyNode(new_node);
-            break;
-          default:
-            break;
-        }*/
+
       }else if(this.edit_state === WallEditStateEnum.Deleting){
         if(this.hover_grid_side != undefined){
           const changed = this.editSide(cell, this.hover_grid_side, Grid.TileStateEnum.Nothing);
           console.log(changed);
-          //todo use changed
+          //todo use changed, i.e. devalidates graph
         }
-        /*
-        switch(this.hover_grid_side){
-          case GridCellSectionEnum.Left:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Left, Grid.TileStateEnum.Nothing);
-            break;
-          case GridCellSectionEnum.Down:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Down, Grid.TileStateEnum.Nothing);
-            break;
-          case GridCellSectionEnum.Right:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Right, Grid.TileStateEnum.Nothing);
-            break;
-          case GridCellSectionEnum.Up:
-            this.grid.setCellState(cell.x, cell.y, Grid.DirectionEnum.Up, Grid.TileStateEnum.Nothing);
-            break;
-          case GridCellSectionEnum.Center:
-            console.log(cell);
-            const node_id = this.grid.getNodeId(cell.x, cell.y);
-            if(node_id != undefined){
-              const node = this.active_nodes.get(node_id);
-              if(node != undefined) this.deleteKeyNode(node);
-            }
-            console.log(node_id);
-            break;
-          default:
-            break;
-        }*/
       }
     }
 
@@ -794,9 +719,24 @@ export class WallEngine extends App.BaseEngine{
     this.toggle_buttons.mouseDown();
     if(this.true_mouse != undefined){
       this.test_text_box.onMouseDown(this.true_mouse);
-      this.test_options.onMouseDown();
+      for(const opt of this.select_options){
+        opt.onMouseDown();
+      }
+      this.test_internal_window.mouseDown(this.true_mouse);
     }
   }
+
+  
+  protected override handleMouseUp(ev: MouseEvent): void {
+    this.buttons.mouseUp();
+    this.toggle_buttons.mouseUp();
+    this.test_text_box.onMouseUp();
+    for(const opt of this.select_options){
+        opt.onMouseUp();
+    }
+    this.test_internal_window.mouseUp();
+  }
+
 
   editSide(cell: Grid.GridPosition, side: GridCellSection, value: Grid.TileState): boolean{
     const side_to_direction = {
@@ -828,12 +768,34 @@ export class WallEngine extends App.BaseEngine{
     }
     return changed;
   }
+  updateHoveredNode(){
+    this.hovered_node = undefined;
+    if(this.grid_true_mouse != undefined){
+      for(const [id, node] of this.active_nodes){
+        const dist = node.distanceSq(this.grid_true_mouse);
+        if(dist < this.node_size*this.node_size){
+          this.hovered_node = node;
+        }
+      }
+    }
+  }
 
-  protected override handleMouseUp(ev: MouseEvent): void {
-    this.buttons.mouseUp();
-    this.toggle_buttons.mouseUp();
-    this.test_text_box.onMouseUp();
-    this.test_options.onMouseUp();
+  deselectKeyNodes(){
+    for(const [id, node] of this.active_nodes){
+      this.grid.setSelected(node.x, node.y, false);
+    }
+    this.selected_nodes.clear();
+  }
+  deselectCar(){
+    if(this.selected_car != undefined){
+      this.car_collection.get(this.selected_car)!.is_selected = false;
+      this.selected_car = undefined;
+    }
+  }
+  selectCar(car_id: Int32){
+    //console.log("select");
+    this.car_collection.select(car_id);
+    this.selected_car = car_id;
   }
 
 
@@ -979,6 +941,9 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     this.white = WebGL.Colour.ColourUtils.white();
 
+  }
+  resize(w: Int32, h: Int32){
+    this.perspective = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
   }
   loadTextures(onLoad:VoidFunction=EmptyFunction){
     //load textures
@@ -1161,7 +1126,12 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.text_drawer.drawText(this.perspective, 0, 0, graph_status_text, 10);
 
     engine.test_text_box.draw(this.perspective, this.solid_shader, this.text_drawer);
-    engine.test_options.draw(this.perspective, this.solid_shader, this.text_drawer);
+    for(const opt of engine.select_options){
+      opt.draw(this.perspective, this.solid_shader, this.text_drawer);
+    }
+
+    engine.test_internal_window.draw(this.perspective, this.solid_shader);
+    this.drawInWindowTest(engine.test_internal_window);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
@@ -1294,6 +1264,12 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     const target_node_text = car.target_node != undefined ? 
     `Target node id ${car.target_node.getId().toString()}` : "No Target";
     this.text_drawer.drawText(this.perspective, 10, y+(text_size*4), target_node_text, text_size);
+  }
+  drawInWindowTest(window: InternalWindow.InternalWindow){
+    if(window.visible){
+      const p = window.getWindowPosition();
+      this.text_drawer.drawText(this.perspective, p.x+10, p.y+10, "Hello world", 10);
+    }
   }
   /*
   setMultiTile(shader: MultiColourTileShader, left: boolean, top: boolean, right: boolean, bot: boolean, active_colour: Colour.ColourRGB, inactive_colour: Colour.ColourRGB){

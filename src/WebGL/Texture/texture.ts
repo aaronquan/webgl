@@ -4,6 +4,9 @@ import * as Shader from "./../Shaders/custom"
 
 type Int32 = number;
 type VoidFunction = () => void;
+type ErrorFunction = (e: any) => void;
+const EmptyErrorFunction = (e: any) => {};
+
 const EmptyFunction = () => {};
 
 export class Texture{
@@ -22,7 +25,8 @@ export class Texture{
       this.url = Texture.path+fn;
       this.is_loaded = false;
     }
-    load(onLoad:VoidFunction=EmptyFunction, onError:VoidFunction=EmptyFunction){
+    load(onLoad:VoidFunction=EmptyFunction, onError:ErrorFunction=EmptyErrorFunction){
+      console.log(this.url);
       if(!this.is_loaded){
         Texture.textures_requested++;
         const gl = WebGL.gl;
@@ -44,9 +48,11 @@ export class Texture{
             onLoad();
           }
           img.onerror = (e) => {
-            onError();
+            onError(e);
           }
         }
+      }else{
+        onLoad();
       }
     }
     //static loadList
@@ -182,11 +188,14 @@ export class CustomFont{
         console.log(`Font: loaded success, ${this.font_name}`);
         onLoaded();
         this.loaded = true;
-      }, 
-      (error) => { 
-          console.log(error);
-          if(onError) onError(error);
-      })
+      },
+      (e) => {
+        console.log(`${this.font_name}.txt - error`);
+        if(onError) onError(e);
+      }), 
+      (e) => { 
+        if(onError) onError(e);
+      }
     );
   }
 

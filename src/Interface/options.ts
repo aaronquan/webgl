@@ -87,6 +87,7 @@ export class SingleSelectOptions{
   }
 
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
+    if(this.options.length == 0) return;
     const n_chars = this.options.reduce((pv, cv) => {
       return pv + cv.length;
     }, 0);

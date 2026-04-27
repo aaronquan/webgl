@@ -24,8 +24,10 @@ overlay.style.transform = "translate(-50%, -50%)";
 overlay.style.color = "white";
 overlay.textContent = "Loading";
 
-canvas.width = 900;
-canvas.height = 900;
+canvas.width = window.innerWidth; // record this! TODO important for consistant resizing
+canvas.height = window.innerHeight;
+
+
 
 //console.log(txt.);
 //const gl: WebGL2RenderingContext = canvas.getContext("webgl2")!;
@@ -45,16 +47,23 @@ renderer.addOverlayElement(overlay);
 const water_engine = new Water.WaterEngine();
 const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 
-const card_engine = new Card.CardEngine();
+const card_engine = new Card.CardEngine(canvas.width, canvas.height);
 const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
 //const app = new App.App(card_engine, card_renderer);
 const app = new App.App(engine, renderer);
 
+
 app.loadResources(() => {
   console.log("running app");
   app.initApp();
   engine.onFinishLoading();
+});
+
+window.addEventListener("resize", (e: Event) => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  app.resize(canvas.width, canvas.height, canvas);
 });
 
 
