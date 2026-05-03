@@ -1,3 +1,4 @@
+import { colour } from "../WebGL/Shaders/Fragment/Source/fragment_source";
 import * as WebGL from "./../WebGL/globals";
 
 type Int32 = number;
@@ -37,6 +38,8 @@ export class TextInput{
   text_colour: WebGL.Colour.ColourRGB;
   cursor_colour: WebGL.Colour.ColourRGB;
 
+  select_border_colour: WebGL.Colour.ColourRGB;
+
   text: string;
 
   text_offset: Int32;
@@ -50,19 +53,20 @@ export class TextInput{
 
   onChange: (text: string) => void;
 
-  constructor(x: Int32, y: Int32, width: Int32, height: Int32, ts: Int32=height-2){
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, ts: Int32=height-4){
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
 
-    this.text_offset = 2;
+    this.text_offset = 3;
 
     this.text_size = ts;
 
     this.background_colour = WebGL.Colour.ColourUtils.white();
     this.text_colour = WebGL.Colour.ColourUtils.black();
     this.cursor_colour = WebGL.Colour.ColourUtils.blue();
+    this.select_border_colour = WebGL.Colour.ColourUtils.fromRGB(0.3, 0.5, 0.9);
     
     this.text = "";
 
@@ -72,14 +76,18 @@ export class TextInput{
     this.cursor_index = 0;
     this.onChange = (_) => {};
   }
+  maxTextSize(): Int32{
+    return Math.floor((this.width-(this.text_offset*2)) / this.text_size);
+  }
   isInside(point: WebGL.Matrix.Point2D): boolean{
     const in_x = this.x < point.x && point.x < this.x+this.width;
     const in_y = this.y < point.y && point.y < this.y+this.height;
     return in_x && in_y;
   }
   onKeyDown(ev: KeyboardEvent){
+    console.log(ev.key);
     if(this.state == TextStatusEnum.Selected){
-      if(ev.key.length == 1){
+      if(ev.key.length == 1 && this.text.length < this.maxTextSize()){
         this.text = this.text.slice(0, this.cursor_index) + ev.key + this.text.slice(this.cursor_index);
         this.cursor_index++;
         this.onChange(this.text);
@@ -88,6 +96,14 @@ export class TextInput{
           this.text = this.text.slice(0, this.cursor_index-1) + this.text.slice(this.cursor_index);
           this.cursor_index--;
           this.onChange(this.text);
+        }
+      }else if(ev.key === "ArrowRight"){
+        if(this.cursor_index < this.text.length){
+          this.cursor_index++;
+        }
+      }else if(ev.key === "ArrowLeft"){
+        if(this.cursor_index > 0){
+          this.cursor_index--;
         }
       }
     }
@@ -104,7 +120,6 @@ export class TextInput{
     if(this.isInside(point)){
       this.state = TextStatusEnum.Selected;
       const index = this.cursorIndexFromX(point.x);
-      console.log(index)
       this.cursor_index = index;
     }else{
       this.state = TextStatusEnum.Deselected;
@@ -142,5 +157,27 @@ export class TextInput{
 
       //draw text
       text_drawer.drawTextColour(vp, this.x+this.text_offset, y, this.text, this.text_size, this.text_colour);
-  }
+  
+      //draw border
+      if(this.state == TextStatusEnum.Selected){
+        const border_size = 2;
+        colour_shader.use();
+        colour_shader.setColourFromColourRGB(this.select_border_colour);
+        const left_model = WebGL.WebGL.rectangleModel(this.x, this.y, border_size, this.height);
+        colour_shader.setMvp(vp.multiplyCopy(left_model));
+        WebGL.Shapes.Quad.draw();
+
+        const right_model = WebGL.WebGL.rectangleModel(this.x+this.width-border_size, this.y, border_size, this.height);
+        colour_shader.setMvp(vp.multiplyCopy(right_model));
+        WebGL.Shapes.Quad.draw();
+
+        const top_model = WebGL.WebGL.rectangleModel(this.x, this.y, this.width, border_size);
+        colour_shader.setMvp(vp.multiplyCopy(top_model));
+        WebGL.Shapes.Quad.draw();
+
+        const bot_model = WebGL.WebGL.rectangleModel(this.x, this.y+this.height-border_size, this.width, border_size);
+        colour_shader.setMvp(vp.multiplyCopy(bot_model));
+        WebGL.Shapes.Quad.draw();
+      }
+    }
 }

@@ -5,7 +5,7 @@ import * as CustomShader from './WebGL/Shaders/custom';
 import * as Matrix from "./WebGL/Matrix/matrix";
 
 import * as Mixin from './utils/mixin';
-import * as App from './App/app';
+import * as App from './WebGL/app';
 import * as Grid from './App/ResourceSim/grid_app';
 import * as WebGLGlobals from './WebGL/globals';
 

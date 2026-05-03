@@ -1,5 +1,5 @@
 import WebGL from "../../WebGL/globals"
-import * as App from "../app"
+import * as App from "./../../WebGL/app"
 import * as Shader from "../../WebGL/Shaders/custom"
 import * as Texture from "../../WebGL/Texture/texture"
 import * as Matrix from "../../WebGL/Matrix/matrix"

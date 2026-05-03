@@ -1,5 +1,5 @@
 import * as Matrix from "../../WebGL/Matrix/matrix";
-import * as App from "../app";
+import * as App from "./../../WebGL/app";
 import * as Grid from "./grid";
 
 //webgl imports
@@ -449,7 +449,7 @@ export class WallEngine extends App.BaseEngine{
     this.hovered_car = undefined;
     this.selected_car = undefined;
 
-    this.test_text_box = new TextInput.TextInput(200, 810, 100, 20);
+    this.test_text_box = new TextInput.TextInput(200, 810, 600, 20);
   }
   addKeyNode(node: Node.KeyNode){
     if(this.grid.getNodeId(node.x, node.y) != undefined){
@@ -606,8 +606,6 @@ export class WallEngine extends App.BaseEngine{
   }
 
   protected override handleKeyDown(ev: KeyboardEvent){
-    //this.grid.randomise();
-    console.log(ev.key);
     if(ev.key == 'q'){
       this.is_circle_positions = !this.is_circle_positions;
       if(this.mouse_over_cell != undefined){

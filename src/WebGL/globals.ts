@@ -17,7 +17,7 @@ export * as Shapes from "./Shapes/Shapes";
 export * as Matrix from "./Matrix/matrix";
 export * as Texture from "./Texture/texture";
 export * as Line from "./Shapes/Line";
-export * as Shader from "./Shaders/custom"
+export * as Shader from "./Shaders/custom";
 
 
 type VoidFunction = () => void;
@@ -32,13 +32,17 @@ export class WebGL{
   }
   static initialise(canvas: HTMLCanvasElement){
     this.gl = canvas.getContext("webgl2", {alpha: false});
-    this.gl?.viewport(0, 0, canvas.width, canvas.height);
+    this.resetViewport(canvas);
     if(this.gl && !this.initialised){
       loadVertexShaders();
       loadFragmentShaders();
       this.initialised = true;
       //this.buffer = this.gl.createBuffer();
     }
+  }
+
+  static resetViewport(canvas: HTMLCanvasElement){
+    this.gl!.viewport(0, 0, canvas.width, canvas.height);
   }
 
   static rectangleModel(x: Float, y: Float, width: number, height: number): Matrix.TransformationMatrix3x3{

@@ -1,5 +1,5 @@
 import * as Matrix from "./../../WebGL/Matrix/matrix";
-import * as App from "./../app";
+import * as App from "./../../WebGL/app";
 import * as Grid from "../ResourceSim/grid"
 import * as Shader from "./../../WebGL/Shaders/custom";
 import * as Shapes from './../../WebGL/Shapes/Shapes';
