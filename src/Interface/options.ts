@@ -1,8 +1,11 @@
 
 import * as WebGL from "./../WebGL/globals";
 import * as ArrayUtils from "./../utils/array";
+import * as InterfaceElement from "./interface_element";
 
 type Int32 = number;
+
+
 
 export class SingleSelectOptions{
   selected: Int32;
@@ -150,5 +153,39 @@ export class SingleSelectOptions{
     const bot_model = WebGL.WebGL.rectangleModel(this.x, this.y+this.height, this.width, border_thickness);
     colour_shader.setMvp(vp.multiplyCopy(bot_model));
     WebGL.Shapes.Quad.draw();
+  }
+}
+
+const DropdownStateEnum = {
+  Default: 0,
+  Selecting: 1
+} as const;
+
+type DropdownState = (typeof DropdownStateEnum)[keyof typeof DropdownStateEnum];
+
+export class DropdownOptions extends InterfaceElement.InterfaceElement{
+  static no_option_text = "-No Options-";
+  options: string[];
+  selected: Int32;
+  state: DropdownState;
+
+  background_colour: WebGL.Colour.ColourRGB;
+  text_colour: WebGL.Colour.ColourRGB;
+
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, options: string[]=[]){
+    super(x, y, width, height);
+    this.selected = 0;
+    this.options = options;
+    this.state = DropdownStateEnum.Default;
+    this.background_colour = WebGL.Colour.ColourUtils.white();
+    this.text_colour = WebGL.Colour.ColourUtils.black();
+  }
+
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
+    colour_shader: WebGL.Shader.MVPColourProgram,
+    text_drawer: WebGL.TextDrawer
+  ){
+    this.drawBackground(vp, colour_shader, this.background_colour);
+    
   }
 }
