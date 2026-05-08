@@ -157,8 +157,10 @@ export class SingleSelectOptions{
 }
 
 const DropdownStateEnum = {
-  Default: 0,
-  Selecting: 1
+  Closed: 0,
+  ClosedHover: 1,
+  Open: 2,
+  OpenHover: 3
 } as const;
 
 type DropdownState = (typeof DropdownStateEnum)[keyof typeof DropdownStateEnum];
@@ -176,16 +178,50 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     super(x, y, width, height);
     this.selected = 0;
     this.options = options;
-    this.state = DropdownStateEnum.Default;
+    this.state = DropdownStateEnum.Closed;
     this.background_colour = WebGL.Colour.ColourUtils.white();
     this.text_colour = WebGL.Colour.ColourUtils.black();
   }
+  hasOptions(): boolean{
+    return this.options.length > 0;
+  }
+  openHeight(): Int32{
+    return this.height*this.options.length;
+  }
+  isInsideOpened(){
 
+  }
+  onMouseDown(){
+    
+  }
+  isOpen(){
+    return this.state == DropdownStateEnum.Open || this.state == DropdownStateEnum.OpenHover;
+  }
+  isClosed(){
+    return this.state == DropdownStateEnum.Closed || this.state == DropdownStateEnum.ClosedHover;
+  }
+  onMouseOver(point: WebGL.Matrix.Point2D){
+    if(this.isInside(point)){
+      if(this.isOpen()){
+        this.state = DropdownStateEnum.OpenHover;
+      }else if(this.isClosed()){
+        this.state = DropdownStateEnum.ClosedHover;
+      }
+    }else{
+      if(this.isOpen()){
+        this.state = DropdownStateEnum.Open;
+      }else if(this.isClosed()){
+        this.state = DropdownStateEnum.Closed;
+      }
+    }
+  }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
     colour_shader: WebGL.Shader.MVPColourProgram,
     text_drawer: WebGL.TextDrawer
   ){
     this.drawBackground(vp, colour_shader, this.background_colour);
-    
+    //draw selected text;
+    const text = this.hasOptions() ? this.options[this.selected] : DropdownOptions.no_option_text;
+    text_drawer.drawText(vp, this.x, this.y, text, this.height);
   }
 }
