@@ -22,6 +22,12 @@ export * as Shader from "./Shaders/custom";
 
 type VoidFunction = () => void;
 
+interface MVPColourShader{
+  use: () => void;
+  setMvp:(mat: Matrix.TransformationMatrix3x3) => void;
+  setColourFromColourRGB: (colour: Colour.ColourRGB) => void;
+}
+
 export class WebGL{
   static gl: WebGL2RenderingContext | null;
   static active_shader_program: ShaderProgram | null;
@@ -60,6 +66,17 @@ export class WebGL{
     model.translate(0, -0.5);
     
     return model;
+  }
+  static drawColourRect(vp: Matrix.TransformationMatrix3x3, 
+    shader: MVPColourShader, x: Int32, y: Int32, 
+    width: Int32, height: Int32, 
+    colour: Colour.ColourRGB=Colour.ColourUtils.black())
+  {
+    const model = WebGL.rectangleModel(x, y, width, height);
+    shader.use();
+    shader.setColourFromColourRGB(colour);
+    shader.setMvp(vp.multiplyCopy(model));
+    Shapes.Quad.draw();
   }
 }
 

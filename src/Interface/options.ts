@@ -173,6 +173,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
 
   background_colour: WebGL.Colour.ColourRGB;
   text_colour: WebGL.Colour.ColourRGB;
+  text_size: Int32;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, options: string[]=[]){
     super(x, y, width, height);
@@ -181,6 +182,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     this.state = DropdownStateEnum.Closed;
     this.background_colour = WebGL.Colour.ColourUtils.white();
     this.text_colour = WebGL.Colour.ColourUtils.black();
+    this.text_size = this.height;
   }
   hasOptions(): boolean{
     return this.options.length > 0;
@@ -188,11 +190,36 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   openHeight(): Int32{
     return this.height*this.options.length;
   }
-  isInsideOpened(){
-
+  isInside(point: WebGL.Matrix.Point2D){
+    if(this.isOpen()){
+      return this.isInsideOpened(point);
+    }
+    return super.isInside(point);
   }
-  onMouseDown(){
-    
+  isInsideOpened(point: WebGL.Matrix.Point2D): boolean{
+    const in_x = point.x < this.x && this.x < point.x+this.width;
+    const in_y = point.y < this.y && this.y < point.y+this.openHeight();
+    return in_x && in_y;
+  }
+  // 0 is selected, otherwise 
+  getOptionIndexFromY(y: Int32): Int32{
+    const position = Math.floor(y / this.height);
+    return position == 0 ? this.selected : (position <= this.selected ? position-1 : position);
+  }
+  onMouseDown(point: WebGL.Matrix.Point2D){
+    if(this.isOpen()){
+      if(this.isHovered()){
+        this.selected = this.getOptionIndexFromY(point.y);
+        this.state = DropdownStateEnum.ClosedHover;
+      }else{
+        this.state = DropdownStateEnum.Closed;
+      }
+    }else{
+      //do nothing
+    }
+  }
+  isHovered(){
+    return this.state == DropdownStateEnum.OpenHover || this.state == DropdownStateEnum.ClosedHover;
   }
   isOpen(){
     return this.state == DropdownStateEnum.Open || this.state == DropdownStateEnum.OpenHover;
@@ -219,9 +246,33 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     colour_shader: WebGL.Shader.MVPColourProgram,
     text_drawer: WebGL.TextDrawer
   ){
-    this.drawBackground(vp, colour_shader, this.background_colour);
+    //drawing background
+    if(!this.isOpen()){
+      this.drawBackground(vp, colour_shader, this.background_colour);
+    }else{
+      const open_bg_model = WebGL.WebGL.rectangleModel(this.x, this.y, this.width, this.openHeight());
+      colour_shader.use();
+      colour_shader.setColourFromColourRGB(this.background_colour);
+      colour_shader.setMvp(vp.multiplyCopy(open_bg_model));
+      WebGL.Shapes.Quad.draw();
+    }
+
     //draw selected text;
     const text = this.hasOptions() ? this.options[this.selected] : DropdownOptions.no_option_text;
-    text_drawer.drawText(vp, this.x, this.y, text, this.height);
+    text_drawer.drawTextColour(vp, this.x, this.y, text, this.height, this.text_colour);
+    
+    if(this.isOpen()){
+      //draw other options
+      let y = this.y+this.height;
+      for(const opt of this.options){
+        //dividing line (todo - set colour)
+        WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, y, this.width, 2);
+
+        //select text
+        text_drawer.drawTextColour(vp, this.x, y, opt, this.text_size, this.text_colour);
+        y += this.height;
+      }
+    }
+
   }
 }
