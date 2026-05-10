@@ -12,6 +12,11 @@ export class InterfaceElement{
     this.width = width;
     this.height = height;
   }
+  isInside(point: WebGL.Matrix.Point2D){
+    const in_x = this.x < point.x && point.x < this.x+this.width;
+    const in_y = this.y < point.y  && point.y < this.y+this.height;
+    return in_x && in_y;
+  }
   drawBackground(vp: WebGL.Matrix.TransformationMatrix3x3, 
     colour_shader: WebGL.Shader.MVPColourProgram, 
     bg_colour: WebGL.Colour.ColourRGB){

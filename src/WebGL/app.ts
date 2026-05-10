@@ -1,4 +1,5 @@
 import WebGL from "../WebGL/globals";
+import * as WebGLGlobals from "../WebGL/globals";
 
 type Int32 = number;
 type Float = number;
@@ -88,7 +89,11 @@ export class App<E extends IEngine>{
   //to override?
   loadResources(onLoaded:VoidFunction=()=>{}){
     //this.engine.loadTextures();
-    if(this.renderer.loadTextures) this.renderer.loadTextures(onLoaded);
+    if(this.renderer.loadTextures){
+      this.renderer.loadTextures(onLoaded);
+    }else{
+      onLoaded();
+    }
   }
   update(t: Float){
     this.engine.update(t);
@@ -104,5 +109,38 @@ export class App<E extends IEngine>{
     this.update(t);
     if(this.renderer.render) this.renderer.render(this.engine);
     requestAnimationFrame((t) => this.appCycle(t));
+  }
+}
+
+
+//includes text
+export class SimpleAppRenderer<E extends BaseEngine> implements IEngineRenderer<E>{
+  fonts: WebGLGlobals.FontLoader;
+  text_drawer: WebGLGlobals.TextDrawer;
+  orthographic: WebGLGlobals.Matrix.TransformationMatrix3x3;
+  font_names: string[];
+  constructor(w: Int32, h: Int32){
+    this.fonts = new WebGLGlobals.FontLoader();
+    this.text_drawer = new WebGLGlobals.TextDrawer();
+    this.orthographic = WebGLGlobals.Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+    this.font_names = [];
+  }
+  loadTextures(onLoad: VoidFunction=EmptyFunction){
+    console.log("loading textures");
+    for(const fn of this.font_names){
+      this.fonts.addFont(fn);
+    }
+    this.fonts.loadFonts(() => {
+      if(this.font_names.length != 0){
+        this.text_drawer.setFont(this.fonts.getFont(this.font_names[0])!);
+      }
+      //this.text_drawer.loadFont(); //this does nothing
+      console.log("finished loading");
+      if(onLoad) onLoad();
+      
+    });
+  }
+  resize(w: Int32, h: Int32){
+    this.orthographic = WebGLGlobals.Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
   }
 }

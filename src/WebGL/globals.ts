@@ -18,9 +18,15 @@ export * as Matrix from "./Matrix/matrix";
 export * as Texture from "./Texture/texture";
 export * as Line from "./Shapes/Line";
 export * as Shader from "./Shaders/custom";
-
+export * as App from "./app";
 
 type VoidFunction = () => void;
+
+interface MVPColourShader{
+  use: () => void;
+  setMvp:(mat: Matrix.TransformationMatrix3x3) => void;
+  setColourFromColourRGB: (colour: Colour.ColourRGB) => void;
+}
 
 export class WebGL{
   static gl: WebGL2RenderingContext | null;
@@ -60,6 +66,17 @@ export class WebGL{
     model.translate(0, -0.5);
     
     return model;
+  }
+  static drawColourRect(vp: Matrix.TransformationMatrix3x3, 
+    shader: MVPColourShader, x: Int32, y: Int32, 
+    width: Int32, height: Int32, 
+    colour: Colour.ColourRGB=Colour.ColourUtils.black())
+  {
+    const model = WebGL.rectangleModel(x, y, width, height);
+    shader.use();
+    shader.setColourFromColourRGB(colour);
+    shader.setMvp(vp.multiplyCopy(model));
+    Shapes.Quad.draw();
   }
 }
 
@@ -196,6 +213,9 @@ export class FontLoader{
         this.to_load.push(font);
       }
       console.log(this.to_load);
+      if(this.to_load.length == 0){
+        finishLoading(this);
+      }
 
       for(const font of this.to_load){
         console.log(font);
@@ -257,6 +277,7 @@ export class TextDrawer{
   }
   drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float){
     if(this.font){
+      //console.log(this.font);
       const gl = WebGL.gl!;
       this.sprite_sheet_shader.use();
       this.font.active(1);

@@ -9,6 +9,8 @@ import * as App from './WebGL/app';
 import * as Grid from './App/ResourceSim/grid_app';
 import * as WebGLGlobals from './WebGL/globals';
 
+import { newPuzzleApp } from './App/puzzle_box/app';
+
 import * as Water from './App/water/water'
 import * as Card from "./App/card/card";
 //import * as CustomShaders from './shaders/custom';
@@ -51,8 +53,8 @@ const card_engine = new Card.CardEngine(canvas.width, canvas.height);
 const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
 //const app = new App.App(card_engine, card_renderer);
-const app = new App.App(engine, renderer);
-
+//const app = new App.App(engine, renderer);
+const app = newPuzzleApp(canvas.width,canvas.height);
 
 app.loadResources(() => {
   console.log("running app");

@@ -157,8 +157,10 @@ export class SingleSelectOptions{
 }
 
 const DropdownStateEnum = {
-  Default: 0,
-  Selecting: 1
+  Closed: 0,
+  ClosedHover: 1,
+  Open: 2,
+  OpenHover: 3
 } as const;
 
 type DropdownState = (typeof DropdownStateEnum)[keyof typeof DropdownStateEnum];
@@ -170,23 +172,119 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   state: DropdownState;
 
   background_colour: WebGL.Colour.ColourRGB;
+  hovered_background_colour: WebGL.Colour.ColourRGB;
   text_colour: WebGL.Colour.ColourRGB;
+  text_size: Int32;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, options: string[]=[]){
     super(x, y, width, height);
     this.selected = 0;
     this.options = options;
-    this.state = DropdownStateEnum.Default;
+    this.state = DropdownStateEnum.Closed;
     this.background_colour = WebGL.Colour.ColourUtils.white();
+    this.hovered_background_colour = WebGL.Colour.ColourUtils.grey();
     this.text_colour = WebGL.Colour.ColourUtils.black();
+    this.text_size = this.height;
   }
-
+  hasOptions(): boolean{
+    return this.options.length > 0;
+  }
+  openHeight(): Int32{
+    return this.height*this.options.length;
+  }
+  isInside(point: WebGL.Matrix.Point2D){
+    if(this.isOpen()){
+      return this.isInsideOpened(point);
+    }
+    return super.isInside(point);
+  }
+  isInsideOpened(point: WebGL.Matrix.Point2D): boolean{
+    const in_x = this.x < point.x && point.x < this.x+this.width;
+    const in_y = this.y < point.y && point.y < this.y+this.openHeight();
+    return in_x && in_y;
+  }
+  // 0 is selected, otherwise 
+  getOptionIndexFromY(y: Int32): Int32{
+    const position = Math.floor(y / this.height);
+    return position == 0 ? this.selected : (position <= this.selected ? position-1 : position);
+  }
+  onMouseDown(point: WebGL.Matrix.Point2D){
+    if(this.isOpen()){
+      if(this.isHovered()){
+        this.selected = this.getOptionIndexFromY(point.y);
+        console.log(this.selected);
+        this.state = DropdownStateEnum.ClosedHover;
+      }else{
+        this.state = DropdownStateEnum.Closed;
+      }
+    }else{
+      if(this.isHovered()){
+        this.state = DropdownStateEnum.OpenHover;
+      }
+    }
+  }
+  isHovered(){
+    return this.state == DropdownStateEnum.OpenHover || this.state == DropdownStateEnum.ClosedHover;
+  }
+  isOpen(){
+    return this.state == DropdownStateEnum.Open || this.state == DropdownStateEnum.OpenHover;
+  }
+  isClosed(){
+    return this.state == DropdownStateEnum.Closed || this.state == DropdownStateEnum.ClosedHover;
+  }
+  onMouseOver(point: WebGL.Matrix.Point2D){
+    if(this.isInside(point)){
+      console.log("over");
+      if(this.isOpen()){
+        this.state = DropdownStateEnum.OpenHover;
+      }else if(this.isClosed()){
+        this.state = DropdownStateEnum.ClosedHover;
+      }
+    }else{
+      if(this.isOpen()){
+        this.state = DropdownStateEnum.Open;
+      }else if(this.isClosed()){
+        this.state = DropdownStateEnum.Closed;
+      }
+    }
+  }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
     colour_shader: WebGL.Shader.MVPColourProgram,
     text_drawer: WebGL.TextDrawer
   ){
-    this.drawBackground(vp, colour_shader, this.background_colour);
-    //todo
+
+
+    const bg_colour = this.isHovered() ? this.hovered_background_colour : this.background_colour;
+
+    //drawing background
+    if(!this.isOpen()){
+      this.drawBackground(vp, colour_shader, bg_colour);
+    }else{
+      const open_bg_model = WebGL.WebGL.rectangleModel(this.x, this.y, this.width, this.openHeight());
+      colour_shader.use();
+      colour_shader.setColourFromColourRGB(bg_colour);
+      colour_shader.setMvp(vp.multiplyCopy(open_bg_model));
+      WebGL.Shapes.Quad.draw();
+    }
+
+    //draw selected text;
+    const text = this.hasOptions() ? this.options[this.selected] : DropdownOptions.no_option_text;
+    text_drawer.drawTextColour(vp, this.x, this.y, text, this.height, this.text_colour);
     
+    if(this.isOpen()){
+      //draw other options
+      let y = this.y+this.height;
+      for(let i = 0; i < this.options.length; i++){
+        if(i == this.selected) continue;
+        const opt = this.options[i];
+        //dividing line (todo - set colour)
+        WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, y, this.width, 2);
+
+        //select text
+        text_drawer.drawTextColour(vp, this.x, y, opt, this.text_size, this.text_colour);
+        y += this.height;
+      }
+    }
+
   }
 }

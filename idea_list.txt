@@ -1,8 +1,11 @@
 fix resizing - fixed by adding gl viewport in initialise ( can change )
 use new app.ts in webgl - done
 
+finish dropdown select - TODO
 add visual indicator (border) to text input when selected and sizing - TODO
 draggable window inside canvas - mostly finished 
 car move to destination - TODO
 save grid configurations - TODO
 car traffic - TODO
+
+implement puzzle grid - TODO
