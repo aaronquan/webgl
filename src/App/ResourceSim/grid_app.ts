@@ -199,6 +199,7 @@ export class WallEngine extends App.BaseEngine{
   //test_options: Options.SingleSelectOptions;
   //edit_state_options: Options.SingleSelectOptions;
   select_options: Options.SingleSelectOptions[];
+  test_drop_option: Options.DropdownOptions;
 
   test_internal_window: InternalWindow.InternalWindow;
 
@@ -206,6 +207,7 @@ export class WallEngine extends App.BaseEngine{
     super();
     const w = 10; const h = 10;
     const s = 80;
+    this.test_drop_option = new Options.DropdownOptions(100, 100, 80, 20, []);
     this.grid = new Grid.WallGrid(w,h);
     this.rect_grid = new Grid.RectGrid(w, h, s);
     this.mouse_over_cell = undefined;
@@ -1130,6 +1132,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     engine.test_internal_window.draw(this.perspective, this.solid_shader);
     this.drawInWindowTest(engine.test_internal_window);
+    engine.test_drop_option.draw(this.perspective, this.solid_shader, this.text_drawer);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
