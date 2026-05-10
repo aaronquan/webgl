@@ -172,6 +172,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   state: DropdownState;
 
   background_colour: WebGL.Colour.ColourRGB;
+  hovered_background_colour: WebGL.Colour.ColourRGB;
   text_colour: WebGL.Colour.ColourRGB;
   text_size: Int32;
 
@@ -181,6 +182,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     this.options = options;
     this.state = DropdownStateEnum.Closed;
     this.background_colour = WebGL.Colour.ColourUtils.white();
+    this.hovered_background_colour = WebGL.Colour.ColourUtils.grey();
     this.text_colour = WebGL.Colour.ColourUtils.black();
     this.text_size = this.height;
   }
@@ -197,8 +199,8 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     return super.isInside(point);
   }
   isInsideOpened(point: WebGL.Matrix.Point2D): boolean{
-    const in_x = point.x < this.x && this.x < point.x+this.width;
-    const in_y = point.y < this.y && this.y < point.y+this.openHeight();
+    const in_x = this.x < point.x && point.x < this.x+this.width;
+    const in_y = this.y < point.y && point.y < this.y+this.openHeight();
     return in_x && in_y;
   }
   // 0 is selected, otherwise 
@@ -210,12 +212,15 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     if(this.isOpen()){
       if(this.isHovered()){
         this.selected = this.getOptionIndexFromY(point.y);
+        console.log(this.selected);
         this.state = DropdownStateEnum.ClosedHover;
       }else{
         this.state = DropdownStateEnum.Closed;
       }
     }else{
-      //do nothing
+      if(this.isHovered()){
+        this.state = DropdownStateEnum.OpenHover;
+      }
     }
   }
   isHovered(){
@@ -229,6 +234,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   }
   onMouseOver(point: WebGL.Matrix.Point2D){
     if(this.isInside(point)){
+      console.log("over");
       if(this.isOpen()){
         this.state = DropdownStateEnum.OpenHover;
       }else if(this.isClosed()){
@@ -246,13 +252,16 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     colour_shader: WebGL.Shader.MVPColourProgram,
     text_drawer: WebGL.TextDrawer
   ){
+
+    const bg_colour = this.isHovered() ? this.hovered_background_colour : this.background_colour;
+
     //drawing background
     if(!this.isOpen()){
-      this.drawBackground(vp, colour_shader, this.background_colour);
+      this.drawBackground(vp, colour_shader, bg_colour);
     }else{
       const open_bg_model = WebGL.WebGL.rectangleModel(this.x, this.y, this.width, this.openHeight());
       colour_shader.use();
-      colour_shader.setColourFromColourRGB(this.background_colour);
+      colour_shader.setColourFromColourRGB(bg_colour);
       colour_shader.setMvp(vp.multiplyCopy(open_bg_model));
       WebGL.Shapes.Quad.draw();
     }
@@ -264,7 +273,9 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     if(this.isOpen()){
       //draw other options
       let y = this.y+this.height;
-      for(const opt of this.options){
+      for(let i = 0; i < this.options.length; i++){
+        if(i == this.selected) continue;
+        const opt = this.options[i];
         //dividing line (todo - set colour)
         WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, y, this.width, 2);
 

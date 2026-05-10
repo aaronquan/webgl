@@ -18,7 +18,7 @@ export * as Matrix from "./Matrix/matrix";
 export * as Texture from "./Texture/texture";
 export * as Line from "./Shapes/Line";
 export * as Shader from "./Shaders/custom";
-
+export * as App from "./app";
 
 type VoidFunction = () => void;
 
@@ -213,6 +213,9 @@ export class FontLoader{
         this.to_load.push(font);
       }
       console.log(this.to_load);
+      if(this.to_load.length == 0){
+        finishLoading(this);
+      }
 
       for(const font of this.to_load){
         console.log(font);
@@ -274,6 +277,7 @@ export class TextDrawer{
   }
   drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float){
     if(this.font){
+      //console.log(this.font);
       const gl = WebGL.gl!;
       this.sprite_sheet_shader.use();
       this.font.active(1);
