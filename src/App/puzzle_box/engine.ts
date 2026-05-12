@@ -16,10 +16,26 @@ class IdGrid{
 }
 
 class ShapeIdGrid extends IdGrid{
-  canFitShape(shape: GridShape, x: Int32, y: Int32){
-
+  isFree(x: Int32, y: Int32): boolean{
+    return this.object_id[x+y*this.width] == undefined;
   }
-  addShape(){
+  canFitShape(shape: GridShapeInstance, x: Int32, y: Int32): boolean{
+    //test borders
+    if(x < 0 || y < 0 || x+shape.width >= this.width || y+shape.height >= this.height){
+      return false;
+    }
+
+    //test individual parts
+    for(let py = 0; py < shape.height; py++){
+      for(let px = 0; px < shape.width; px++){
+        if(shape.getPart(x, y) && this.isFree(x+px, y+py) != undefined){
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  addShape(shape: GridShapeInstance, x: Int32, y: Int32){
 
   }
 }
@@ -111,10 +127,21 @@ export class GridShapeInstance{
 export class PuzzleEngine extends WebGL.App.BaseEngine{
   option_select: Options.DropdownOptions;
   mouse_point: WebGL.Matrix.Point2D | undefined;
+
+  my_shapes: GridShape[]; 
   constructor(){
     super();
     this.option_select = new Options.DropdownOptions(100, 100, 150, 25, ["hello", "good", "bye"]);
+    this.my_shapes = this.createShapes();
   }
+  createShapes(): GridShape[]{
+    const one = new GridShape(1, 1, [true]);
+    const two = new GridShape(2, 1, [true, true]);
+    const l = new GridShape(3, 2, [false, false, true, true, true, true]);
+    const t = new GridShape(3, 2, [false, true, false, true, true, true]);
+    return [one, two, l, t];
+  }
+
   override handleKeyDown(ev: KeyboardEvent){};
   //to override
   override handleKeyUp(ev: KeyboardEvent){};
