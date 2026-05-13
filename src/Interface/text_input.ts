@@ -23,7 +23,8 @@ export class TextGlobals{
 
 const TextStatusEnum = {
   Deselected: 0,
-  Selected: 1
+  Selected: 1,
+  Highlighting: 2,
 } as const;
 
 type TextStatus = (typeof TextStatusEnum)[keyof typeof TextStatusEnum];
@@ -37,6 +38,7 @@ export class TextInput{
   background_colour: WebGL.Colour.ColourRGB;
   text_colour: WebGL.Colour.ColourRGB;
   cursor_colour: WebGL.Colour.ColourRGB;
+  highlight_colour: WebGL.Colour.ColourRGB;
 
   select_border_colour: WebGL.Colour.ColourRGB;
 
@@ -53,6 +55,11 @@ export class TextInput{
 
   onChange: (text: string) => void;
 
+  highlight_pivot: Int32;
+  highlight_start: Int32;
+  highlight_end: Int32;
+  highlighting: boolean;
+
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, ts: Int32=height-4){
     this.x = x;
     this.y = y;
@@ -66,6 +73,7 @@ export class TextInput{
     this.background_colour = WebGL.Colour.ColourUtils.white();
     this.text_colour = WebGL.Colour.ColourUtils.black();
     this.cursor_colour = WebGL.Colour.ColourUtils.blue();
+    this.highlight_colour = WebGL.Colour.ColourUtils.cyan();
     this.select_border_colour = WebGL.Colour.ColourUtils.fromRGB(0.3, 0.5, 0.9);
     
     this.text = "";
@@ -75,6 +83,11 @@ export class TextInput{
     this.cursor_thickness = 1;
     this.cursor_index = 0;
     this.onChange = (_) => {};
+    
+    this.highlight_pivot = -1;
+    this.highlight_start = 0;
+    this.highlight_end = 0;
+    this.highlighting = false;
   }
   maxTextSize(): Int32{
     return Math.floor((this.width-(this.text_offset*2)) / this.text_size);
@@ -85,48 +98,126 @@ export class TextInput{
     return in_x && in_y;
   }
   onKeyDown(ev: KeyboardEvent){
-    console.log(ev.key);
     if(this.state == TextStatusEnum.Selected){
-      if(ev.key.length == 1 && this.text.length < this.maxTextSize()){
-        this.text = this.text.slice(0, this.cursor_index) + ev.key + this.text.slice(this.cursor_index);
-        this.cursor_index++;
-        this.onChange(this.text);
+      if(ev.key.length == 1){
+        if(ev.key == 'c' && ev.ctrlKey){
+          //copy
+          navigator.clipboard.writeText(this.getHighlighted()).then(() => {});
+        }else{
+          this.deleteHighlighted();
+          if(ev.key == 'v' && ev.ctrlKey){
+            //paste
+            navigator.clipboard.readText().then((text) => {
+              this.text = this.text.slice(0, this.cursor_index) + text + this.text.slice(this.cursor_index);
+              this.text = this.text.slice(0, this.maxTextSize());
+            });
+          }else if(this.text.length < this.maxTextSize()){
+            this.text = this.text.slice(0, this.cursor_index) + ev.key + this.text.slice(this.cursor_index);
+            this.cursor_index++;
+            this.onChange(this.text);
+          }
+        }
       }else if(ev.key === "Backspace"){
-        if(this.cursor_index > 0){
-          this.text = this.text.slice(0, this.cursor_index-1) + this.text.slice(this.cursor_index);
-          this.cursor_index--;
-          this.onChange(this.text);
+        if(!this.deleteHighlighted()){
+          if(this.cursor_index > 0){
+            this.text = this.text.slice(0, this.cursor_index-1) + this.text.slice(this.cursor_index);
+            this.cursor_index--;
+            this.onChange(this.text);
+          }
         }
       }else if(ev.key === "ArrowRight"){
-        if(this.cursor_index < this.text.length){
+        if(ev.shiftKey && this.cursor_index < this.text.length){
+          if(!this.hasHighlight()){
+            this.highlight_start = this.cursor_index;
+            this.highlight_end = this.cursor_index+1;
+          }else if(this.cursor_index == this.highlight_end){
+            this.highlight_end++;
+          }else if(this.cursor_index == this.highlight_start){
+            this.highlight_start++;
+          }
           this.cursor_index++;
+        }else{
+          if(this.hasHighlight()){
+            this.cursor_index = this.highlight_end;
+            this.highlight_start = this.highlight_end;
+          }else{
+            if(this.cursor_index < this.text.length){
+              this.cursor_index++;
+            }
+          }
         }
       }else if(ev.key === "ArrowLeft"){
-        if(this.cursor_index > 0){
+        if(ev.shiftKey && this.cursor_index > 0){
+          if(!this.hasHighlight()){
+            this.highlight_start = this.cursor_index-1;
+            this.highlight_end = this.cursor_index;
+          }else if(this.cursor_index == this.highlight_start){
+            this.highlight_start--;
+          }else if(this.cursor_index == this.highlight_end){
+            this.highlight_end--;
+          }
           this.cursor_index--;
+        }else{
+          if(this.hasHighlight()){
+          this.cursor_index = this.highlight_start;
+          this.highlight_start = this.highlight_end;
+          }else{
+            if(this.cursor_index > 0){
+              this.cursor_index--;
+            }
+          }
         }
       }
     }
   }
+  getHighlighted(): string{
+    if(this.hasHighlight()){
+      return this.text.slice(this.highlight_start, this.highlight_end);
+    }
+    return "";
+  }
+  deleteHighlighted(): boolean{
+    if(this.hasHighlight()){
+      this.text = this.text.slice(0, this.highlight_start) + this.text.slice(this.highlight_end);
+      if(this.cursor_index == this.highlight_end){
+        this.cursor_index = this.highlight_start;
+      }
+      this.highlight_start = this.highlight_end;
+      return true;
+    }
+    return false;
+  }
+  hasHighlight(){
+    return this.highlight_start != this.highlight_end;
+  }
   cursorIndexFromX(x: Float): Int32{
     const fl = (x-(this.x+this.text_offset))/this.text_size;
     const i = Math.round(fl);
+    if(i < 0) return 0;
     return i > this.text.length ? this.text.length : i;
   }
   onMouseMove(point: WebGL.Matrix.Point2D){
-
+    if(this.highlighting){
+      const index = this.cursorIndexFromX(point.x);
+      this.highlight_start = Math.min(index, this.highlight_pivot);
+      this.highlight_end = Math.max(index, this.highlight_pivot);
+      this.cursor_index = index;
+    }
   }
   onMouseDown(point: WebGL.Matrix.Point2D){
     if(this.isInside(point)){
       this.state = TextStatusEnum.Selected;
       const index = this.cursorIndexFromX(point.x);
       this.cursor_index = index;
+      this.highlight_start = this.highlight_end;
+      this.highlight_pivot = this.cursor_index;
+      this.highlighting = true;
     }else{
       this.state = TextStatusEnum.Deselected;
     }
   }
   onMouseUp(){
-
+    this.highlighting = false;
   }
 
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
@@ -140,8 +231,13 @@ export class TextInput{
       WebGL.Shapes.Quad.draw();
 
       const text_height_diff = this.height - this.text_size;
-
       const y = this.y + (text_height_diff*0.5);
+
+      if(this.highlight_start != this.highlight_end){
+        WebGL.WebGL.drawColourRect(vp, colour_shader, this.x+this.text_offset+(this.highlight_start*this.text_size), 
+        y, (this.highlight_end-this.highlight_start)*this.text_size,
+        this.text_size, this.highlight_colour);
+      }
 
       //text cursor
       if(TextGlobals.cursor_on && this.state == TextStatusEnum.Selected){

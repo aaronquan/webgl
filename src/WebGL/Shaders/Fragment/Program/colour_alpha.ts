@@ -1,6 +1,13 @@
-import ColourAlpha from './../Source/colour_alpha.frag?raw';
 import * as Shader from './../../shader';
 import * as WebGL from './../../../globals';
+
+const ColourAlpha = `precision mediump float;
+
+uniform vec4 colour; //coloura
+
+void main(){
+  gl_FragColor = vec4(colour);
+}`;
 
 export class ColourAlphaFragmentShader{
   static shader?: Shader.FragmentShader;

@@ -29,8 +29,6 @@ overlay.textContent = "Loading";
 canvas.width = window.innerWidth; // record this! TODO important for consistant resizing
 canvas.height = window.innerHeight;
 
-
-
 //console.log(txt.);
 //const gl: WebGL2RenderingContext = canvas.getContext("webgl2")!;
 WebGL.initialise(canvas);
@@ -53,8 +51,8 @@ const card_engine = new Card.CardEngine(canvas.width, canvas.height);
 const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
 //const app = new App.App(card_engine, card_renderer);
-//const app = new App.App(engine, renderer);
-const app = newPuzzleApp(canvas.width,canvas.height);
+const app = new App.App(engine, renderer);
+//const app = newPuzzleApp(canvas.width, canvas.height);
 
 app.loadResources(() => {
   console.log("running app");

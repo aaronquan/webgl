@@ -1,7 +1,7 @@
 {
-  "name": "webgl",
-  "private": true,
-  "version": "0.0.0",
+  "name": "webglmusti",
+  "private": false,
+  "version": "0.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",

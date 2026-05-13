@@ -1,6 +1,15 @@
-import Colour from './../Source/colour.frag?raw';
 import * as Shader from './../../shader';
 import * as WebGL from './../../../globals';
+
+const Colour = `precision mediump float;
+
+
+
+uniform vec3 colour; //colour
+
+void main(){
+  gl_FragColor = vec4(colour, 1.0);
+}`;
 
 export class ColourFragmentShader{
   static shader?: Shader.FragmentShader;
@@ -30,10 +39,8 @@ export function ColourShaderProgramMix<TBase extends Shader.CustomShaderPrograma
     setColour(a: GLfloat, b: GLfloat, c: GLfloat){
       this.program.setFloat3(this.colour_uniform_location!, a, b, c);
     }
-
     setColourFromColourRGB(colour: WebGL.Colour.ColourRGB){
       this.program.setFloat3(this.colour_uniform_location!, colour.red, colour.green, colour.blue);
     }
-
   }
 }

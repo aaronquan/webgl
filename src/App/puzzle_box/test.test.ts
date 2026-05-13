@@ -18,7 +18,7 @@ test("grid_shape", () => {
   expect(i1.getPart(2, 1)).toBe(true);
 
   const i2 = new Puzzle.GridShapeInstance(shape);
-  i2.setRotation(Puzzle.RotationEnum.Clockwise);
+  i2.setRotation(Puzzle.RotationEnum.Right);
   expect(i2.getPart(0, 0)).toBe(false);
   expect(i2.getPart(1, 0)).toBe(true);
   expect(i2.getPart(0, 1)).toBe(false);
@@ -28,7 +28,7 @@ test("grid_shape", () => {
   expect(i2.getPart(2, 2)).toBe(undefined);
 
   const i3 = new Puzzle.GridShapeInstance(shape);
-  i3.setRotation(Puzzle.RotationEnum.AntiClockwise);
+  i3.setRotation(Puzzle.RotationEnum.Left);
   expect(i3.getPart(0, 0)).toBe(true);
   expect(i3.getPart(1, 0)).toBe(true);
   expect(i3.getPart(0, 1)).toBe(true);
@@ -38,7 +38,7 @@ test("grid_shape", () => {
   expect(i3.getPart(2, 2)).toBe(undefined);
 
   const i4 = new Puzzle.GridShapeInstance(shape);
-  i4.setRotation(Puzzle.RotationEnum.Opposite);
+  i4.setRotation(Puzzle.RotationEnum.Down);
   expect(i4.getPart(0, 0)).toBe(true);
   expect(i4.getPart(1, 0)).toBe(false);
   expect(i4.getPart(2, 0)).toBe(false);

@@ -1,5 +1,18 @@
-import Line from './../Source/line.frag?raw';
 import * as Shader from './../../shader';
+import * as WebGL from './../../../globals';
+
+const Line = `precision mediump float;
+
+varying vec2 v_position;
+varying vec2 v_relative;
+
+uniform float u_thickness;
+uniform vec3 u_equation;
+
+void main(){
+  float in_line = 1.0-step(u_thickness, abs(u_equation.x*v_relative.x + u_equation.y*v_relative.y + u_equation.z));
+  gl_FragColor = vec4(vec3(1.0), in_line);
+}`;
 
 export class LineFragmentShader{
   static shader?: Shader.FragmentShader;
@@ -19,11 +32,10 @@ export function LineShaderProgramMix<TBase extends Shader.CustomShaderProgramabl
     private declare equation_uniform_location: WebGLUniformLocation | null;
     protected override setupFragment(){
       this.fragment_name = 'LineShader';
-      if(LineFragmentShader.shader){
-        this.program.addFragment(LineFragmentShader.shader)
-      }else{
-        throw new Error(`${this.fragment_name} not loaded`);
+      if(!LineFragmentShader.shader){
+        LineFragmentShader.load();
       }
+      this.program.addFragment(LineFragmentShader.shader!);
     }
     protected override addFragmentUniformLocations(): void{
       this.thickness_uniform_location = this.program.getUniformLocation('u_thickness');

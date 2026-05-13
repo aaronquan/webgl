@@ -34,6 +34,7 @@ export class BaseEngine implements IEngine{
     window.addEventListener("mousemove", (ev) => this.handleMouseMove(ev));
     window.addEventListener("mousedown", (ev) => this.handleMouseDown(ev));
     window.addEventListener("mouseup", (ev) => this.handleMouseUp(ev));
+    document.addEventListener("wheel", (ev) => this.handleScrollWheel(ev));
   }
   resize(w: Int32, h:Int32){
 
@@ -49,6 +50,9 @@ export class BaseEngine implements IEngine{
   protected handleMouseDown(ev: MouseEvent){};
   //to override
   protected handleMouseUp(ev: MouseEvent){};
+  //to override
+  protected handleScrollWheel(ev: WheelEvent){
+  }
 
 }
 

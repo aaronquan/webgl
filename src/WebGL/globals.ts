@@ -19,6 +19,7 @@ export * as Texture from "./Texture/texture";
 export * as Line from "./Shapes/Line";
 export * as Shader from "./Shaders/custom";
 export * as App from "./app";
+export * as FileUtil from "./Util/file"
 
 type VoidFunction = () => void;
 

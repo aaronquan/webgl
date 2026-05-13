@@ -1,5 +1,24 @@
-import SpriteSheet from './../Source/sprite_sheet.frag?raw';
 import * as Shader from './../../shader';
+import * as WebGL from './../../../globals';
+
+const SpriteSheet = `precision mediump float;
+
+varying vec2 v_position;
+varying vec2 v_relative;
+
+
+uniform sampler2D u_texture_id;
+uniform float u_width;
+uniform float u_height;
+uniform float u_x;
+uniform float u_y;
+
+void main(){
+    float px = (u_x+v_relative.x)/u_width;
+	float py = (u_y+v_relative.y)/u_height;
+    
+    gl_FragColor = texture2D(u_texture_id, vec2(px, py));
+}`;
 
 export class SpriteSheetFragmentShader{
   static shader?: Shader.FragmentShader;
@@ -22,11 +41,10 @@ export function SpriteSheetShaderProgramMix<TBase extends Shader.CustomShaderPro
     private declare y_uniform_location: WebGLUniformLocation | null;
     protected override setupFragment(){
       this.fragment_name = 'SpriteSheetShader';
-      if(SpriteSheetFragmentShader.shader){
-        this.program.addFragment(SpriteSheetFragmentShader.shader)
-      }else{
-        throw new Error(`${this.fragment_name} not loaded`);
+      if(!SpriteSheetFragmentShader.shader){
+        SpriteSheetFragmentShader.load();
       }
+      this.program.addFragment(SpriteSheetFragmentShader.shader!);
     }
     protected override addFragmentUniformLocations(): void{
       this.texture_id_uniform_location = this.program.getUniformLocation('u_texture_id');
