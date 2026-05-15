@@ -1,11 +1,13 @@
+//webgl imports
+
 import WebGL from "../../WebGL/globals"
 import * as App from "./../../WebGL/app"
 import * as Shader from "../../WebGL/Shaders/custom"
-import * as Texture from "../../WebGL/Texture/texture"
 import * as Matrix from "../../WebGL/Matrix/matrix"
 import * as Shapes from "../../WebGL/Shapes/Shapes"
 import * as WebGLGlobals from "../../WebGL/globals"
-import { colour } from "../../WebGL/Shaders/Fragment/Source/fragment_source"
+
+//grid imports
 import { DirectionUtil } from "../ResourceSim/grid"
 import * as Grid from "../ResourceSim/grid";
 

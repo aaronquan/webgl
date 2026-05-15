@@ -20,13 +20,13 @@ import * as NumberUtils from "../../utils/numbers";
 import * as Texts from "./texts";
 
 //interface imports
-import * as Options from "./../../Interface/options";
+//import * as Options from "./../../Interface/options";
 //import * as InternalWindow from "./../../Interface/internal_window";
-import * as Button from "../../Interface/button";
-import * as TextInput from "../../Interface/text_input";
+//import * as Button from "../../Interface/button";
+//import * as TextInput from "../../Interface/text_input";
 
 
-interface Point extends Button.Point{};
+interface Point extends WebGL.Interface.Button.Point{};
 
 type Int32 = number;
 type Float = number;
@@ -158,6 +158,17 @@ class TestContent extends WebGL.Interface.InternalWindow.InternalContent{
   }
 }
 
+class TestScrollContentWindow extends WebGL.Interface.InternalWindow.HorizontalScrollInternalWindow{
+  
+  constructor(){
+    super(10, 10, 300, 300, 600, 300, 12);
+  }
+
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram){
+    super.draw(vp, colour_shader);
+  }
+}
+
 export class WallEngine extends App.BaseEngine{
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
@@ -182,8 +193,8 @@ export class WallEngine extends App.BaseEngine{
 
   car_collection: Car.CarCollection;
 
-  buttons: Button.ButtonSet;
-  toggle_buttons: Button.ToggleButtonSet;
+  buttons: WebGL.Interface.Button.ButtonSet;
+  toggle_buttons: WebGL.Interface.Button.ToggleButtonSet;
 
   hovered_node: Node.KeyNode | undefined;
   nodes: Node.KeyNode[];
@@ -207,28 +218,29 @@ export class WallEngine extends App.BaseEngine{
 
   hovered_car: Int32 | undefined;
   selected_car: Int32 | undefined;
-  car_buttons: Button.SingleSelectToggleButtonSet;
+  car_buttons: WebGL.Interface.Button.SingleSelectToggleButtonSet;
 
-  test_text_box: TextInput.TextInput;
+  test_text_box: WebGL.Interface.TextInput.TextInput;
 
   graph_updated_status: boolean;
 
-  //test_options: Options.SingleSelectOptions;
-  //edit_state_options: Options.SingleSelectOptions;
-  select_options: Options.SingleSelectOptions[];
-  test_drop_option: Options.DropdownOptions;
+  //test_options: WebGL.Interface.Options.SingleSelectOptions;
+  //edit_state_options: WebGL.Interface.Options.SingleSelectOptions;
+  select_options: WebGL.Interface.Options.SingleSelectOptions[];
+  test_drop_option: WebGL.Interface.Options.DropdownOptions;
 
   test_internal_window: WebGL.Interface.InternalWindow.InternalWindow;
 
   test_scrollbar: WebGL.Interface.ScrollBar.HorizontalScrollBar;
 
   test_content: TestContent;
+  test_scroll_window: TestScrollContentWindow;
 
   constructor(){
     super();
     const w = 10; const h = 10;
     const s = 80;
-    this.test_drop_option = new Options.DropdownOptions(100, 100, 80, 20, []);
+    this.test_drop_option = new WebGL.Interface.Options.DropdownOptions(100, 100, 80, 20, []);
     this.grid = new Grid.WallGrid(w,h);
     this.rect_grid = new Grid.RectGrid(w, h, s);
     this.mouse_over_cell = undefined;
@@ -249,16 +261,17 @@ export class WallEngine extends App.BaseEngine{
     this.adding_path_hori_first = true;
     this.highlight_path = [];
 
-    this.buttons = new Button.ButtonSet();
-    this.toggle_buttons = new Button.ToggleButtonSet();
+    this.buttons = new WebGL.Interface.Button.ButtonSet();
+    this.toggle_buttons = new WebGL.Interface.Button.ToggleButtonSet();
     this.graph_updated_status = false;
     this.test_internal_window = new WebGL.Interface.InternalWindow.InternalWindow(100, 50, 200, 200);
+    this.test_scroll_window = new TestScrollContentWindow();
 
     // adding buttons
     const butt_x = 810;
 
     this.select_options = [];
-    const edit_state_options = new Options.SingleSelectOptions(["Off", "Add", "Del", "Sel"], butt_x+90, 80, 15);
+    const edit_state_options = new WebGL.Interface.Options.SingleSelectOptions(["Off", "Add", "Del", "Sel"], butt_x+90, 80, 15);
     edit_state_options.onSelected = (id: Int32) => {
       switch(id){
         case 0:
@@ -280,7 +293,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.select_options.push(edit_state_options);
 
-    const car_plan_button = new Button.BasicButton(butt_x, 10, 80, 25, 9);
+    const car_plan_button = new WebGL.Interface.Button.BasicButton(butt_x, 10, 80, 25, 9);
     car_plan_button.text = "New Plan";
     car_plan_button.onPressed = () => {
       //console.log(this.car.last_key);
@@ -298,7 +311,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.buttons.addButton(car_plan_button);
 
-    const example_plan_button = new Button.BasicButton(butt_x, 130, 80, 25, 7);
+    const example_plan_button = new WebGL.Interface.Button.BasicButton(butt_x, 130, 80, 25, 7);
     example_plan_button.text = "New Example";
     example_plan_button.onPressed = () => {
       this.clearGrid();
@@ -320,7 +333,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.buttons.addButton(example_plan_button);
 
-    const generate_graph_button = new Button.BasicButton(butt_x, 160, 80, 25, 8);
+    const generate_graph_button = new WebGL.Interface.Button.BasicButton(butt_x, 160, 80, 25, 8);
     generate_graph_button.text = "Gen Graph";
     generate_graph_button.onPressed = () => {
       this.node_graph.generate(this.grid, this.active_nodes);
@@ -329,7 +342,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.buttons.addButton(generate_graph_button);
 
-    const validate_button = new Button.BasicButton(butt_x, 190, 80, 25, 8);
+    const validate_button = new WebGL.Interface.Button.BasicButton(butt_x, 190, 80, 25, 8);
     validate_button.text = "Validate";
     validate_button.onPressed = () => {
       const valid = this.validateGrid();
@@ -337,7 +350,7 @@ export class WallEngine extends App.BaseEngine{
     };
     this.buttons.addButton(validate_button);
 
-    const clear_button = new Button.BasicButton(butt_x, 220, 80, 25, 8);
+    const clear_button = new WebGL.Interface.Button.BasicButton(butt_x, 220, 80, 25, 8);
     clear_button.text = "Clear Grid";
     clear_button.onPressed = () => {
       this.clearGrid();
@@ -345,7 +358,7 @@ export class WallEngine extends App.BaseEngine{
     };
     this.buttons.addButton(clear_button);
 
-    const short_path_button = new Button.BasicButton(butt_x, 250, 80, 25, 6);
+    const short_path_button = new WebGL.Interface.Button.BasicButton(butt_x, 250, 80, 25, 6);
     short_path_button.text = "Shortest Path";
     short_path_button.onPressed = () => {
       if(this.selected_nodes.size == 2){
@@ -363,7 +376,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.buttons.addButton(short_path_button);
 
-    const add_car_button = new Button.BasicButton(butt_x, 280, 80, 25, 8);
+    const add_car_button = new WebGL.Interface.Button.BasicButton(butt_x, 280, 80, 25, 8);
     add_car_button.text = "Add car";
     add_car_button.onPressed = () => {
       if(this.selected_nodes.size == 1){
@@ -378,7 +391,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.buttons.addButton(add_car_button);
 
-    const car_path_button = new Button.BasicButton(butt_x, 310, 80, 25, 8);
+    const car_path_button = new WebGL.Interface.Button.BasicButton(butt_x, 310, 80, 25, 8);
     car_path_button.text = "Car Path To";
     car_path_button.onPressed = () => {
       if(this.selected_nodes.size == 1 && this.selected_car != undefined){
@@ -407,14 +420,14 @@ export class WallEngine extends App.BaseEngine{
     };
     this.buttons.addButton(car_path_button);
 
-    const car_delete_button = new Button.BasicButton(butt_x, 340, 80, 25, 8);
+    const car_delete_button = new WebGL.Interface.Button.BasicButton(butt_x, 340, 80, 25, 8);
     car_delete_button.text = "Car Del";
     car_delete_button.onPressed = () => {
       this.deleteSelectedCar();
     };
     this.buttons.addButton(car_delete_button);
 
-    const add_button = new Button.ToggleButton(butt_x, 45, 80, 20, 10);
+    const add_button = new WebGL.Interface.Button.ToggleButton(butt_x, 45, 80, 20, 10);
     add_button.on_text = "Add On";
     add_button.off_text = "Add Off";
     add_button.onToggleOn = () => {
@@ -428,7 +441,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.toggle_buttons.addButton(add_button);
 
-    const delete_button = new Button.ToggleButton(butt_x, 70, 80, 20, 10);
+    const delete_button = new WebGL.Interface.Button.ToggleButton(butt_x, 70, 80, 20, 10);
     delete_button.on_text = "Del On";
     delete_button.off_text = "Del Off";
     delete_button.onToggleOn = () => {
@@ -441,7 +454,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.toggle_buttons.addButton(delete_button);
 
-    const select_button = new Button.ToggleButton(butt_x, 95, 80, 20, 10);
+    const select_button = new WebGL.Interface.Button.ToggleButton(butt_x, 95, 80, 20, 10);
     select_button.on_text = "Sel On";
     select_button.off_text = "Sel Off";
     select_button.onToggleOn = () => {
@@ -455,7 +468,7 @@ export class WallEngine extends App.BaseEngine{
 
     this.toggle_buttons.addButton(select_button);
 
-    this.car_buttons = new Button.SingleSelectToggleButtonSet();
+    this.car_buttons = new WebGL.Interface.Button.SingleSelectToggleButtonSet();
 
     this.view = Matrix.TransformationMatrix3x3.identity();
 
@@ -472,7 +485,7 @@ export class WallEngine extends App.BaseEngine{
     this.hovered_car = undefined;
     this.selected_car = undefined;
 
-    this.test_text_box = new TextInput.TextInput(200, 810, 600, 20);
+    this.test_text_box = new WebGL.Interface.TextInput.TextInput(200, 810, 600, 20);
     this.test_scrollbar = new WebGL.Interface.ScrollBar.HorizontalScrollBar(150, 350, 400, 40, 5, 600);
     this.test_content = new TestContent(this.test_internal_window);
   }
@@ -874,7 +887,7 @@ export class WallEngine extends App.BaseEngine{
       this.hovered_car = undefined;
     }
 
-    TextInput.TextGlobals.update(update_time);
+    WebGL.Interface.TextInput.TextGlobals.update(update_time);
 
     this.last_time = time;
   }
@@ -1161,6 +1174,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.drawInternalWindowTest(engine, engine.test_content);
     engine.test_drop_option.draw(this.perspective, this.solid_shader, this.text_drawer);
     engine.test_scrollbar.draw(this.perspective, this.solid_shader);
+    engine.test_scroll_window.draw(this.perspective, this.solid_shader);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();

@@ -1,7 +1,7 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as PEngine from "./engine";
 import { PuzzleEngine } from "./engine";
-import Heap from "@datastructures-js/priority-queue";
+
 
 
 type Int32 = number;

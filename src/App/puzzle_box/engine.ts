@@ -1,7 +1,4 @@
 import * as WebGL from "./../../WebGL/globals";
-import * as Options from "./../../Interface/options";
-import * as Button from "./../../Interface/button";
-import * as InterfaceElement from "./../../Interface/interface_element";
 
 type Int32 = number;
 type Float = number;
@@ -237,7 +234,7 @@ export class GridShapeInstance{
 }
 
 
-export class ShapeLabel extends InterfaceElement.InterfaceElement{
+export class ShapeLabel extends WebGL.Interface.InterfaceElement.InterfaceElement{
   shape: GridShape;
   is_hovered: boolean;
   onSelect: ((shape: GridShape) => void) | undefined;
@@ -325,7 +322,7 @@ type Coord = {
 }
 
 export class PuzzleEngine extends WebGL.App.BaseEngine{
-  option_select: Options.DropdownOptions;
+  option_select: WebGL.Interface.Options.DropdownOptions;
   mouse_point: WebGL.Matrix.Point2D | undefined;
 
   my_shapes: GridShape[]; 
@@ -347,7 +344,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
   constructor(){
     super();
-    this.option_select = new Options.DropdownOptions(100, 100, 150, 25, ["hello", "good", "bye"]);
+    this.option_select = new WebGL.Interface.Options.DropdownOptions(100, 100, 150, 25, ["hello", "good", "bye"]);
     this.my_shapes = this.createShapes();
 
     this.shape_label_layout = new GridLayout(100, 100, 120, 80, 500, 500);
