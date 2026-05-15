@@ -1,4 +1,3 @@
-import { colour } from "../WebGL/Shaders/Fragment/Source/fragment_source";
 import * as WebGL from "./../WebGL/globals";
 
 type Int32 = number;

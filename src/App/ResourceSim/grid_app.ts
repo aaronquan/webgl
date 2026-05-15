@@ -21,7 +21,7 @@ import * as Texts from "./texts";
 
 //interface imports
 import * as Options from "./../../Interface/options";
-import * as InternalWindow from "./../../Interface/internal_window";
+//import * as InternalWindow from "./../../Interface/internal_window";
 import * as Button from "../../Interface/button";
 import * as TextInput from "../../Interface/text_input";
 
@@ -141,6 +141,23 @@ const GridCellSectionEnum =  {
 
 type GridCellSection = (typeof GridCellSectionEnum)[keyof typeof GridCellSectionEnum];
 
+class TestContent extends WebGL.Interface.InternalWindow.InternalContent{
+  t1: string;
+  constructor(win: WebGL.Interface.InternalWindow.InternalWindow){
+
+    super(win, 400, 400);
+    this.t1 = "A string";
+  }
+
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
+    this.window.draw(vp, colour_shader);
+    const wx = this.window.x;
+    const wy = this.window.getInternalY();
+
+    text_drawer.drawText(vp, wx+40, wy+50, this.t1, 10);
+  }
+}
+
 export class WallEngine extends App.BaseEngine{
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
@@ -201,7 +218,11 @@ export class WallEngine extends App.BaseEngine{
   select_options: Options.SingleSelectOptions[];
   test_drop_option: Options.DropdownOptions;
 
-  test_internal_window: InternalWindow.InternalWindow;
+  test_internal_window: WebGL.Interface.InternalWindow.InternalWindow;
+
+  test_scrollbar: WebGL.Interface.ScrollBar.HorizontalScrollBar;
+
+  test_content: TestContent;
 
   constructor(){
     super();
@@ -231,7 +252,7 @@ export class WallEngine extends App.BaseEngine{
     this.buttons = new Button.ButtonSet();
     this.toggle_buttons = new Button.ToggleButtonSet();
     this.graph_updated_status = false;
-    this.test_internal_window = new InternalWindow.InternalWindow(100, 50, 200, 200);
+    this.test_internal_window = new WebGL.Interface.InternalWindow.InternalWindow(100, 50, 200, 200);
 
     // adding buttons
     const butt_x = 810;
@@ -452,6 +473,8 @@ export class WallEngine extends App.BaseEngine{
     this.selected_car = undefined;
 
     this.test_text_box = new TextInput.TextInput(200, 810, 600, 20);
+    this.test_scrollbar = new WebGL.Interface.ScrollBar.HorizontalScrollBar(150, 350, 400, 40, 5, 600);
+    this.test_content = new TestContent(this.test_internal_window);
   }
   addKeyNode(node: Node.KeyNode){
     if(this.grid.getNodeId(node.x, node.y) != undefined){
@@ -674,7 +697,8 @@ export class WallEngine extends App.BaseEngine{
     for(const opt of this.select_options){
       opt.onMouseMove(true_mouse);
     }
-    this.test_internal_window.mouseMove(true_mouse);
+    this.test_internal_window.onMouseMove(true_mouse);
+    this.test_scrollbar.onMouseMove(true_mouse);
   }
 
   protected override handleMouseDown(ev: MouseEvent){
@@ -722,8 +746,10 @@ export class WallEngine extends App.BaseEngine{
       for(const opt of this.select_options){
         opt.onMouseDown();
       }
-      this.test_internal_window.mouseDown(this.true_mouse);
+      this.test_internal_window.onMouseDown(this.true_mouse);
+      this.test_scrollbar.onMouseDown(this.true_mouse);
     }
+    
   }
 
   
@@ -734,7 +760,8 @@ export class WallEngine extends App.BaseEngine{
     for(const opt of this.select_options){
         opt.onMouseUp();
     }
-    this.test_internal_window.mouseUp();
+    this.test_internal_window.onMouseUp();
+    this.test_scrollbar.onMouseUp();
   }
 
 
@@ -1130,9 +1157,10 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       opt.draw(this.perspective, this.solid_shader, this.text_drawer);
     }
 
-    engine.test_internal_window.draw(this.perspective, this.solid_shader);
-    this.drawInWindowTest(engine.test_internal_window);
+    //engine.test_internal_window.draw(this.perspective, this.solid_shader);
+    this.drawInternalWindowTest(engine, engine.test_content);
     engine.test_drop_option.draw(this.perspective, this.solid_shader, this.text_drawer);
+    engine.test_scrollbar.draw(this.perspective, this.solid_shader);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
@@ -1266,10 +1294,9 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     `Target node id ${car.target_node.getId().toString()}` : "No Target";
     this.text_drawer.drawText(this.perspective, 10, y+(text_size*4), target_node_text, text_size);
   }
-  drawInWindowTest(window: InternalWindow.InternalWindow){
-    if(window.visible){
-      const p = window.getWindowPosition();
-      this.text_drawer.drawText(this.perspective, p.x+10, p.y+10, "Hello world", 10);
+  drawInternalWindowTest(engine: WallEngine, window: WebGL.Interface.InternalWindow.InternalContent){
+    if(window.window.visible){
+      engine.test_content.draw(this.perspective, this.solid_shader, this.text_drawer);
     }
   }
   /*

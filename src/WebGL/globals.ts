@@ -19,7 +19,8 @@ export * as Texture from "./Texture/texture";
 export * as Line from "./Shapes/Line";
 export * as Shader from "./Shaders/custom";
 export * as App from "./app";
-export * as FileUtil from "./Util/file"
+export * as FileUtil from "./Util/file";
+export * as Interface from "./Interface/interface";
 
 type VoidFunction = () => void;
 
@@ -96,6 +97,11 @@ export class BasicModel{
   }
   addPart(part: BasicModelItem2D){
     this.parts.push(part);
+  }
+  colourAll(colour: Colour.ColourRGB){
+    for(const part of this.parts){
+      part.colour = colour;
+    }
   }
   draw(p: Matrix.TransformationMatrix3x3){
     const shader = BasicModel.colour_shader;

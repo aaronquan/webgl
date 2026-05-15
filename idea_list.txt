@@ -1,12 +1,14 @@
 fix resizing - fixed by adding gl viewport in initialise ( can change )
 use new app.ts in webgl - done
 add visual indicator (border) to text input when selected and sizing - done
+finish dropdown select - done
+text input highlight, copy and paste - done
 
 colour themes - Todo
 
-finish dropdown select - TODO
-text input highlight, copy and paste,
+generic scroll bars - todo
 draggable window inside canvas - mostly finished 
+resizable internal window - TODO
 car move to destination - TODO
 save grid configurations - TODO
 car traffic - TODO
