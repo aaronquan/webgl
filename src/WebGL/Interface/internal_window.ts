@@ -19,6 +19,8 @@ export class InternalWindow extends InterfaceElement{
   
   onClose: VoidFunction;
 
+  //title: string;
+
   
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     super(x, y, width, height);
@@ -156,6 +158,31 @@ export class FullScrollInternalWindow extends InternalWindow{
   }
   getFullWidth(): Int32{
     return this.width + this.horizontal_scroll_bar.bar_width;
+  }
+  onMouseMove(global_position: WebGL.Matrix.Point2D){
+    super.onMouseMove(global_position);
+    this.horizontal_scroll_bar.x = this.x;
+    this.horizontal_scroll_bar.y = this.y + this.height + this.horizontal_scroll_bar.height;
+    this.horizontal_scroll_bar.onMouseMove(global_position);
+  }
+  onMouseDown(global_position: WebGL.Matrix.Point2D){
+    super.onMouseDown(global_position);
+    this.horizontal_scroll_bar.onMouseDown(global_position);
+  }
+  onMouseUp(){
+    super.onMouseUp();
+    this.horizontal_scroll_bar.onMouseUp();
+  }
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, solid_shader: WebGL.Shader.MVPColourProgram){
+    super.draw(vp, solid_shader);
+    if(this.visible){
+      if(this.content_width > this.width){
+        this.horizontal_scroll_bar.draw(vp, solid_shader);
+      }
+      if(this.content_height > this.height){
+        this.vertical_scroll_bar.draw(vp, solid_shader);
+      }
+    }
   }
 }
 

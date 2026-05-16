@@ -185,6 +185,13 @@ class TestScrollContentWindow extends WebGL.Interface.InternalWindow.HorizontalS
   }
 }
 
+class TestFullScrollWindow extends WebGL.Interface.InternalWindow.FullScrollInternalWindow{
+  constructor(){
+    super(400, 400, 200, 200, 300, 300, 10);
+  }
+
+}
+
 export class WallEngine extends App.BaseEngine{
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
@@ -252,6 +259,7 @@ export class WallEngine extends App.BaseEngine{
 
   test_content: TestContent;
   test_scroll_window: TestScrollContentWindow;
+  test_full_window: TestFullScrollWindow;
 
   constructor(){
     super();
@@ -283,6 +291,7 @@ export class WallEngine extends App.BaseEngine{
     this.graph_updated_status = false;
     this.test_internal_window = new WebGL.Interface.InternalWindow.InternalWindow(100, 50, 200, 200);
     this.test_scroll_window = new TestScrollContentWindow();
+    this.test_full_window = new TestFullScrollWindow();
 
     // adding buttons
     const butt_x = 810;
@@ -730,6 +739,7 @@ export class WallEngine extends App.BaseEngine{
     this.test_internal_window.onMouseMove(true_mouse);
     this.test_scrollbar.onMouseMove(true_mouse);
     this.test_scroll_window.onMouseMove(true_mouse);
+    this.test_full_window.onMouseMove(true_mouse);
   }
 
   protected override handleMouseDown(ev: MouseEvent){
@@ -780,6 +790,7 @@ export class WallEngine extends App.BaseEngine{
       this.test_internal_window.onMouseDown(this.true_mouse);
       this.test_scrollbar.onMouseDown(this.true_mouse);
       this.test_scroll_window.onMouseDown(this.true_mouse);
+      this.test_full_window.onMouseDown(this.true_mouse);
     }
     
   }
@@ -795,6 +806,7 @@ export class WallEngine extends App.BaseEngine{
     this.test_internal_window.onMouseUp();
     this.test_scrollbar.onMouseUp();
     this.test_scroll_window.onMouseUp();
+    this.test_full_window.onMouseUp();
   }
 
 
@@ -1195,6 +1207,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     engine.test_drop_option.draw(this.perspective, this.solid_shader, this.text_drawer);
     engine.test_scrollbar.draw(this.perspective, this.solid_shader);
     engine.test_scroll_window.draw(this.perspective, this.solid_shader);
+    engine.test_full_window.draw(this.perspective, this.solid_shader);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();
