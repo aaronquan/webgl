@@ -33,12 +33,14 @@ interface MVPColourShader{
 export class WebGL{
   static gl: WebGL2RenderingContext | null;
   static active_shader_program: ShaderProgram | null;
+  static canvas: HTMLCanvasElement | undefined;
   private static initialised: boolean = false;
   //static buffer: WebGLBuffer | null; for testing
   static defaultError(){
     throw new Error("WebGL not initialised or null");
   }
   static initialise(canvas: HTMLCanvasElement){
+    this.canvas = canvas;
     this.gl = canvas.getContext("webgl2", {alpha: false});
     this.resetViewport(canvas);
     if(this.gl && !this.initialised){
@@ -79,6 +81,13 @@ export class WebGL{
     shader.setColourFromColourRGB(colour);
     shader.setMvp(vp.multiplyCopy(model));
     Shapes.Quad.draw();
+  }
+  static enableScissor(x: Int32, y: Int32, width: Int32, height: Int32){
+    this.gl?.enable(this.gl.SCISSOR_TEST);
+    this.gl?.scissor(x, this.canvas!.clientHeight-(y+height), width, height);
+  }
+  static disableScissor(){
+    this.gl?.disable(this.gl.SCISSOR_TEST);
   }
 }
 
@@ -206,11 +215,12 @@ export class FontLoader{
   }
   loadFonts(onAllLoaded: () => void) {
     function finishLoading(fl: FontLoader){
-      if(fl.finished_loading == fl.to_load.length){
+      if(fl.finished_loading >= fl.to_load.length){
         console.log("end loading");
         onAllLoaded();
         fl.loading = false;
       }
+      console.log(fl.finished_loading);
     }
     if(!this.loading){
       console.log("start loading fonts");

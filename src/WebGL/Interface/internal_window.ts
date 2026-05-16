@@ -34,6 +34,12 @@ export class InternalWindow extends InterfaceElement{
   getInternalY(): Int32{ // where the internal window starts
     return this.y+this.header_height;
   }
+  getFullHeight(): Int32{
+    return this.height+this.header_height;
+  }
+  getFullWidth(): Int32{
+    return this.width;
+  }
   isInsideHeader(pos: WebGL.Matrix.Point2D): boolean{
     const inside_x = this.x < pos.x && pos.x < this.x + this.width;
     const inside_y = this.y < pos.y && pos.y < this.y + this.header_height;
@@ -100,14 +106,21 @@ export class HorizontalScrollInternalWindow extends InternalWindow{
   content_width: Int32;
   content_height: Int32
 
-  constructor(x: Int32, y: Int32, width: Int32, height: Int32, content_width: Int32, content_height: Int32, scroll_height: Int32){
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, 
+    content_width: Int32, content_height: Int32, 
+    scroll_height: Int32){
     super(x, y, width, height);
-    this.scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.y, this.width, scroll_height, this.width, content_width);
+    this.scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.y+height, this.width, scroll_height, this.width, content_width);
     this.content_width = content_width;
     this.content_height = content_height;
   }
+  getFullHeight(): Int32{
+    return this.height + this.header_height + this.scroll_bar.height;
+  }
   onMouseMove(global_position: WebGL.Matrix.Point2D){
     super.onMouseMove(global_position);
+    this.scroll_bar.x = this.x;
+    this.scroll_bar.y = this.y + this.height + this.scroll_bar.height;
     this.scroll_bar.onMouseMove(global_position);
   }
   onMouseDown(global_position: WebGL.Matrix.Point2D){
@@ -119,10 +132,30 @@ export class HorizontalScrollInternalWindow extends InternalWindow{
     this.scroll_bar.onMouseUp();
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, solid_shader: WebGL.Shader.MVPColourProgram){
-    this.draw(vp, solid_shader);
-    if(this.content_width > this.width){
-      this.scroll_bar.draw(vp, solid_shader);
+    super.draw(vp, solid_shader);
+    if(this.visible){
+      if(this.content_width > this.width){
+        this.scroll_bar.draw(vp, solid_shader);
+      }
     }
+  }
+}
+
+export class FullScrollInternalWindow extends InternalWindow{
+  horizontal_scroll_bar: Scroll.HorizontalScrollBar;
+  vertical_scroll_bar: Scroll.VerticalScrollBar;
+  content_width: Int32;
+  content_height: Int32;
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, 
+    content_width: Int32, content_height: Int32, scroll_width: Int32){
+    super(x, y, width, height);
+    this.horizontal_scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.y+height, this.width, scroll_width, this.width, content_width);
+    this.vertical_scroll_bar = new Scroll.VerticalScrollBar(this.x+width, this.y, scroll_width, this.height, this.height, content_height);
+    this.content_width = content_width;
+    this.content_height = content_height;
+  }
+  getFullWidth(): Int32{
+    return this.width + this.horizontal_scroll_bar.bar_width;
   }
 }
 

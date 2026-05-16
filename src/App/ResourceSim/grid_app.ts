@@ -166,6 +166,22 @@ class TestScrollContentWindow extends WebGL.Interface.InternalWindow.HorizontalS
 
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram){
     super.draw(vp, colour_shader);
+    if(this.visible){
+      const sx = this.x-this.scroll_bar.windowOffsetX();
+      const sy = this.getInternalY();
+      const gl = WebGL.WebGL.gl!;
+      WebGL.WebGL.enableScissor(this.x, sy, this.width, this.height);
+      WebGL.WebGL.drawColourRect(vp, colour_shader, 
+        sx+10, sy+10, 10, 10, 
+        WebGL.Colour.ColourUtils.red()
+      );
+
+      WebGL.WebGL.drawColourRect(vp, colour_shader, 
+        sx+100, sy+25, 10, 10, 
+        WebGL.Colour.ColourUtils.blue()
+      );
+      WebGL.WebGL.disableScissor();
+    }
   }
 }
 
@@ -231,7 +247,8 @@ export class WallEngine extends App.BaseEngine{
 
   test_internal_window: WebGL.Interface.InternalWindow.InternalWindow;
 
-  test_scrollbar: WebGL.Interface.ScrollBar.HorizontalScrollBar;
+  test_scrollbar: WebGL.Interface.ScrollBar.VerticalScrollBar;
+  
 
   test_content: TestContent;
   test_scroll_window: TestScrollContentWindow;
@@ -486,7 +503,7 @@ export class WallEngine extends App.BaseEngine{
     this.selected_car = undefined;
 
     this.test_text_box = new WebGL.Interface.TextInput.TextInput(200, 810, 600, 20);
-    this.test_scrollbar = new WebGL.Interface.ScrollBar.HorizontalScrollBar(150, 350, 400, 40, 5, 600);
+    this.test_scrollbar = new WebGL.Interface.ScrollBar.VerticalScrollBar(150, 350, 40, 400, 400, 600);
     this.test_content = new TestContent(this.test_internal_window);
   }
   addKeyNode(node: Node.KeyNode){
@@ -712,6 +729,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.test_internal_window.onMouseMove(true_mouse);
     this.test_scrollbar.onMouseMove(true_mouse);
+    this.test_scroll_window.onMouseMove(true_mouse);
   }
 
   protected override handleMouseDown(ev: MouseEvent){
@@ -761,6 +779,7 @@ export class WallEngine extends App.BaseEngine{
       }
       this.test_internal_window.onMouseDown(this.true_mouse);
       this.test_scrollbar.onMouseDown(this.true_mouse);
+      this.test_scroll_window.onMouseDown(this.true_mouse);
     }
     
   }
@@ -775,6 +794,7 @@ export class WallEngine extends App.BaseEngine{
     }
     this.test_internal_window.onMouseUp();
     this.test_scrollbar.onMouseUp();
+    this.test_scroll_window.onMouseUp();
   }
 
 

@@ -171,6 +171,7 @@ export class CustomFont{
     this.font_sheet.active(id);
   }
   load(onLoaded:()=>void=()=>{}, onError?: (e: any) => void){
+    console.log("loading");
     this.font_sheet.load(
       () =>
       File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
