@@ -18,6 +18,7 @@ import * as ArrayUtils from "../../utils/array";
 import * as NumberUtils from "../../utils/numbers";
 
 import * as Texts from "./texts";
+import { colour } from "../../WebGL/Shaders/Fragment/Source/fragment_source";
 
 //interface imports
 //import * as Options from "./../../Interface/options";
@@ -32,6 +33,16 @@ type Int32 = number;
 type Float = number;
 type VoidFunction = () => void;
 const EmptyFunction: VoidFunction = () => {};
+
+const theme: WebGL.Interface.Theme.InterfaceTheme = {
+  primary: WebGL.Colour.ColourUtils.fromHex("40EB9E"),
+  secondary: WebGL.Colour.ColourUtils.fromHex("4fb286"),
+  tertiary: WebGL.Colour.ColourUtils.fromHex("77FFC2"),
+  background: WebGL.Colour.ColourUtils.fromHex("3c896d"),
+  secondary_background: WebGL.Colour.ColourUtils.fromHex("266C52"),
+  close: WebGL.Colour.ColourUtils.fromHex("546d64"),
+  close_hover: WebGL.Colour.ColourUtils.fromHex("CC1212"),
+}
 
 function randomPick<T>(arr: T[]): T{
   const p = Math.floor(Math.random()*arr.length);
@@ -167,20 +178,19 @@ class TestScrollContentWindow extends WebGL.Interface.InternalWindow.HorizontalS
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram){
     super.draw(vp, colour_shader);
     if(this.visible){
-      const sx = this.x-this.scroll_bar.windowOffsetX();
-      const sy = this.getInternalY();
-      const gl = WebGL.WebGL.gl!;
-      WebGL.WebGL.enableScissor(this.x, sy, this.width, this.height);
+      const sx = this.contentOffsetX();
+      const sy = this.contentOffsetY();
+      this.enableScissors();
       WebGL.WebGL.drawColourRect(vp, colour_shader, 
         sx+10, sy+10, 10, 10, 
         WebGL.Colour.ColourUtils.red()
       );
 
       WebGL.WebGL.drawColourRect(vp, colour_shader, 
-        sx+100, sy+25, 10, 10, 
+        sx+-5, sy+25, 10, 10, 
         WebGL.Colour.ColourUtils.blue()
       );
-      WebGL.WebGL.disableScissor();
+      this.disableScissors();
     }
   }
 }
@@ -189,7 +199,19 @@ class TestFullScrollWindow extends WebGL.Interface.InternalWindow.FullScrollInte
   constructor(){
     super(400, 400, 200, 200, 300, 300, 10);
   }
+  drawEverything(vp: WebGL.Matrix.TransformationMatrix3x3, 
+    colour_shader: WebGL.Shader.MVPColourProgram, 
+    text_drawer: WebGL.TextDrawer){
+      if(this.visible){
+        super.draw(vp, colour_shader);
+        this.enableScissors();
+        const sx = this.contentOffsetX();
+        const sy = this.contentOffsetY();
+        text_drawer.drawText(vp, sx-6, sy+40, "hi", 15);
 
+        this.disableScissors();
+      }
+  }
 }
 
 export class WallEngine extends App.BaseEngine{
@@ -291,7 +313,9 @@ export class WallEngine extends App.BaseEngine{
     this.graph_updated_status = false;
     this.test_internal_window = new WebGL.Interface.InternalWindow.InternalWindow(100, 50, 200, 200);
     this.test_scroll_window = new TestScrollContentWindow();
+    this.test_scroll_window.setTheme(theme);
     this.test_full_window = new TestFullScrollWindow();
+    this.test_full_window.setTheme(theme);
 
     // adding buttons
     const butt_x = 810;
@@ -1207,7 +1231,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     engine.test_drop_option.draw(this.perspective, this.solid_shader, this.text_drawer);
     engine.test_scrollbar.draw(this.perspective, this.solid_shader);
     engine.test_scroll_window.draw(this.perspective, this.solid_shader);
-    engine.test_full_window.draw(this.perspective, this.solid_shader);
+    engine.test_full_window.drawEverything(this.perspective, this.solid_shader, this.text_drawer);
   }
   drawGridLines(engine: WallEngine){
     this.solid_shader.use();

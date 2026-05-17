@@ -1,6 +1,7 @@
 import * as WebGL from "./../globals";
 import {InterfaceElement} from "./interface_element";
 import * as Scroll from "./scroll_bar";
+import * as Theme from "./theme";
 
 type Int32 = number;
 type Float = number;
@@ -15,13 +16,19 @@ export class InternalWindow extends InterfaceElement{
   header_offset_y: Int32;
 
   can_close: boolean;
+  hover_close: boolean;
   visible: boolean;
   
   onClose: VoidFunction;
+  onOpen: VoidFunction;
+
+  background_colour: WebGL.Colour.ColourRGB;
+  header_colour: WebGL.Colour.ColourRGB;
+  close_colour: WebGL.Colour.ColourRGB;
+  hover_close_colour: WebGL.Colour.ColourRGB;
 
   //title: string;
 
-  
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     super(x, y, width, height);
     this.header_height = 15;
@@ -30,9 +37,28 @@ export class InternalWindow extends InterfaceElement{
     this.header_offset_x = 0;
     this.header_offset_y = 0;
     this.can_close = true;
+    this.hover_close = false;
     this.visible = true;
     this.onClose = EmptyFunction;
+    this.onOpen = EmptyFunction;
+
+    this.background_colour = WebGL.Colour.ColourUtils.white();
+    this.header_colour = WebGL.Colour.ColourUtils.grey();
+    this.close_colour = WebGL.Colour.ColourUtils.black();
+    this.hover_close_colour = WebGL.Colour.ColourUtils.red();
+
   }
+  open(){
+    this.visible = true;
+    this.onOpen();
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    this.header_colour = theme.primary;
+    this.background_colour = theme.background;
+    this.close_colour = theme.close;
+    this.hover_close_colour = theme.close_hover;
+  }
+
   getInternalY(): Int32{ // where the internal window starts
     return this.y+this.header_height;
   }
@@ -43,12 +69,12 @@ export class InternalWindow extends InterfaceElement{
     return this.width;
   }
   isInsideHeader(pos: WebGL.Matrix.Point2D): boolean{
-    const inside_x = this.x < pos.x && pos.x < this.x + this.width;
+    const inside_x = this.x < pos.x && pos.x < this.x + this.getFullWidth();
     const inside_y = this.y < pos.y && pos.y < this.y + this.header_height;
     return inside_x && inside_y;
   }
   isInsideClose(pos: WebGL.Matrix.Point2D): boolean{
-    const inside_x = this.x+this.width-this.header_height < pos.x && pos.x < this.x+this.width;
+    const inside_x = this.x+this.getFullWidth()-this.header_height < pos.x && pos.x < this.x+this.getFullWidth();
     const inside_y = this.y < pos.y && pos.y < this.y + this.header_height;
     return inside_x && inside_y;
   }
@@ -62,9 +88,10 @@ export class InternalWindow extends InterfaceElement{
       this.x = global_position.x + this.header_offset_x;
       this.y = global_position.y + this.header_offset_y;
     }
+    this.hover_close = this.isInsideClose(global_position) && this.can_close;
   }
   onMouseDown(global_position: WebGL.Matrix.Point2D){
-    if(this.isInsideClose(global_position)){
+    if(this.hover_close){
       this.visible = false;
       this.onClose();
     }
@@ -77,25 +104,34 @@ export class InternalWindow extends InterfaceElement{
   onMouseUp(){
     this.dragged_header = false;
   }
+  enableScissors(){
+    const wx = this.x;
+    const wy = this.getInternalY();
+    WebGL.WebGL.enableScissor(wx, wy, this.width, this.height);
+  }
+  disableScissors(){
+    WebGL.WebGL.disableScissor();
+  }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, solid_shader: WebGL.Shader.MVPColourProgram){
     if(this.visible){
       //draw header
       solid_shader.use();
-      const header_model = WebGL.WebGL.rectangleModel(this.x, this.y, this.width, this.header_height);
-      solid_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.grey());
+      const header_model = WebGL.WebGL.rectangleModel(this.x, this.y, this.getFullWidth(), this.header_height);
+      solid_shader.setColourFromColourRGB(this.header_colour);
       solid_shader.setMvp(vp.multiplyCopy(header_model));
       WebGL.Shapes.Quad.draw();
 
       //window background
-      const back_model = WebGL.WebGL.rectangleModel(this.x, this.y+this.header_height, this.width, this.height);
-      solid_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.white());
+      const back_model = WebGL.WebGL.rectangleModel(this.x, this.getInternalY(), this.width, this.height);
+      solid_shader.setColourFromColourRGB(this.background_colour);
       solid_shader.setMvp(vp.multiplyCopy(back_model));
       WebGL.Shapes.Quad.draw();
 
       //close header
       if(this.can_close){
-        const close_model = WebGL.WebGL.rectangleModel(this.x+this.width-this.header_height, this.y, this.header_height, this.header_height);
-        solid_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.grey(0.75));
+        const close_colour = this.hover_close ? this.hover_close_colour : this.close_colour;
+        const close_model = WebGL.WebGL.rectangleModel(this.x+this.getFullWidth()-this.header_height, this.y, this.header_height, this.header_height);
+        solid_shader.setColourFromColourRGB(close_colour);
         solid_shader.setMvp(vp.multiplyCopy(close_model));
         WebGL.Shapes.Quad.draw();
       }
@@ -112,17 +148,27 @@ export class HorizontalScrollInternalWindow extends InternalWindow{
     content_width: Int32, content_height: Int32, 
     scroll_height: Int32){
     super(x, y, width, height);
-    this.scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.y+height, this.width, scroll_height, this.width, content_width);
+    this.scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.getInternalY()+height, this.width, scroll_height, this.width, content_width);
     this.content_width = content_width;
     this.content_height = content_height;
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    super.setTheme(theme);
+    this.scroll_bar.setTheme(theme);
   }
   getFullHeight(): Int32{
     return this.height + this.header_height + this.scroll_bar.height;
   }
+  contentOffsetX(): Int32{
+    return this.x + this.scroll_bar.windowOffsetX();
+  }
+  contentOffsetY(): Int32{
+    return this.getInternalY();
+  }
   onMouseMove(global_position: WebGL.Matrix.Point2D){
     super.onMouseMove(global_position);
     this.scroll_bar.x = this.x;
-    this.scroll_bar.y = this.y + this.height + this.scroll_bar.height;
+    this.scroll_bar.y = this.getInternalY() + this.height;
     this.scroll_bar.onMouseMove(global_position);
   }
   onMouseDown(global_position: WebGL.Matrix.Point2D){
@@ -146,32 +192,46 @@ export class HorizontalScrollInternalWindow extends InternalWindow{
 export class FullScrollInternalWindow extends InternalWindow{
   horizontal_scroll_bar: Scroll.HorizontalScrollBar;
   vertical_scroll_bar: Scroll.VerticalScrollBar;
+  scroll_width: Int32;
   content_width: Int32;
   content_height: Int32;
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, 
     content_width: Int32, content_height: Int32, scroll_width: Int32){
     super(x, y, width, height);
-    this.horizontal_scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.y+height, this.width, scroll_width, this.width, content_width);
-    this.vertical_scroll_bar = new Scroll.VerticalScrollBar(this.x+width, this.y, scroll_width, this.height, this.height, content_height);
+    this.horizontal_scroll_bar = new Scroll.HorizontalScrollBar(this.x, this.getInternalY()+height, width, scroll_width, width, content_width);
+    this.vertical_scroll_bar = new Scroll.VerticalScrollBar(this.x+width, this.getInternalY(), scroll_width, height, height, content_height);
     this.content_width = content_width;
     this.content_height = content_height;
+    this.scroll_width = scroll_width;
   }
   getFullWidth(): Int32{
-    return this.width + this.horizontal_scroll_bar.bar_width;
+    return this.width + this.vertical_scroll_bar.width;
+  }
+  contentOffsetX(): Int32{
+    return this.x + this.horizontal_scroll_bar.windowOffsetX();
+  }
+  contentOffsetY(): Int32{
+    return this.getInternalY() + this.vertical_scroll_bar.windowOffsetY();
   }
   onMouseMove(global_position: WebGL.Matrix.Point2D){
     super.onMouseMove(global_position);
     this.horizontal_scroll_bar.x = this.x;
-    this.horizontal_scroll_bar.y = this.y + this.height + this.horizontal_scroll_bar.height;
+    this.horizontal_scroll_bar.y = this.getInternalY() + this.height;
     this.horizontal_scroll_bar.onMouseMove(global_position);
+
+    this.vertical_scroll_bar.x = this.x+this.width;
+    this.vertical_scroll_bar.y = this.getInternalY();
+    this.vertical_scroll_bar.onMouseMove(global_position);
   }
   onMouseDown(global_position: WebGL.Matrix.Point2D){
     super.onMouseDown(global_position);
     this.horizontal_scroll_bar.onMouseDown(global_position);
+    this.vertical_scroll_bar.onMouseDown(global_position);
   }
   onMouseUp(){
     super.onMouseUp();
     this.horizontal_scroll_bar.onMouseUp();
+    this.vertical_scroll_bar.onMouseUp();
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, solid_shader: WebGL.Shader.MVPColourProgram){
     super.draw(vp, solid_shader);
@@ -182,6 +242,10 @@ export class FullScrollInternalWindow extends InternalWindow{
       if(this.content_height > this.height){
         this.vertical_scroll_bar.draw(vp, solid_shader);
       }
+
+      //draw extra scroll square in bottom right
+      WebGL.WebGL.drawColourRect(vp, solid_shader, this.horizontal_scroll_bar.x+this.horizontal_scroll_bar.width, 
+        this.vertical_scroll_bar.y+this.vertical_scroll_bar.height, this.scroll_width, this.scroll_width, WebGL.Colour.ColourUtils.red());
     }
   }
 }

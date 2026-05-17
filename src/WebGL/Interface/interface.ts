@@ -5,3 +5,4 @@ export * as InternalWindow from "./internal_window";
 export * as Options from "./options";
 export * as TextInput from "./text_input";
 export * as Slider from "./slider";
+export * as Theme from "./theme";

@@ -1,5 +1,6 @@
 import * as WebGL from "./../globals";
 import { InterfaceElement } from "./interface_element";
+import * as Theme from "./theme";
 
 type Int32 = number;
 type Float = number;
@@ -28,6 +29,12 @@ class ScrollBar extends InterfaceElement{
     this.dragging = false;
     this.bar_hovering = false;
   }
+  setTheme(theme: Theme.InterfaceTheme){
+    this.bar_colour = theme.secondary;
+    this.hover_bar_colour = theme.primary;
+    this.grabbed_bar_colour = theme.tertiary;
+    this.background_colour = theme.secondary_background;
+  }
 
   //to override
   isInsideBar(point: WebGL.Matrix.Point2D){}
@@ -51,7 +58,7 @@ export class HorizontalScrollBar extends ScrollBar{
   }
   windowOffsetX(): Float{
     const diff = this.content_width - this.window_width;
-    return diff*this.value;
+    return -diff*this.value;
   }
   barOffsetX(): Float{
     const diff = this.width-this.bar_width;
@@ -96,7 +103,7 @@ export class HorizontalScrollBar extends ScrollBar{
   }
 
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram){
-    this.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.black());
+    this.drawBackground(vp, colour_shader, this.background_colour);
 
     //draw bar
     const bc = this.dragging ? this.grabbed_bar_colour : (this.bar_hovering ? this.hover_bar_colour : this.bar_colour);
@@ -125,7 +132,7 @@ export class VerticalScrollBar extends ScrollBar{
   }
   windowOffsetY(): Float{
     const diff = this.content_height - this.window_height;
-    return diff*this.value;
+    return -diff*this.value;
   }
   barOffsetY(): Float{
     const diff = this.height-this.bar_height;

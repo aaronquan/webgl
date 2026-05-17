@@ -55,6 +55,13 @@ export class ColourUtils{
   static random(): ColourRGB{
     return this.fromRGB(Math.random(), Math.random(), Math.random());
   }
+  static fromHex(hex:string): ColourRGB{
+    if(hex.length < 6) return this.white();
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return this.fromRGB(r/255, g/255, b/255);
+  }
   static linearTransitionColours(c1: ColourRGB, c2: ColourRGB, n: Int32): ColourRGB[]{
     const colours: ColourRGB[] = [];
     const step_r = (c2.red-c1.red)/(n+1);
