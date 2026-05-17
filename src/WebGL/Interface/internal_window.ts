@@ -8,7 +8,25 @@ type Float = number;
 type VoidFunction = () => void;
 const EmptyFunction = () => {};
 
+const HorizontalSideHoverStateEnum = {
+  None: 0,
+  Left: 1,
+  Right: 2
+} as const;
+
+type HorizontalSideHoverState = (typeof HorizontalSideHoverStateEnum)[keyof typeof HorizontalSideHoverStateEnum];
+
+const VerticalSideHoverStateEnum = {
+  None: 0,
+  Up: 1,
+  Down: 2
+} as const;
+
+type VerticalSideHoverState = (typeof VerticalSideHoverStateEnum)[keyof typeof VerticalSideHoverStateEnum];
+
 export class InternalWindow extends InterfaceElement{
+  static minimum_size: Int32 = 20;
+
   header_height: Int32;
   hover_header: boolean;
   dragged_header: boolean;
@@ -28,6 +46,10 @@ export class InternalWindow extends InterfaceElement{
   hover_close_colour: WebGL.Colour.ColourRGB;
 
   //title: string;
+  can_resize: boolean;
+  resizing: boolean;
+  horizontal_hover_state: HorizontalSideHoverState;
+  vertical_hover_state: VerticalSideHoverState;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     super(x, y, width, height);
@@ -47,6 +69,10 @@ export class InternalWindow extends InterfaceElement{
     this.close_colour = WebGL.Colour.ColourUtils.black();
     this.hover_close_colour = WebGL.Colour.ColourUtils.red();
 
+    this.can_resize = false;
+    this.resizing = false;
+    this.horizontal_hover_state = HorizontalSideHoverStateEnum.None;
+    this.vertical_hover_state = VerticalSideHoverStateEnum.None;
   }
   open(){
     this.visible = true;
@@ -89,6 +115,15 @@ export class InternalWindow extends InterfaceElement{
       this.y = global_position.y + this.header_offset_y;
     }
     this.hover_close = this.isInsideClose(global_position) && this.can_close;
+
+    if(!this.resizing){
+      //update resizing states
+    }else{
+      //run resize (can't be lover than minimum)
+      if(this.horizontal_hover_state == HorizontalSideHoverStateEnum.Left){
+
+      }
+    }
   }
   onMouseDown(global_position: WebGL.Matrix.Point2D){
     if(this.hover_close){
@@ -100,9 +135,11 @@ export class InternalWindow extends InterfaceElement{
       this.header_offset_x = this.x - global_position.x;
       this.header_offset_y = this.y - global_position.y;
     }
+    this.resizing = this.horizontal_hover_state != HorizontalSideHoverStateEnum.None || this.vertical_hover_state != VerticalSideHoverStateEnum.None;
   }
   onMouseUp(){
     this.dragged_header = false;
+    this.resizing = false;
   }
   enableScissors(){
     const wx = this.x;
@@ -250,6 +287,62 @@ export class FullScrollInternalWindow extends InternalWindow{
   }
 }
 
+//to test
+export class VerticalStrollInternalWindow extends InternalWindow{
+  scroll_bar: Scroll.VerticalScrollBar;
+  scroll_width: Int32;
+  content_width: Int32;
+  content_height: Int32;
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, 
+    content_width: Int32, content_height: Int32, scroll_width: Int32){
+    super(x, y, width, height);
+    this.scroll_bar = new Scroll.VerticalScrollBar(this.scrollBarX(), this.getInternalY(), scroll_width, height, height, content_height);
+    this.content_width = content_width  
+    this.content_height = content_height;
+    this.scroll_width = scroll_width;
+  }
+  scrollBarX(): Int32{
+    return this.x + this.width;
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    super.setTheme(theme);
+    this.scroll_bar.setTheme(theme);
+  }
+  getFullWidth(): Int32 {
+    return this.width + this.scroll_width;
+  }
+  contentOffsetY(): Int32{
+    return this.y + this.scroll_bar.windowOffsetY();
+  }
+  contentOffsetX(): Int32{
+    return this.x;
+  }
+  onMouseMove(global_position: WebGL.Matrix.Point2D){
+    super.onMouseMove(global_position);
+    this.scroll_bar.x = this.scrollBarX();
+    this.scroll_bar.y = this.getInternalY();
+    this.scroll_bar.onMouseMove(global_position);
+  }
+  onMouseDown(global_position: WebGL.Matrix.Point2D){
+    super.onMouseDown(global_position);
+    this.scroll_bar.onMouseDown(global_position);
+  }
+  onMouseUp(){
+    super.onMouseUp();
+    this.scroll_bar.onMouseUp();
+  }
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, solid_shader: WebGL.Shader.MVPColourProgram){
+    super.draw(vp, solid_shader);
+    if(this.visible){
+      if(this.content_height > this.height){
+        this.scroll_bar.draw(vp, solid_shader);
+      }
+    }
+  }
+}
+
+
+//unused classes for now
 export class InternalContentWindow extends InternalWindow{
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     super(x, y, width, height);
