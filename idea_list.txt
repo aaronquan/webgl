@@ -3,11 +3,11 @@ use new app.ts in webgl - done
 add visual indicator (border) to text input when selected and sizing - done
 finish dropdown select - done
 text input highlight, copy and paste - done
+generic scroll bars - done
+draggable window inside canvas - done
 
-colour themes - Todo
+colour themes - partial
 
-generic scroll bars - todo
-draggable window inside canvas - mostly finished 
 resizable internal window - TODO
 car move to destination - TODO
 save grid configurations - TODO

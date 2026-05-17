@@ -70,7 +70,7 @@ export class InternalWindow extends InterfaceElement{
     this.hover_close_colour = WebGL.Colour.ColourUtils.red();
 
     this.can_resize = false;
-    this.resizing = false;
+    this.resizing = true;
     this.horizontal_hover_state = HorizontalSideHoverStateEnum.None;
     this.vertical_hover_state = VerticalSideHoverStateEnum.None;
   }
@@ -118,6 +118,21 @@ export class InternalWindow extends InterfaceElement{
 
     if(!this.resizing){
       //update resizing states
+      const hover_size = 2;
+      const in_x = this.x - hover_size < global_position.x && global_position.x < this.x + this.getFullWidth() + hover_size;
+      const in_top = this.y - hover_size < global_position.y && global_position.y < this.y + hover_size;
+      const in_bot = this.y + this.getFullHeight() - hover_size < global_position.y && global_position.y < this.y + this.getFullHeight() + hover_size;
+      if(in_x){
+        if(in_top){
+          this.vertical_hover_state = VerticalSideHoverStateEnum.Up;
+        }else if(in_bot){
+          this.vertical_hover_state = VerticalSideHoverStateEnum.Down
+        }else{
+          this.vertical_hover_state = VerticalSideHoverStateEnum.None;
+        }
+      }else{
+        this.vertical_hover_state = HorizontalSideHoverStateEnum.None;
+      }
     }else{
       //run resize (can't be lover than minimum)
       if(this.horizontal_hover_state == HorizontalSideHoverStateEnum.Left){
