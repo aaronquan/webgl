@@ -1,4 +1,5 @@
 import * as WebGL from "./../globals";
+import * as Theme from "./theme";
 
 type Int32 = number;
 type Float = number;
@@ -66,6 +67,12 @@ export class BasicButton{
     this.onPressed = EmptyFunction;
     this.onPressedOut = EmptyFunction;
   }
+  setTheme(theme: Theme.InterfaceTheme){
+    this.colours.set(ButtonStateEnum.Off, theme.primary);
+    this.colours.set(ButtonStateEnum.Hovered, theme.tertiary);
+    this.colours.set(ButtonStateEnum.Pressed, theme.secondary);
+    this.colours.set(ButtonStateEnum.PressedHovered, theme.secondary);
+  }
   setTextColour(colour: WebGL.Colour.ColourRGB){
 
   }
@@ -131,6 +138,11 @@ export class ButtonSet{
   buttons: BasicButton[];
   constructor(){
     this.buttons = [];
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    for(const button of this.buttons){
+      button.setTheme(theme);
+    }
   }
   addButton(b: BasicButton){
     this.buttons.push(b);
@@ -205,6 +217,12 @@ export class ToggleButton implements Button{
     this.onToggleOn = () => {};
     this.onToggleOff = () => {};
     this.text_colour = WebGL.Colour.ColourUtils.white();
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    this.colours.set(ToggleButtonStateEnum.Off, theme.secondary);
+    this.colours.set(ToggleButtonStateEnum.On, theme.primary);
+    this.colours.set(ToggleButtonStateEnum.OffHovered, theme.tertiary);
+    this.colours.set(ToggleButtonStateEnum.OnHovered, theme.tertiary);
   }
   private isInside(x: Int32, y: Int32): boolean{
     const sx = x - this.x;
@@ -283,6 +301,11 @@ export class ToggleButtonSet{
   buttons: ToggleButton[];
   constructor(){
     this.buttons = [];
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    for(const button of this.buttons){
+      button.setTheme(theme);
+    }
   }
   addButton(b: ToggleButton){
     this.buttons.push(b);

@@ -312,7 +312,7 @@ export class VerticalStrollInternalWindow extends InternalWindow{
     return this.width + this.scroll_width;
   }
   contentOffsetY(): Int32{
-    return this.y + this.scroll_bar.windowOffsetY();
+    return this.getInternalY() + this.scroll_bar.windowOffsetY();
   }
   contentOffsetX(): Int32{
     return this.x;

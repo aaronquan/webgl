@@ -313,7 +313,7 @@ export class TextDrawer{
       }
       gl.disable(gl.BLEND);
     }else{
-      throw "TextDrawer: No font set";
+      console.log("TextDrawer: No font set");
     }
   }
   drawTextModel(mat: Matrix.TransformationMatrix3x3, text: string, size: Float){
@@ -358,7 +358,7 @@ export class TextDrawer{
       }
       gl.disable(gl.BLEND);
     }else{
-      throw "TextDrawer: No font set";
+      console.log("TextDrawer: No font set");
     }
   }
   //expects that all characters are of same width

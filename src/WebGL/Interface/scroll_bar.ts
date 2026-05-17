@@ -175,7 +175,7 @@ export class VerticalScrollBar extends ScrollBar{
   }
 
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram){
-    this.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.black());
+    this.drawBackground(vp, colour_shader, this.background_colour);
 
     //draw bar
     const bc = this.dragging ? this.grabbed_bar_colour : (this.bar_hovering ? this.hover_bar_colour : this.bar_colour);

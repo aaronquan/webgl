@@ -13,6 +13,7 @@ import { newPuzzleApp } from './App/puzzle_box/app';
 
 import * as Water from './App/water/water'
 import * as Card from "./App/card/card";
+import { newITApp } from './App/interface_testing/it_app';
 //import * as CustomShaders from './shaders/custom';
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
@@ -51,8 +52,9 @@ const card_engine = new Card.CardEngine(canvas.width, canvas.height);
 const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
 //const app = new App.App(card_engine, card_renderer);
-const app = new App.App(engine, renderer);
+//const app = new App.App(engine, renderer);
 //const app = newPuzzleApp(canvas.width, canvas.height);
+const app = newITApp(canvas.width, canvas.height);
 
 app.loadResources(() => {
   console.log("running app");
