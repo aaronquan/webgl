@@ -506,6 +506,11 @@ export class RectGrid{
     model.multiply(Matrix.TransformationMatrix3x3.scale(this.size, this.size));
     return model;
   }
+  drawLines(){ //todo
+    for(let y = 0; y < this.height; y++){
+
+    }
+  }
 }
 
 export const TileStateEnum = {
@@ -552,6 +557,9 @@ export class WallTile{
         break;
     }
   }*/
+  isEmpty(){
+
+  }
   clear(){
     this.left = TileStateEnum.Nothing;
     this.bottom = TileStateEnum.Nothing;
@@ -811,6 +819,8 @@ export class WallGrid{
     }
     return undefined;
   }
+
+
 }
 
 type PositionsAtDistance = {
@@ -990,4 +1000,71 @@ export class GridAlgorithms{
     }
     return positions;
   }
+}
+
+export class ChunkHolder{
+  chunks: Map<Int32, Map<Int32, Chunk>>;
+  constructor(){
+    this.chunks = new Map();
+  }
+  getTile(x: Int32, y: Int32): WallTile | undefined{
+    const y_chunks = this.chunks.get(Math.floor(y/Chunk.height));
+    if(y_chunks != undefined){
+      const chunk = y_chunks.get(Math.floor(x/Chunk.width));
+      if(chunk != undefined){
+        const cx = x < 0 ? -(x % Chunk.width) : x % Chunk.width;
+        const cy = y < 0 ? -(y % Chunk.height) : y % Chunk.height;
+        return chunk.getTile(cx, cy);
+      }
+    }
+    return undefined;
+  }
+
+  requestChunkRange(min_x: Float, max_x: Float, min_y: Float, max_y: Float){
+    //create new chunks for now
+    const sy = Math.floor(min_y/Chunk.height);
+    const ey = Math.floor(max_y/Chunk.height);
+
+    const sx = Math.floor(min_x/Chunk.width);
+    const ex = Math.floor(max_x/Chunk.width);
+
+    for(let y = sy; y <= ey; y++){
+      if(!this.chunks.has(y)){
+        this.chunks.set(y, new Map());
+      }
+      const y_chunks = this.chunks.get(y)!;
+      for(let x = sx; x <= ex; x++){
+        if(!y_chunks.has(x)){
+          y_chunks.set(x, new Chunk(x, y));
+        }
+      }
+    }
+
+  }
+
+}
+
+export class Chunk{
+  static width = 10;
+  static height = 10;
+  static key_limit = Chunk.width*Chunk.height;
+  x: Int32;
+  y: Int32;
+  tiles: WallTile[];
+  constructor(x: Int32, y: Int32){
+    this.x = x;
+    this.y = y;
+    this.tiles = Array.from({length: Chunk.key_limit}, () => new WallTile());
+  }
+  getTile(x: Int32, y: Int32): WallTile | undefined{
+    const key = this.getKey(x, y);
+    if(key >= 0 && key < Chunk.key_limit){
+      return this.tiles[key];
+    }
+    return undefined;
+  }
+  getKey(x: Int32, y: Int32): Int32{
+    return x + y*Chunk.width;
+  }
+
 }

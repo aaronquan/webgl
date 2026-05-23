@@ -85,6 +85,16 @@ export class HorizontalScrollBar extends ScrollBar{
     }
   }
 
+  setWidth(w: Int32){
+    this.width = w;
+    this.window_width = w;
+    this.bar_width = this.width * (this.window_width / this.content_width);
+    if(this.bar_width > this.width){
+      this.bar_width = this.width;
+      this.setScroll(0);
+    }
+  }
+
   onMouseDown(point: WebGL.Matrix.Point2D){
     if(this.isInside(point)){
       this.dragging = true;
@@ -121,11 +131,15 @@ export class VerticalScrollBar extends ScrollBar{
   bar_height: Int32;
   content_height: Int32;
   window_height: Int32;
+  scroll_y: Int32;
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, window_height: Int32, content_height: Int32){
     super(x, y, width, height);
     this.content_height = content_height;
     this.window_height = window_height;
     this.bar_height = height * (this.window_height/this.content_height);
+    this.scroll_y = this.y+(this.bar_height*0.5);
+    console.log(this.scroll_y);
+
   }
   validScroll(): boolean{
     return this.content_height > this.window_height;
@@ -144,11 +158,14 @@ export class VerticalScrollBar extends ScrollBar{
     const in_y = this.y + offset_y < point.y && point.y < this.y + offset_y + this.bar_height;
     return in_x && in_y;
   }
-  setScroll(y: Int32){
+  setScrollFromY(y: Int32){
     const top_bar = y - (this.bar_height*0.5);
     const ry = top_bar - this.y;
     const new_scroll = ry / (this.height-this.bar_height);
-    if(new_scroll < 0){
+    this.setTrueScroll(new_scroll);
+  }
+  setTrueScroll(new_scroll: Int32){
+    if(new_scroll < 0 || this.window_height > this.content_height){
       this.value = 0;
     }else if(new_scroll > 1){
       this.value = 1;
@@ -156,12 +173,21 @@ export class VerticalScrollBar extends ScrollBar{
       this.value = new_scroll;
     }
   }
+  setHeight(h: Int32){
+    this.height = h;
+    this.window_height = h;
+    this.bar_height = this.height * (this.window_height/this.content_height);
+    if(this.bar_height > this.height){
+      this.bar_height = this.height;
+      this.setScrollFromY(0);
+    }
+  }
 
   onMouseDown(point: WebGL.Matrix.Point2D){
     if(this.isInside(point)){
       this.dragging = true;
       this.bar_hovering = true;
-      this.setScroll(point.y);
+      this.setScrollFromY(point.y);
     }
   }
   onMouseUp(){
@@ -170,7 +196,15 @@ export class VerticalScrollBar extends ScrollBar{
   onMouseMove(point: WebGL.Matrix.Point2D){
     this.bar_hovering = this.isInsideBar(point);
     if(this.dragging){
-      this.setScroll(point.y);
+      this.setScrollFromY(point.y);
+    }
+  }
+  onMouseWheel(ev: WheelEvent){
+    const inc = 5/(this.content_height-this.window_height);
+    if(ev.deltaY > 0){
+      this.setTrueScroll(this.value + inc);
+    }else if(ev.deltaY < 0){
+      this.setTrueScroll(this.value - inc);
     }
   }
 

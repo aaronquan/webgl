@@ -7,7 +7,8 @@ import * as Shapes from "./Shapes/Shapes"
 import * as Matrix from "./Matrix/matrix";
 import * as Line from "./Shapes/Line";
 import * as Colour from "./colour";
-import * as Texture from "./Texture/texture"
+import * as Texture from "./Texture/texture";
+import * as Interface from "./Interface/interface";
 
 type Float = number;
 type Int32 = number;
@@ -88,6 +89,12 @@ export class WebGL{
   }
   static disableScissor(){
     this.gl?.disable(this.gl.SCISSOR_TEST);
+  }
+
+  static setCursor(cursor: string){
+    if(WebGL.canvas != undefined){
+      WebGL.canvas.style.cursor = cursor;
+    }
   }
 }
 

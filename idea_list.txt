@@ -5,10 +5,11 @@ finish dropdown select - done
 text input highlight, copy and paste - done
 generic scroll bars - done
 draggable window inside canvas - done
+resizable internal window - done
+window layers - done
 
 colour themes - partial
 
-resizable internal window - TODO
 car move to destination - TODO
 save grid configurations - TODO
 car traffic - TODO
