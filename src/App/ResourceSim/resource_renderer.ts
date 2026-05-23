@@ -59,7 +59,9 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.drawGridBackground(engine);
     this.drawGridTiles(engine);
     //this.drawTile(engine, 2, 2);
-    engine.main_game.drawGrid(this.orthographic, this.colour_shader, 2);
+    if(engine.side_interface.grid_on){
+      engine.main_game.drawGrid(this.orthographic, this.colour_shader, 2);
+    }
     engine.main_game.disableScissors();
   }
 
@@ -70,17 +72,10 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   }
 
   drawTile(engine: ResourceSimEngine, x: Int32, y: Int32){
-    const sx = Math.floor(engine.main_game.grid_left);
-    const ex = Math.floor(engine.main_game.grid_right);
-    const sy = Math.floor(engine.main_game.grid_top);
-    const ey = Math.floor(engine.main_game.grid_bot);
     const gs = engine.main_game.grid_size;
     const tile = engine.main_game.chunk_holder.getTile(x, y);
-    const tx = 1+(engine.main_game.grid_left%1);
-    const ty = engine.main_game.grid_top >= 0 ? engine.main_game.grid_top%1 : 1+(engine.main_game.grid_top%1);
     if(tile != undefined){
       this.multi_colour_tile_shader.use();
-      const tx = 1+(engine.main_game.grid_left%1);
       const x_off = engine.main_game.x + (x-engine.main_game.grid_left)*gs;
       const y_off = engine.main_game.y + (y-engine.main_game.grid_top)*gs;
       const model = WebGL.WebGL.rectangleModel(x_off, y_off, gs, gs);
@@ -95,9 +90,11 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     const ex = Math.floor(engine.main_game.grid_right);
     const sy = Math.floor(engine.main_game.grid_top);
     const ey = Math.floor(engine.main_game.grid_bot);
-    const gs = engine.main_game.grid_size;
+    //const gs = engine.main_game.grid_size;
     for(let y = sy; y <= ey; y++){
       for(let x = sx; x <= ex; x++){
+        this.drawTile(engine, x, y);
+        /*
         const tile = engine.main_game.chunk_holder.getTile(x, y);
         if(tile != undefined){
           this.multi_colour_tile_shader.use();
@@ -108,8 +105,22 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
           this.setTileShader(this.multi_colour_tile_shader, tile);
           WebGL.Shapes.Quad.draw();
         }
+        */
       }
     }
+  }
+
+  getMidColour(tile: Grid.WallTile): Colour.ColourRGB{
+    if(tile.isClear()){
+      return this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;
+    }
+    else if(tile.is_selected){
+      return this.tile_state_colours.get(Grid.TileStateEnum.Highlight)!;
+    }
+    else if(tile.is_preview){
+      return this.tile_state_colours.get(Grid.TileStateEnum.Preview)!;
+    }
+    return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
   }
 
   setTileShader(shader: MultiColourTileShader, tile: Grid.WallTile){
@@ -117,7 +128,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     shader.setBotColourFromColourRGB(this.tile_state_colours.get(tile.top)!);
     shader.setRightColourFromColourRGB(this.tile_state_colours.get(tile.right)!);
     shader.setTopColourFromColourRGB(this.tile_state_colours.get(tile.bottom)!);
-    const mid_colour = WebGL.Colour.ColourUtils.blue();
+    const mid_colour = this.getMidColour(tile);
     shader.setMidColourFromColourRGB(mid_colour);
   }
 }

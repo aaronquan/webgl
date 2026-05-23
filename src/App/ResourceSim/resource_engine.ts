@@ -62,7 +62,9 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     this.side_interface.text2 = this.main_game.hover_side != undefined 
     ? Consts.ConstUtil.cellSectionToString(this.main_game.hover_side) 
     : "NA";
-    
+    if(this.side_interface.edit_state == Consts.WallEditStateEnum.Adding){
+      this.main_game.updatePreview();
+    }
   }
   protected handleMouseDown(ev: MouseEvent){
     this.side_interface.onMouseDown(this.global_mouse_point);
@@ -143,8 +145,14 @@ class MainScreen{
     }else{
       this.hover_side = undefined;
     }
-
-    
+  }
+  updatePreview(){
+    if(this.mouse_grid_position != undefined){
+      const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
+      if(tile != undefined){
+        this.addOnTile(tile, Grid.TileStateEnum.Preview);
+      }
+    }
   }
   onMouseDown(global_point: Point){
     if(this.isInside(global_point)){
@@ -155,12 +163,25 @@ class MainScreen{
     this.drag_point = undefined;
   }
 
-  addOnHoveredTile(){
+  addOnTile(tile: Grid.WallTile, state: Grid.TileState=Grid.TileStateEnum.Path){
+    if(this.hover_side != undefined){
+      if(this.hover_side !== Consts.GridCellSectionEnum.Center){
+        tile?.setTileState(Consts.ConstUtil.side_to_direction[this.hover_side], state);
+      }else{
+        //add key node
+
+      }
+    }
+      
+  }
+
+  addOnHoveredTile(state: Grid.TileState=Grid.TileStateEnum.Path){
     if(this.mouse_grid_position != undefined && this.hover_side != undefined){
       const tile = this.chunk_holder.getTile(this.mouse_grid_position.x, this.mouse_grid_position.y);
       if(this.hover_side !== Consts.GridCellSectionEnum.Center){
-        tile?.setTileState(Consts.ConstUtil.side_to_direction[this.hover_side], Grid.TileStateEnum.Path);
+        tile?.setTileState(Consts.ConstUtil.side_to_direction[this.hover_side], state);
       }else{
+        //add key node
 
       }
     }
@@ -227,6 +248,7 @@ class SimSideInterface{
   text2: string;
 
   toggle_buttons: Button.ToggleButtonSet;
+  grid_on: boolean;
 
   constructor(x: Int32, y: Int32){
     this.x = x;
@@ -252,22 +274,38 @@ class SimSideInterface{
     this.text1 = "ok";
     this.text2 = "";
     this.toggle_buttons = new Button.ToggleButtonSet();
+    this.grid_on = false;
     const grid_toggle_button = new Button.ToggleButton(x, y+60, 100, 15);
     //todo
+    grid_toggle_button.on_text = "Grid Off";
+    grid_toggle_button.off_text = "Grid On";
+    grid_toggle_button.onToggleOn = () => {
+      this.grid_on = true;
+    }
+    grid_toggle_button.toggleOff = () => {
+      this.grid_on = false;
+    }
+    this.toggle_buttons.addButton(grid_toggle_button);
+
   }
   onMouseMove(point: WebGL.Matrix.Point2D){
     this.edit_options.onMouseOver(point);
+    this.toggle_buttons.updateMouse(point);
   }
   onMouseDown(point: WebGL.Matrix.Point2D){
     this.edit_options.onMouseDown(point);
+    this.toggle_buttons.mouseDown();
   }
   onMouseUp(){
+    this.toggle_buttons.mouseUp();
     //this.edit_options.on
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
 
     text_drawer.drawText(vp, this.x, this.y+20, this.text1, 15);
     text_drawer.drawText(vp, this.x, this.y+40, this.text2, 15);
+
+    this.toggle_buttons.draw(vp, colour_shader, text_drawer);
 
     this.edit_options.draw(vp, colour_shader, text_drawer);
   }

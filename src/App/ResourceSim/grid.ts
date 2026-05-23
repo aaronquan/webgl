@@ -532,6 +532,7 @@ export class WallTile{
   is_key: boolean;
   node_id: Int32 | undefined;
   is_selected: boolean;
+  is_preview: boolean;
   constructor(){
     this.left = TileStateEnum.Nothing;
     this.bottom = TileStateEnum.Nothing;
@@ -539,6 +540,7 @@ export class WallTile{
     this.top = TileStateEnum.Nothing;
     this.is_key = false;
     this.is_selected = false;
+    this.is_preview = false;
   }
   /* no longer a thing
   setDirection(direction: GridDirection, value: boolean){
@@ -557,8 +559,11 @@ export class WallTile{
         break;
     }
   }*/
-  isEmpty(){
-
+  isClear(): boolean{
+    return this.left == TileStateEnum.Nothing && 
+    this.bottom == TileStateEnum.Nothing &&
+    this.right == TileStateEnum.Nothing &&
+    this.top == TileStateEnum.Nothing && !this.is_key;
   }
   clear(){
     this.left = TileStateEnum.Nothing;
@@ -1007,6 +1012,9 @@ export class ChunkHolder{
   constructor(){
     this.chunks = new Map();
   }
+  getTileFromPosition(position: GridPosition): WallTile | undefined{
+    return this.getTile(position.x, position.y);
+  }
   getTile(x: Int32, y: Int32): WallTile | undefined{
     const y_chunks = this.chunks.get(Math.floor(y/Chunk.height));
     if(y_chunks != undefined){
@@ -1055,6 +1063,9 @@ export class Chunk{
     this.x = x;
     this.y = y;
     this.tiles = Array.from({length: Chunk.key_limit}, () => new WallTile());
+  }
+  getTileFromPosition(position: GridPosition): WallTile | undefined{
+    return this.getTile(position.x, position.y);
   }
   getTile(x: Int32, y: Int32): WallTile | undefined{
     const key = this.getKey(x, y);
