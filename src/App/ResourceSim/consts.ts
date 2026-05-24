@@ -27,3 +27,9 @@ export class ConstUtil{
     [GridCellSectionEnum.Up]: Grid.DirectionEnum.Up
   }
 }
+
+export type PositionSide = {
+  position: Grid.GridPosition;
+  side: GridCellSection;
+
+}

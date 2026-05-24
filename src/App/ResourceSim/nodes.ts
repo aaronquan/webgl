@@ -19,6 +19,21 @@ export const NodeTypeEnum = {
 type NodeType = (typeof NodeTypeEnum)[keyof typeof NodeTypeEnum];
 
 
+//todo
+export class NodeCollection{
+  nodes: Map<Int32, KeyNode>;
+  constructor(){
+    this.nodes = new Map();
+  }
+  addNode(node: KeyNode){
+    this.nodes.set(node.getId(), node);
+  }
+
+  getNode(id: Int32): KeyNode | undefined{
+    return this.nodes.get(id);
+  }
+}
+
 //no capacity
 export class KeyNode{
   x: Int32;
@@ -34,7 +49,15 @@ export class KeyNode{
     this.id = -1;
     this.initialiseDefaultInventory();
   }
-
+  static idToNodeType(id: Int32): NodeType{
+    switch(id){
+      case 1: 
+        return NodeTypeEnum.Resource;
+      case 2:
+        return NodeTypeEnum.Requirement;
+    }
+    return NodeTypeEnum.Basic;
+  }
   protected initialiseDefaultInventory(){
     this.inventory.set(Resource.ResourceEnum.Water, 0);
     this.inventory.set(Resource.ResourceEnum.Apple, 0);
@@ -108,13 +131,16 @@ export class KeyNode{
     }
     return 0;
   }
+
+  //
   serialise(): string{
-    //TODO
-    return "";
+    //x,y,type
+    return `${this.x.toString()},${this.y.toString()},${this.type.toString()}`;
   }
   static deserialise(s: string): KeyNode{
-    //TODO
-    return new KeyNode(0, 0);
+    const sp = s.split(',');
+    const type = KeyNode.idToNodeType(parseInt(sp[2]));
+    return new KeyNode(parseInt(sp[0]), parseInt(sp[1]), type);
   }
 }
 

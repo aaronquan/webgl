@@ -2,6 +2,7 @@
 import * as WebGL from "./../globals";
 import * as ArrayUtils from "./../Util/array";
 import * as InterfaceElement from "./interface_element";
+import * as Theme from "./theme";
 
 type Int32 = number;
 
@@ -54,6 +55,12 @@ export class SingleSelectOptions{
     this.mouse_over_option = undefined;
 
     this.onSelected = () => {};
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    this.background_colour = theme.secondary_background;
+    //this.text_colour = theme.
+    this.selected_colour = theme.primary;
+    this.hover_colour = theme.secondary;
   }
   generateDividers(opts: string[], ts: Int32): Int32[]{
     const divs: Int32[] = [];
@@ -196,6 +203,11 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
 
     this.border_width = 2;
     this.onSelect = () => {};
+  }
+  setTheme(theme: Theme.InterfaceTheme){
+    this.background_colour = theme.secondary_background;
+    this.hovered_background_colour = theme.background;
+    this.border_colour = theme.tertiary;
   }
   hasOptions(): boolean{
     return this.options.length > 0;

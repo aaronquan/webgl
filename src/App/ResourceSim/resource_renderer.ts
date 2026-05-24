@@ -36,7 +36,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.tile_state_colours.set(Grid.TileStateEnum.Nothing, Colour.ColourUtils.yellow());
     this.tile_state_colours.set(Grid.TileStateEnum.Highlight, Colour.ColourUtils.red());
     this.tile_state_colours.set(Grid.TileStateEnum.Path, Colour.ColourUtils.blue());
-    this.tile_state_colours.set(Grid.TileStateEnum.Preview, Colour.ColourUtils.fromRGB(0.3, 0.4, 1));
+    this.tile_state_colours.set(Grid.TileStateEnum.Preview, Colour.ColourUtils.fromRGB(0.3, 0.8, 0.2));
 
     //shader initialisations
     this.colour_shader = new WebGL.Shader.MVPColourProgram();

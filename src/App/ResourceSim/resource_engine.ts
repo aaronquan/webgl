@@ -13,6 +13,7 @@ import * as Consts from "./consts";
 //interface webgl imports
 import Button = WebGL.Interface.Button;
 import Options = WebGL.Interface.Options;
+import Theme = WebGL.Interface.Theme;
 
 import Point = WebGL.Matrix.Point2D;
 import Mat3 = WebGL.Matrix.TransformationMatrix3x3;
@@ -23,6 +24,16 @@ type Float = number;
 type VoidFunction = () => void;
 const EmptyFunction: VoidFunction = () => {};
 
+const theme: WebGL.Interface.Theme.InterfaceTheme = {
+  primary: WebGL.Colour.ColourUtils.fromHex("40EB9E"),
+  secondary: WebGL.Colour.ColourUtils.fromHex("4fb286"),
+  tertiary: WebGL.Colour.ColourUtils.fromHex("77FFC2"),
+  background: WebGL.Colour.ColourUtils.fromHex("3c896d"),
+  secondary_background: WebGL.Colour.ColourUtils.fromHex("266C52"),
+  close: WebGL.Colour.ColourUtils.fromHex("546d64"),
+  close_hover: WebGL.Colour.ColourUtils.fromHex("CC1212"),
+}
+
 export class ResourceSimEngine extends WebGL.App.BaseEngine{
   screen_width: Int32;
   screen_height: Int32;
@@ -32,7 +43,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
 
-  main_game: MainScreen;
+  main_game: MainGame;
 
   side_interface: SimSideInterface;
   constructor(w: Int32, h: Int32){
@@ -42,9 +53,9 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     this.global_mouse_point = new Point();
     this.grid = new Grid.WallGrid(10, 10);
     this.rect_grid = new Grid.RectGrid(10, 10, 40);
-    this.main_game = new MainScreen(5, 5, 600, 600)
+    this.main_game = new MainGame(5, 5, 600, 600)
     this.side_interface = new SimSideInterface(605, 10);
-
+    this.side_interface.setTheme(theme);
     
   }
   
@@ -74,6 +85,9 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       case Consts.WallEditStateEnum.Adding:
         this.main_game.addOnHoveredTile();
         break;
+      case Consts.WallEditStateEnum.Deleting:
+        this.main_game.deleteHovered();
+        break;
       
     }
   }
@@ -84,7 +98,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
   }
 }
 
-class MainScreen{
+class MainGame{
   x: Int32;
   y: Int32;
   width: Int32;
@@ -101,7 +115,11 @@ class MainScreen{
   mouse_grid_position: Grid.GridPosition | undefined;
   hover_side: Consts.GridCellSection | undefined;
 
+  hovered_preview: Consts.PositionSide | undefined;
+
   chunk_holder: Grid.ChunkHolder;
+
+  key_nodes: Node.NodeCollection;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
@@ -120,6 +138,8 @@ class MainScreen{
     this.chunk_holder.requestChunkRange(this.grid_left, this.grid_right, this.grid_top, this.grid_bot);
     console.log(this.chunk_holder);
     this.chunk_holder.getTile(2, 1)?.setTileState(Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
+
+    this.key_nodes = new Node.NodeCollection();
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
@@ -146,14 +166,6 @@ class MainScreen{
       this.hover_side = undefined;
     }
   }
-  updatePreview(){
-    if(this.mouse_grid_position != undefined){
-      const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
-      if(tile != undefined){
-        this.addOnTile(tile, Grid.TileStateEnum.Preview);
-      }
-    }
-  }
   onMouseDown(global_point: Point){
     if(this.isInside(global_point)){
       this.drag_point = this.grid_point;
@@ -162,17 +174,55 @@ class MainScreen{
   onMouseUp(){
     this.drag_point = undefined;
   }
-
-  addOnTile(tile: Grid.WallTile, state: Grid.TileState=Grid.TileStateEnum.Path){
-    if(this.hover_side != undefined){
-      if(this.hover_side !== Consts.GridCellSectionEnum.Center){
-        tile?.setTileState(Consts.ConstUtil.side_to_direction[this.hover_side], state);
-      }else{
-        //add key node
-
+  updatePreview(){
+    this.removeHoveredPreview();
+    if(this.mouse_grid_position != undefined && this.hover_side != undefined){
+      const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
+      if(tile != undefined){
+        if(this.hover_side !== Consts.GridCellSectionEnum.Center){
+          const direction = Consts.ConstUtil.side_to_direction[this.hover_side];
+          if(tile.getSideState(direction) == Grid.TileStateEnum.Nothing){
+            tile.setTileState(direction, Grid.TileStateEnum.Preview);
+            this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
+          }
+        }
       }
     }
-      
+  }
+  removeHoveredPreview(){
+    if(this.hovered_preview != undefined){
+      if(this.hovered_preview.side != this.hover_side || this.hovered_preview.position != this.mouse_grid_position){
+        const tile = this.chunk_holder.getTileFromPosition(this.hovered_preview.position)!; //has to be a tile if hovered_preview is set
+        if(tile != undefined){
+          if(this.hovered_preview.side !== Consts.GridCellSectionEnum.Center){
+            const direction = Consts.ConstUtil.side_to_direction[this.hovered_preview.side];
+            if(tile.getSideState(direction) == Grid.TileStateEnum.Preview){
+              tile.setTileState(direction, Grid.TileStateEnum.Nothing);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  deleteHovered(){
+    if(this.mouse_grid_position != undefined && this.hover_side != undefined){
+      const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
+      if(tile != undefined){
+        this.addOnTile(tile, this.hover_side, Grid.TileStateEnum.Nothing);
+      }
+    }
+  }
+
+  addOnTile(tile: Grid.WallTile, side: Consts.GridCellSection, state: Grid.TileState=Grid.TileStateEnum.Path){
+    if(side !== Consts.GridCellSectionEnum.Center){
+      //if(tile.getSideState(Consts.ConstUtil.side_to_direction[side]) == Grid.TileStateEnum.Nothing){
+        tile.setTileState(Consts.ConstUtil.side_to_direction[side], state);
+      //}
+    }else{
+      //add key node
+
+    }
   }
 
   addOnHoveredTile(state: Grid.TileState=Grid.TileStateEnum.Path){
@@ -275,18 +325,23 @@ class SimSideInterface{
     this.text2 = "";
     this.toggle_buttons = new Button.ToggleButtonSet();
     this.grid_on = false;
-    const grid_toggle_button = new Button.ToggleButton(x, y+60, 100, 15);
-    //todo
+    const grid_toggle_button = new Button.ToggleButton(x+5, y+60, 125, 15);
     grid_toggle_button.on_text = "Grid Off";
     grid_toggle_button.off_text = "Grid On";
     grid_toggle_button.onToggleOn = () => {
       this.grid_on = true;
     }
-    grid_toggle_button.toggleOff = () => {
+    grid_toggle_button.onToggleOff = () => {
       this.grid_on = false;
     }
+    grid_toggle_button.toggleOn();
     this.toggle_buttons.addButton(grid_toggle_button);
 
+  }
+
+  setTheme(theme: Theme.InterfaceTheme){
+    this.edit_options.setTheme(theme);
+    this.toggle_buttons.setTheme(theme);
   }
   onMouseMove(point: WebGL.Matrix.Point2D){
     this.edit_options.onMouseOver(point);
