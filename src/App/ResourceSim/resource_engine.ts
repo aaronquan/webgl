@@ -147,6 +147,9 @@ class MainGame{
   disableScissors(){
     WebGL.WebGL.disableScissor();
   }
+  addNodeOnHovered(){
+    //todo
+  }
   onMouseMove(global_point: Point){
     this.grid_point = this.isInside(global_point) ? this.getGridPoint(global_point) : undefined;
     this.mouse_grid_position = this.grid_point != undefined ? new Grid.GridPosition(Math.floor(this.grid_point.x), Math.floor(this.grid_point.y)) : undefined;
@@ -185,6 +188,9 @@ class MainGame{
             tile.setTileState(direction, Grid.TileStateEnum.Preview);
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
           }
+        }else{
+          tile.is_preview = true;
+          this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
         }
       }
     }
@@ -199,6 +205,8 @@ class MainGame{
             if(tile.getSideState(direction) == Grid.TileStateEnum.Preview){
               tile.setTileState(direction, Grid.TileStateEnum.Nothing);
             }
+          }else{
+
           }
         }
       }
