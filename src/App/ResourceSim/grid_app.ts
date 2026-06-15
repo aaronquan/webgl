@@ -526,25 +526,29 @@ export class WallEngine extends App.BaseEngine{
     this.test_content = new TestContent(this.test_internal_window);
   }
   addKeyNode(node: Node.KeyNode){
-    if(this.grid.getNodeId(node.x, node.y) != undefined){
-      console.log("node already here");
-      return;
-    }
-    //console.log(node);
-    this.grid.setNodeId(node.x, node.y, this.node_id);
-    //console.log(this.grid.getTile(node.x, node.y));
-    //this.nodes.push(node);
-    node.setId(this.node_id);
-    this.active_nodes.set(this.node_id, node);
-    console.log(`adding node ${this.node_id.toString()}`);
-    this.node_id++;
-    this.updateHoveredNode();
+    if(node.tile != undefined){
+      if(this.grid.getNodeId(node.tile.x, node.tile.y) != undefined){
+        console.log("node already here");
+        return;
+      }
+      //console.log(node);
+      this.grid.setNodeId(node.tile.x, node.tile.y, this.node_id);
+      //console.log(this.grid.getTile(node.x, node.y));
+      //this.nodes.push(node);
+      node.setId(this.node_id);
+      this.active_nodes.set(this.node_id, node);
+      console.log(`adding node ${this.node_id.toString()}`);
+      this.node_id++;
+      this.updateHoveredNode();
 
-    this.graph_updated_status = false;
+      this.graph_updated_status = false;
+    }
   }
   deleteKeyNode(node: Node.KeyNode){
     this.selected_nodes.delete(node.getId());
-    this.grid.getTile(node.x, node.y)!.clearKey();
+    if(node.tile != undefined){
+      this.grid.getTile(node.tile.x, node.tile.y)!.clearKey();
+    }
     //this.grid.setCellKeyNode(node.x, node.y, false);
     console.log(`clearing node ${this.node_id.toString()}`);
     this.active_nodes.delete(node.getId());
@@ -636,14 +640,24 @@ export class WallEngine extends App.BaseEngine{
     this.nodes = [];
     const rand_arr = ArrayUtils.random0ToN(this.key_positions.length);
     //console.log(rand_arr);
-    const res_node = new Node.ResourceGeneratorNode(this.key_positions[rand_arr[0]].x, this.key_positions[rand_arr[0]].y);
+    const res_node = new Node.ResourceGeneratorNode();
+    const tile = this.grid.getTileFromPosition(this.key_positions[rand_arr[0]])!;
+    res_node.tile = tile;
+    tile.key_node = res_node;
     this.addKeyNode(res_node);
 
-    const deliver_node = new Node.RequirementNode(this.key_positions[rand_arr[1]].x, this.key_positions[rand_arr[1]].y);
+    const deliver_node = new Node.RequirementNode();
+    const tile2 = this.grid.getTileFromPosition(this.key_positions[rand_arr[1]])!;
+    deliver_node.tile = tile2;
+    tile2.key_node = deliver_node;
+
     this.addKeyNode(deliver_node);
 
     for(let i = 2; i < this.key_positions.length; i++){
-      const node = new Node.KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y);
+      const node = new Node.KeyNode();
+      const tile = this.grid.getTileFromPosition(this.key_positions[rand_arr[i]])!;
+      node.tile = tile;
+      tile.key_node = node;
       //this.nodes.push(new Node.KeyNode(this.key_positions[rand_arr[i]].x, this.key_positions[rand_arr[i]].y));
       this.addKeyNode(node);
     }
@@ -834,7 +848,10 @@ export class WallEngine extends App.BaseEngine{
       if(value === Grid.TileStateEnum.Path){
         //adding node
         changed = node_id == undefined;
-        const new_node = new Node.KeyNode(cell.x, cell.y);
+        const tile = this.grid.getTileFromPosition(cell);
+        const new_node = new Node.KeyNode(tile);
+
+
         this.addKeyNode(new_node);
       }else{
         //deleting node
@@ -855,7 +872,7 @@ export class WallEngine extends App.BaseEngine{
     if(this.grid_true_mouse != undefined){
       for(const [id, node] of this.active_nodes){
         const dist = node.distanceSq(this.grid_true_mouse);
-        if(dist < this.node_size*this.node_size){
+        if(dist != undefined && dist < this.node_size*this.node_size){
           this.hovered_node = node;
         }
       }
@@ -864,7 +881,9 @@ export class WallEngine extends App.BaseEngine{
 
   deselectKeyNodes(){
     for(const [id, node] of this.active_nodes){
-      this.grid.setSelected(node.x, node.y, false);
+      if(node.tile != undefined){
+        this.grid.setSelected(node.tile.x, node.tile.y, false);
+      }
     }
     this.selected_nodes.clear();
   }

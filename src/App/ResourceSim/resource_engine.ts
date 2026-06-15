@@ -34,6 +34,11 @@ const theme: WebGL.Interface.Theme.InterfaceTheme = {
   close_hover: WebGL.Colour.ColourUtils.fromHex("CC1212"),
 }
 
+class TileV2{
+  //left: TileV2 | 
+  //left_wall: boolean;
+}
+
 export class ResourceSimEngine extends WebGL.App.BaseEngine{
   screen_width: Int32;
   screen_height: Int32;
@@ -148,6 +153,9 @@ class MainGame{
     WebGL.WebGL.disableScissor();
   }
   addNodeOnHovered(){
+    if(this.mouse_grid_position != undefined && this.hover_side == Consts.GridCellSectionEnum.Center){
+      //const tile = this.chunk_holder.
+    }
     //todo
   }
   onMouseMove(global_point: Point){
@@ -189,8 +197,10 @@ class MainGame{
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
           }
         }else{
-          tile.is_preview = true;
-          this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
+          if(!tile.is_key){
+            tile.is_preview = true;
+            this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
+          }
         }
       }
     }
@@ -206,7 +216,7 @@ class MainGame{
               tile.setTileState(direction, Grid.TileStateEnum.Nothing);
             }
           }else{
-
+            tile.is_preview = false;
           }
         }
       }
@@ -228,19 +238,36 @@ class MainGame{
         tile.setTileState(Consts.ConstUtil.side_to_direction[side], state);
       //}
     }else{
-      //add key node
-
+      if(state == Grid.TileStateEnum.Nothing){
+        //delete key node
+        if(tile.key_node != undefined){
+          const id = tile.key_node.getId();
+          this.key_nodes.remove(id);
+          tile.is_key = false;
+          tile.is_preview = false;
+          //const node = this.key_nodes.getNode(id);
+        }
+        //this.key_nodes.getNode
+      }else{
+        //to test
+        //add key node
+        console.log("adding key node");
+        const node = new Node.KeyNode(tile);
+        this.key_nodes.addNode(node);
+        if(!tile.is_key){
+          tile.is_key = true;
+          tile.is_preview = false;
+        }
+      }
+      
     }
   }
 
   addOnHoveredTile(state: Grid.TileState=Grid.TileStateEnum.Path){
     if(this.mouse_grid_position != undefined && this.hover_side != undefined){
       const tile = this.chunk_holder.getTile(this.mouse_grid_position.x, this.mouse_grid_position.y);
-      if(this.hover_side !== Consts.GridCellSectionEnum.Center){
-        tile?.setTileState(Consts.ConstUtil.side_to_direction[this.hover_side], state);
-      }else{
-        //add key node
-
+      if(tile != undefined){
+        this.addOnTile(tile, this.hover_side, state);
       }
     }
   }

@@ -175,7 +175,8 @@ export class CustomFont{
     this.font_sheet.load(
       () =>
       File.fetchPublicFile(`${this.font_name}.txt`, (txt) => {
-        const sp = txt.split('\r\n');
+        const sp_var = txt.indexOf("\r\n") == -1 ? "\n" : "\r\n";
+        const sp = txt.split(sp_var);
         const dims = sp[0].split(' ');
         this.width = parseInt(dims[0]);
         this.height = parseInt(dims[1]);

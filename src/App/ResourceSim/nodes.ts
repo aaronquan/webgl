@@ -1,5 +1,6 @@
 import * as WebGL from '../../WebGL/globals';
 import * as Resource from './resource';
+import * as Grid from "./grid";
 
 type Int32 = number;
 type Float = number;
@@ -32,21 +33,27 @@ export class NodeCollection{
   getNode(id: Int32): KeyNode | undefined{
     return this.nodes.get(id);
   }
+  remove(id: Int32){
+    this.nodes.delete(id);
+  }
 }
 
 //no capacity
 export class KeyNode{
-  x: Int32;
-  y: Int32;
+  //x: Int32;
+  //y: Int32;
   inventory: Map<Resource.Resource, Int32>;
   type: NodeType;
+  tile: Grid.WallTile | undefined;
   private id: Int32;
-  constructor(x: Int32, y: Int32, ty: NodeType=NodeTypeEnum.Basic){
-    this.x = x;
-    this.y = y;
+  constructor(tile: Grid.WallTile | undefined=undefined, ty: NodeType=NodeTypeEnum.Basic){
     this.inventory = new Map();
     this.type = ty;
     this.id = -1;
+    this.tile = tile;
+    if(tile != undefined){
+      tile.key_node = this;
+    }
     this.initialiseDefaultInventory();
   }
   static idToNodeType(id: Int32): NodeType{
@@ -84,9 +91,10 @@ export class KeyNode{
   update(t: Float){
     
   }
-  distanceSq(p: Point){
-    const dx = p.x - this.x - 0.5;
-    const dy = p.y - this.y - 0.5;
+  distanceSq(p: Point): Float | undefined{
+    if(this.tile == undefined) return undefined;
+    const dx = p.x - this.tile.x - 0.5;
+    const dy = p.y - this.tile.y - 0.5;
     return dx*dx + dy*dy;
   }
   drawNodeUI(perspective: WebGL.Matrix.TransformationMatrix3x3, solid_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer, 
@@ -103,10 +111,10 @@ export class KeyNode{
     text_drawer.drawTextColour(perspective, x, y, `id ${this.id.toString()}`, text_size, white);
     text_drawer.drawTextColour(perspective, x+(text_size*6), y, this.typeToString(this.type), text_size, white);
     //
-
-    text_drawer.drawTextColour(perspective, x, y+text_size, this.x.toFixed(0), text_size, white);
-    text_drawer.drawTextColour(perspective, x, y+(text_size*2), this.y.toFixed(0), text_size, white);
-
+    if(this.tile != undefined){
+      text_drawer.drawTextColour(perspective, x, y+text_size, this.tile.x.toFixed(0), text_size, white);
+      text_drawer.drawTextColour(perspective, x, y+(text_size*2), this.tile.y.toFixed(0), text_size, white);
+    }
     return text_size*3;
   }
   getResourceInventory(res: Resource.Resource): Int32{
@@ -133,6 +141,7 @@ export class KeyNode{
   }
 
   //
+  /*
   serialise(): string{
     //x,y,type
     return `${this.x.toString()},${this.y.toString()},${this.type.toString()}`;
@@ -141,14 +150,14 @@ export class KeyNode{
     const sp = s.split(',');
     const type = KeyNode.idToNodeType(parseInt(sp[2]));
     return new KeyNode(parseInt(sp[0]), parseInt(sp[1]), type);
-  }
+  }*/
 }
 
 export class RequirementNode extends KeyNode{
   require_resource: Resource.Resource;
   require_amount: Int32;
-  constructor(x: Int32, y: Int32){
-    super(x, y);
+  constructor(){
+    super();
     this.require_resource = Resource.ResourceEnum.Water;
     this.require_amount = 5;
     this.type = NodeTypeEnum.Requirement;
@@ -159,8 +168,8 @@ export class ResourceGeneratorNode extends KeyNode{
   current_time: Float;
   gen_time: Float;
   resource: Resource.Resource;
-  constructor(x: Int32, y: Int32){
-    super(x, y);
+  constructor(){
+    super();
     this.current_time = 0;
     this.gen_time = 1000;
     this.resource = Resource.ResourceEnum.Water;

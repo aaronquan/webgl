@@ -1,5 +1,6 @@
 import * as Matrix from "../../WebGL/Matrix/matrix";
 import * as ArrayUtils from "../../utils/array";
+import * as Node from "./nodes";
 import * as PQ from "@datastructures-js/priority-queue"
 
 type Int32 = number;
@@ -533,7 +534,10 @@ export class WallTile{
   node_id: Int32 | undefined;
   is_selected: boolean;
   is_preview: boolean;
-  constructor(){
+  x: Int32;
+  y: Int32;
+  key_node: Node.KeyNode | undefined;
+  constructor(x: Int32=0, y: Int32=0){
     this.left = TileStateEnum.Nothing;
     this.bottom = TileStateEnum.Nothing;
     this.right = TileStateEnum.Nothing;
@@ -541,6 +545,11 @@ export class WallTile{
     this.is_key = false;
     this.is_selected = false;
     this.is_preview = false;
+    this.x = x;
+    this.y = y;
+  }
+  isKey(): boolean{
+    return this.key_node != undefined;
   }
   /* no longer a thing
   setDirection(direction: GridDirection, value: boolean){
