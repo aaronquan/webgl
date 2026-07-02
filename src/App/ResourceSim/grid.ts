@@ -1071,7 +1071,11 @@ export class Chunk{
   constructor(x: Int32, y: Int32){
     this.x = x;
     this.y = y;
-    this.tiles = Array.from({length: Chunk.key_limit}, () => new WallTile());
+    this.tiles = Array.from({length: Chunk.key_limit}, (_, i) => {
+      const tx = x*Chunk.width + (i%Chunk.width);
+      const ty = y*Chunk.height + Math.floor(i/Chunk.width);
+      return new WallTile(tx, ty);
+    });
   }
   getTileFromPosition(position: GridPosition): WallTile | undefined{
     return this.getTile(position.x, position.y);

@@ -47,9 +47,16 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   }
 
   setInitialTextureParameters(){
+    const default_colour = this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;
     this.multi_colour_tile_shader.use();
     this.multi_colour_tile_shader.setSize(0.12);
-    this.multi_colour_tile_shader.setBackgroundColourFromColourRGB(this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!);
+    this.multi_colour_tile_shader.setBackgroundColourFromColourRGB(default_colour);
+
+    this.multi_colour_centre_circle_shader.use();
+    this.multi_colour_centre_circle_shader.setSize(0.12);
+    this.multi_colour_centre_circle_shader.setCircleRadius(0.15);
+    this.multi_colour_centre_circle_shader.setBackgroundColourFromColourRGB(default_colour);
+    //this.multi_colour_centre_circle_shader.setLeftColourFromColourRGB(WebGL.Colour.ColourUtils.pink());
   }
 
   render(engine: ResourceSimEngine){
@@ -75,12 +82,19 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     const gs = engine.main_game.grid_size;
     const tile = engine.main_game.chunk_holder.getTile(x, y);
     if(tile != undefined){
-      this.multi_colour_tile_shader.use();
+      
       const x_off = engine.main_game.x + (x-engine.main_game.grid_left)*gs;
       const y_off = engine.main_game.y + (y-engine.main_game.grid_top)*gs;
       const model = WebGL.WebGL.rectangleModel(x_off, y_off, gs, gs);
-      this.multi_colour_tile_shader.setMvp(this.orthographic.multiplyCopy(model));
-      this.setTileShader(this.multi_colour_tile_shader, tile);
+      if(tile.isKey()){
+        this.multi_colour_centre_circle_shader.use();
+        this.multi_colour_centre_circle_shader.setMvp(this.orthographic.multiplyCopy(model));
+        this.setTileShader(this.multi_colour_centre_circle_shader, tile);
+      }else{
+        this.multi_colour_tile_shader.use();
+        this.multi_colour_tile_shader.setMvp(this.orthographic.multiplyCopy(model));
+        this.setTileShader(this.multi_colour_tile_shader, tile);
+      }
       WebGL.Shapes.Quad.draw();
     }
   }
@@ -111,16 +125,19 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   }
 
   getMidColour(tile: Grid.WallTile): Colour.ColourRGB{
-    if(tile.isClear()){
+    if(tile.is_preview){
+      return this.tile_state_colours.get(Grid.TileStateEnum.Preview)!;
+    }
+    else if(tile.isClear()){
       return this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;
     }
     else if(tile.is_selected){
       return this.tile_state_colours.get(Grid.TileStateEnum.Highlight)!;
     }
-    else if(tile.is_preview){
-      return this.tile_state_colours.get(Grid.TileStateEnum.Preview)!;
+    else if(tile.isKey()){
+      return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
     }
-    return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
+    return this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;
   }
 
   setTileShader(shader: MultiColourTileShader, tile: Grid.WallTile){

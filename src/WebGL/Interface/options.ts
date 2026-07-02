@@ -236,21 +236,25 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   optionIndexFromSelectedIndex(position: Int32): Int32{
     return position == 0 ? this.selected : (position <= this.selected ? position-1 : position);
   }
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: WebGL.Matrix.Point2D): boolean{
     if(this.isOpen()){
       if(this.isHovered()){
         this.selected = this.getOptionIndexFromY(point.y);
         this.onSelect(this.selected);
         this.state = DropdownStateEnum.ClosedHover;
+        
+        this.setStateFromMousePoint(point);
+        return true;
       }else{
         this.state = DropdownStateEnum.Closed;
       }
-      this.setStateFromMousePoint(point);
     }else{
       if(this.isHovered()){
         this.state = DropdownStateEnum.OpenHover;
       }
     }
+    this.setStateFromMousePoint(point);
+    return false;
   }
   isHovered(){
     return this.state == DropdownStateEnum.OpenHover || this.state == DropdownStateEnum.ClosedHover;

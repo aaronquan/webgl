@@ -61,7 +61,11 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     this.main_game = new MainGame(5, 5, 600, 600)
     this.side_interface = new SimSideInterface(605, 10);
     this.side_interface.setTheme(theme);
+
     
+    this.side_interface.setDebugKeyFunction(() => {
+      console.log(this.main_game.key_nodes);
+    });
   }
   
   protected handleMouseMove(ev: MouseEvent){
@@ -80,6 +84,8 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     : "NA";
     if(this.side_interface.edit_state == Consts.WallEditStateEnum.Adding){
       this.main_game.updatePreview();
+    }else if(this.side_interface.edit_state == Consts.WallEditStateEnum.Selecting){
+      //this.main_game.printHoveredTile();
     }
   }
   protected handleMouseDown(ev: MouseEvent){
@@ -93,6 +99,8 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       case Consts.WallEditStateEnum.Deleting:
         this.main_game.deleteHovered();
         break;
+      case Consts.WallEditStateEnum.Selecting:
+        this.main_game.printHoveredTile();
       
     }
   }
@@ -158,6 +166,12 @@ class MainGame{
     }
     //todo
   }
+  printHoveredTile(){
+    if(this.mouse_grid_position != undefined){
+      const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
+      console.log(tile);
+    }
+  }
   onMouseMove(global_point: Point){
     this.grid_point = this.isInside(global_point) ? this.getGridPoint(global_point) : undefined;
     this.mouse_grid_position = this.grid_point != undefined ? new Grid.GridPosition(Math.floor(this.grid_point.x), Math.floor(this.grid_point.y)) : undefined;
@@ -197,9 +211,12 @@ class MainGame{
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
           }
         }else{
-          if(!tile.is_key){
+          if(!tile.isKey()){
+            //console.log("preview?");
             tile.is_preview = true;
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
+            //todo: add preview vis here
+            //tile.
           }
         }
       }
@@ -333,6 +350,7 @@ class SimSideInterface{
   text2: string;
 
   toggle_buttons: Button.ToggleButtonSet;
+  buttons: Button.ButtonSet;
   grid_on: boolean;
 
   constructor(x: Int32, y: Int32){
@@ -359,6 +377,7 @@ class SimSideInterface{
     this.text1 = "ok";
     this.text2 = "";
     this.toggle_buttons = new Button.ToggleButtonSet();
+    this.buttons = new Button.ButtonSet();
     this.grid_on = false;
     const grid_toggle_button = new Button.ToggleButton(x+5, y+60, 125, 15);
     grid_toggle_button.on_text = "Grid Off";
@@ -372,22 +391,36 @@ class SimSideInterface{
     grid_toggle_button.toggleOn();
     this.toggle_buttons.addButton(grid_toggle_button);
 
+    const debug_key_button = new Button.BasicButton(x+5, y+80, 125, 15, 8);
+    debug_key_button.text = "Print Key Nodes";
+    this.buttons.addButton(debug_key_button);
+
+  }
+
+  setDebugKeyFunction(f: VoidFunction){
+    this.buttons.buttons[0].onPressed = f;
   }
 
   setTheme(theme: Theme.InterfaceTheme){
     this.edit_options.setTheme(theme);
     this.toggle_buttons.setTheme(theme);
+    this.buttons.setTheme(theme);
   }
   onMouseMove(point: WebGL.Matrix.Point2D){
     this.edit_options.onMouseOver(point);
     this.toggle_buttons.updateMouse(point);
+    this.buttons.updateMouse(point);
   }
   onMouseDown(point: WebGL.Matrix.Point2D){
-    this.edit_options.onMouseDown(point);
-    this.toggle_buttons.mouseDown();
+    const selected_option = this.edit_options.onMouseDown(point);
+    if(!selected_option){
+      this.toggle_buttons.mouseDown();
+      this.buttons.mouseDown();
+    }
   }
   onMouseUp(){
     this.toggle_buttons.mouseUp();
+    this.buttons.mouseUp();
     //this.edit_options.on
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
@@ -396,6 +429,7 @@ class SimSideInterface{
     text_drawer.drawText(vp, this.x, this.y+40, this.text2, 15);
 
     this.toggle_buttons.draw(vp, colour_shader, text_drawer);
+    this.buttons.draw(vp, colour_shader, text_drawer);
 
     this.edit_options.draw(vp, colour_shader, text_drawer);
   }

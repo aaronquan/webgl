@@ -40,6 +40,7 @@ export class NodeCollection{
 
 //no capacity
 export class KeyNode{
+  static current_id: Int32 = 0
   //x: Int32;
   //y: Int32;
   inventory: Map<Resource.Resource, Int32>;
@@ -49,7 +50,8 @@ export class KeyNode{
   constructor(tile: Grid.WallTile | undefined=undefined, ty: NodeType=NodeTypeEnum.Basic){
     this.inventory = new Map();
     this.type = ty;
-    this.id = -1;
+    this.id = KeyNode.current_id;
+    KeyNode.current_id++;
     this.tile = tile;
     if(tile != undefined){
       tile.key_node = this;
