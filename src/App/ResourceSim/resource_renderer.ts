@@ -56,7 +56,6 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.multi_colour_centre_circle_shader.setSize(0.12);
     this.multi_colour_centre_circle_shader.setCircleRadius(0.15);
     this.multi_colour_centre_circle_shader.setBackgroundColourFromColourRGB(default_colour);
-    //this.multi_colour_centre_circle_shader.setLeftColourFromColourRGB(WebGL.Colour.ColourUtils.pink());
   }
 
   render(engine: ResourceSimEngine){
@@ -128,15 +127,15 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     if(tile.is_preview){
       return this.tile_state_colours.get(Grid.TileStateEnum.Preview)!;
     }
-    else if(tile.isClear()){
-      return this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;
+    else if(!tile.isClear()){
+      return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
     }
     else if(tile.is_selected){
       return this.tile_state_colours.get(Grid.TileStateEnum.Highlight)!;
     }
-    else if(tile.isKey()){
-      return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
-    }
+    //else if(tile.isKey()){
+    //  return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
+    //}
     return this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;
   }
 

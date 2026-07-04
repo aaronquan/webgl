@@ -20,16 +20,18 @@ void main(){
   vec2 uv = v_relative;
   float sz = u_size/2.;
 
+  vec2 middle = vec2(0.5, 0.5);
+
+  float not_inside_circle = step(u_circle_radius, distance(middle, v_relative));
+  float inside_circle = 1.0-not_inside_circle;
+
   float vertical = step(abs(0.5-uv.x), sz);
   float horizontal = step(abs(0.5-uv.y), sz);
   
-  float top = vertical*step(0.5+sz, uv.y);
-  float bottom = vertical*step(uv.y, 0.5-sz);
-  float left = horizontal*step(uv.x, 0.5-sz);
-  float right = horizontal*step(0.5+sz, uv.x);
-
-  vec2 middle = vec2(0.5, 0.5);
-  float inside_circle = step(u_circle_radius, distance(middle, v_relative));
+  float top = vertical*step(0.5+sz, uv.y)*not_inside_circle;
+  float bottom = vertical*step(uv.y, 0.5-sz)*not_inside_circle;
+  float left = horizontal*step(uv.x, 0.5-sz)*not_inside_circle;
+  float right = horizontal*step(0.5+sz, uv.x)*not_inside_circle;
 
   float background = 1.0-clamp(top+bottom+left+right+inside_circle, 0.0, 1.0);
 

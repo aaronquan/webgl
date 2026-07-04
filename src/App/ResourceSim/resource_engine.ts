@@ -63,8 +63,24 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     this.side_interface.setTheme(theme);
 
     
+    this.addInterfaceFunctions();
+  }
+
+  addInterfaceFunctions(){
     this.side_interface.setDebugKeyFunction(() => {
       console.log(this.main_game.key_nodes);
+    });
+
+    this.side_interface.setSaveFunction(() => {
+      this.main_game.saveToText();
+    });
+
+    this.side_interface.setLoadFunction(() => {
+      this.main_game.loadFromSave();
+    });
+
+    this.side_interface.setClearFunction(() => {
+      this.main_game.clear();
     });
   }
   
@@ -134,13 +150,15 @@ class MainGame{
 
   key_nodes: Node.NodeCollection;
 
+  test_save: string | undefined;
+
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
 
-    this.grid_size = 50; // 50 with 0.1 radius gives misaligned grid
+    this.grid_size = 60; // 50 with 0.1 radius gives misaligned grid
 
     this.grid_left = -1.0;
     this.grid_top = 1.5;
@@ -149,8 +167,8 @@ class MainGame{
 
     this.chunk_holder = new Grid.ChunkHolder();
     this.chunk_holder.requestChunkRange(this.grid_left, this.grid_right, this.grid_top, this.grid_bot);
-    console.log(this.chunk_holder);
-    this.chunk_holder.getTile(2, 1)?.setTileState(Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
+
+    //this.chunk_holder.getTile(2, 1)?.setTileState(Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
 
     this.key_nodes = new Node.NodeCollection();
   }
@@ -159,12 +177,6 @@ class MainGame{
   }
   disableScissors(){
     WebGL.WebGL.disableScissor();
-  }
-  addNodeOnHovered(){
-    if(this.mouse_grid_position != undefined && this.hover_side == Consts.GridCellSectionEnum.Center){
-      //const tile = this.chunk_holder.
-    }
-    //todo
   }
   printHoveredTile(){
     if(this.mouse_grid_position != undefined){
@@ -212,11 +224,8 @@ class MainGame{
           }
         }else{
           if(!tile.isKey()){
-            //console.log("preview?");
             tile.is_preview = true;
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
-            //todo: add preview vis here
-            //tile.
           }
         }
       }
@@ -245,6 +254,15 @@ class MainGame{
       const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
       if(tile != undefined){
         this.addOnTile(tile, this.hover_side, Grid.TileStateEnum.Nothing);
+        if(this.hover_side == Consts.GridCellSectionEnum.Center){
+          //delete node
+          const node = tile.key_node;
+          if(node != undefined){
+            this.key_nodes.remove(node.getId());
+            tile.key_node = undefined;
+          }
+
+        }
       }
     }
   }
@@ -338,6 +356,39 @@ class MainGame{
       WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, this.y+y*this.grid_size-hs, this.width, size, colour);
     }
   }
+  saveToText(){
+    const node_ser = this.key_nodes.serialise();
+    const grid_ser = this.chunk_holder.serialise();
+
+    let content = `${node_ser.number_of_nodes.toString()},${grid_ser.number_of_tiles.toString()}\n`;
+    content += node_ser.serialised_string;
+    content += grid_ser.serialised_string;
+    console.log(content);
+    this.test_save = content;
+  }
+  loadFromSave(){
+    console.log(this.test_save);
+    if(this.test_save == undefined) return;
+    const sp = this.test_save.split("\n");
+    const nums = sp[0].split(",");
+    const num_nodes = parseInt(nums[0]);
+    const num_tiles = parseInt(nums[1]);
+    let ln = 1
+    console.log("nodes");
+    for(let i = 0; i < num_nodes; i++){
+      console.log(sp[ln]);
+      ln++;
+    }
+    console.log("tiles");
+    for(let i = 0; i < num_tiles; i++){
+      console.log(sp[ln]);
+      ln++;
+    }
+  }
+  clear(){
+    this.key_nodes.clear();
+    this.chunk_holder.clearChunks();
+  }
 }
 
 class SimSideInterface{
@@ -395,6 +446,26 @@ class SimSideInterface{
     debug_key_button.text = "Print Key Nodes";
     this.buttons.addButton(debug_key_button);
 
+    const save_button = new Button.BasicButton(x+5, y+100, 100, 15, 12);
+    save_button.text = "Save";
+    this.buttons.addButton(save_button);
+
+    const load_button = new Button.BasicButton(x+5, y+120, 100, 15, 12);
+    load_button.text = "Load";
+    this.buttons.addButton(load_button);
+
+    const clear_button = new Button.BasicButton(x+5, y+140, 100, 15, 12);
+    clear_button.text = "Clear";
+    this.buttons.addButton(clear_button);
+  }
+  setLoadFunction(f: VoidFunction){
+    this.buttons.buttons[2].onPressed = f;
+  }
+  setSaveFunction(f: VoidFunction){
+    this.buttons.buttons[1].onPressed = f;
+  }
+  setClearFunction(f: VoidFunction){
+    this.buttons.buttons[3].onPressed = f;
   }
 
   setDebugKeyFunction(f: VoidFunction){

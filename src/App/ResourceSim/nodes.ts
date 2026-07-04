@@ -20,7 +20,11 @@ export const NodeTypeEnum = {
 type NodeType = (typeof NodeTypeEnum)[keyof typeof NodeTypeEnum];
 
 
-//todo
+type NodeCollectionSerialise = {
+  number_of_nodes: Int32,
+  serialised_string: string
+}
+
 export class NodeCollection{
   nodes: Map<Int32, KeyNode>;
   constructor(){
@@ -35,6 +39,20 @@ export class NodeCollection{
   }
   remove(id: Int32){
     this.nodes.delete(id);
+  }
+  serialise(): NodeCollectionSerialise{
+    let node_string = "";
+    let number_of_nodes = 0;
+    for(const [key, node] of this.nodes){
+      if(node.tile != undefined){
+        node_string += `${key},${node.tile!.x},${node.tile!.y}\n`;
+        number_of_nodes++;
+      }
+    }
+    return {serialised_string: node_string, number_of_nodes};
+  }
+  clear(){
+    this.nodes.clear();
   }
 }
 

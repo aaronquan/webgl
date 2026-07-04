@@ -548,6 +548,9 @@ export class WallTile{
     this.x = x;
     this.y = y;
   }
+  static emptyTile(ts: TileState): boolean{
+    return ts == TileStateEnum.Nothing || ts == TileStateEnum.Preview;
+  }
   isKey(): boolean{
     return this.key_node != undefined;
   }
@@ -569,10 +572,10 @@ export class WallTile{
     }
   }*/
   isClear(): boolean{
-    return this.left == TileStateEnum.Nothing && 
-    this.bottom == TileStateEnum.Nothing &&
-    this.right == TileStateEnum.Nothing &&
-    this.top == TileStateEnum.Nothing && !this.is_key;
+    return WallTile.emptyTile(this.left) && 
+    WallTile.emptyTile(this.bottom) &&
+    WallTile.emptyTile(this.right) &&
+    WallTile.emptyTile(this.top) && !this.is_key;
   }
   clear(){
     this.left = TileStateEnum.Nothing;
@@ -697,6 +700,15 @@ export class WallTile{
   }
   isKeyNode(): boolean{
     return this.node_id != undefined;
+  }
+  isSerialisable(): boolean{
+    return (this.left != TileStateEnum.Nothing ||
+    this.bottom != TileStateEnum.Nothing ||
+    this.right != TileStateEnum.Nothing ||
+    this.top != TileStateEnum.Nothing)
+  }
+  serialise(): string{
+    return `${this.x},${this.y},${this.left ? "1" : "0"},${this.top ? "1": "0"},${this.right ? "1": "0"},${this.bottom ? "1" : "0"}`;
   }
 }
 
@@ -1021,6 +1033,15 @@ export class ChunkHolder{
   constructor(){
     this.chunks = new Map();
   }
+  clearChunks(){
+    for(const [_, chunk_map] of this.chunks){
+      for(const [_, chunk] of chunk_map){
+        for(const tile of chunk.tiles){
+          tile.clear();
+        }
+      }
+    }
+  }
   getTileFromPosition(position: GridPosition): WallTile | undefined{
     return this.getTile(position.x, position.y);
   }
@@ -1056,9 +1077,30 @@ export class ChunkHolder{
         }
       }
     }
-
   }
 
+
+  //tile is x, y, left, top, right, bottom
+  serialise(): TileSerialise{
+    let ser_string = "";
+    let number_of_tiles = 0;
+    for(const [_, chunk_map] of this.chunks){
+      for(const [_, chunk] of chunk_map){
+        for(const tile of chunk.tiles){
+          if(tile.isSerialisable()){
+            ser_string += `${tile.serialise()}\n`;
+            number_of_tiles++;
+          }
+        }
+      }
+    }
+    return {serialised_string: ser_string, number_of_tiles};
+  }
+}
+
+type TileSerialise = {
+  number_of_tiles: Int32,
+  serialised_string: string
 }
 
 export class Chunk{
@@ -1076,6 +1118,11 @@ export class Chunk{
       const ty = y*Chunk.height + Math.floor(i/Chunk.width);
       return new WallTile(tx, ty);
     });
+  }
+  clear(){
+    for(const tile of this.tiles){
+      tile.clear();
+    }
   }
   getTileFromPosition(position: GridPosition): WallTile | undefined{
     return this.getTile(position.x, position.y);
