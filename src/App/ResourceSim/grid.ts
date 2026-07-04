@@ -571,6 +571,7 @@ export class WallTile{
         break;
     }
   }*/
+
   isClear(): boolean{
     return WallTile.emptyTile(this.left) && 
     WallTile.emptyTile(this.bottom) &&
@@ -708,7 +709,16 @@ export class WallTile{
     this.top != TileStateEnum.Nothing)
   }
   serialise(): string{
-    return `${this.x},${this.y},${this.left ? "1" : "0"},${this.top ? "1": "0"},${this.right ? "1": "0"},${this.bottom ? "1" : "0"}`;
+    return `${this.x},${this.y},${this.left.toString()},${this.top.toString()},${this.right.toString()},${this.bottom.toString()}`;
+  }
+  deserialise(data: string){
+    const sp = data.split(",");
+    this.x = parseInt(sp[0]);
+    this.y = parseInt(sp[1]);
+    this.left = parseInt(sp[2]) as TileState;
+    this.top = parseInt(sp[3]) as TileState;
+    this.right = parseInt(sp[4]) as TileState;
+    this.bottom = parseInt(sp[5]) as TileState;
   }
 }
 
@@ -1095,6 +1105,15 @@ export class ChunkHolder{
       }
     }
     return {serialised_string: ser_string, number_of_tiles};
+  }
+  deserialise(tile_string: string){
+    const sp = tile_string.split(",");
+    const x = parseInt(sp[0]);
+    const y = parseInt(sp[1]);
+    const tile = this.getTile(x, y);
+    if(tile != undefined){
+      tile.deserialise(tile_string);
+    }
   }
 }
 

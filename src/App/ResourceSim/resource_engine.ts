@@ -377,6 +377,7 @@ class MainGame{
     console.log("nodes");
     for(let i = 0; i < num_nodes; i++){
       console.log(sp[ln]);
+      
       ln++;
     }
     console.log("tiles");
