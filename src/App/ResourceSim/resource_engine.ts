@@ -84,7 +84,15 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     });
 
     this.side_interface.setGenGraphFunction(() => {
-      this.main_game.
+      this.main_game.generateRoadGraph();
+    });
+
+    this.side_interface.setAddCarFunction(() => {
+      //this.main_game.
+    });
+
+    this.side_interface.setCarDestFunction(() => {
+
     });
   }
   
@@ -407,6 +415,9 @@ class MainGame{
   generateRoadGraph(){
     this.road_graph = new NodeGraph.RoadGraph();
   }
+  clearHighlights(){
+    this.chunk_holder.clearHighlights();
+  }
   clear(){
     this.key_nodes.clear();
     this.chunk_holder.clearChunks();
@@ -485,6 +496,23 @@ class SimSideInterface{
     const generate_graph_button = new Button.BasicButton(x+5, y+160, 100, 15, 12);
     generate_graph_button.text = "Gen Graph";
     this.buttons.addButton(generate_graph_button);
+
+    const add_car_button = new Button.BasicButton(x+5, y+180, 100, 15, 12);
+    add_car_button.text = "Add Car";
+    this.buttons.addButton(add_car_button);
+
+    const set_car_destination_button = new Button.BasicButton(x+5, y+200, 100, 15, 10);
+    set_car_destination_button.text = "Set Car Dest";
+    this.buttons.addButton(set_car_destination_button);
+
+    const show_closest_path_button = new Button.BasicButton(x+5, y+220, 100, 15, 10);
+    show_closest_path_button.text = "Close Path";
+    this.buttons.addButton(show_closest_path_button);
+
+    const clear_highlights_button = new Button.BasicButton(x+5, y+240, 100, 15, 10);
+    clear_highlights_button.text = "Clear HLights";
+    this.buttons.addButton(clear_highlights_button);
+
   }
   setLoadFunction(f: VoidFunction){
     this.buttons.buttons[2].onPressed = f;
@@ -502,6 +530,21 @@ class SimSideInterface{
 
   setGenGraphFunction(f: VoidFunction){
     this.buttons.buttons[4].onPressed = f;
+  }
+
+  setAddCarFunction(f: VoidFunction){
+    this.buttons.buttons[5].onPressed = f;
+  }
+
+  setCarDestFunction(f: VoidFunction){
+    this.buttons.buttons[6].onPressed = f;
+  }
+
+  setClosestPathFunction(f: VoidFunction){
+    this.buttons.buttons[7].onPressed = f;
+  }
+  setClearHighlightsFunction(f: VoidFunction){
+    this.buttons.buttons[8].onPressed = f;
   }
 
   setTheme(theme: Theme.InterfaceTheme){

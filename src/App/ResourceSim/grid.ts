@@ -649,6 +649,21 @@ export class WallTile{
     this.bottom = TileStateEnum.Nothing;
     this.right = TileStateEnum.Nothing;
   }
+  clearHighlights(){
+    if(this.left == TileStateEnum.Highlight){
+      this.left = TileStateEnum.Path;
+    }
+    if(this.top == TileStateEnum.Highlight){
+      this.top = TileStateEnum.Path;
+    }
+    if(this.right == TileStateEnum.Highlight){
+      this.right = TileStateEnum.Path;
+    }
+    if(this.bottom == TileStateEnum.Highlight){
+      this.bottom = TileStateEnum.Path;
+    }
+    this.is_selected = false;
+  }
   setTileActiveDirection(active: ActiveDirections, value: TileState){
     if(active.left){
       this.left = value;
@@ -1047,9 +1062,17 @@ export class ChunkHolder{
   clearChunks(){
     for(const [_, chunk_map] of this.chunks){
       for(const [_, chunk] of chunk_map){
-        for(const tile of chunk.tiles){
-          tile.clear();
-        }
+        chunk.clear();
+        //for(const tile of chunk.tiles){
+        //  tile.clear();
+        //}
+      }
+    }
+  }
+  clearHighlights(){
+    for(const [_, chunk_map] of this.chunks){
+      for(const [_, chunk] of chunk_map){
+        chunk.clearHighlights();
       }
     }
   }
@@ -1156,6 +1179,11 @@ export class Chunk{
   }
   getKey(x: Int32, y: Int32): Int32{
     return x + y*Chunk.width;
+  }
+  clearHighlights(){
+    for(const tile of this.tiles){
+      tile.clearHighlights();
+    }
   }
 
 }
