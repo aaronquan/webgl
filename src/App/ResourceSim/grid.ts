@@ -585,6 +585,7 @@ export class WallTile{
     this.top = TileStateEnum.Nothing;
     this.is_key = false;
     this.is_selected = false;
+    this.key_node = undefined;
   }
   getDirections(): GridDirection[]{
     const dirs: GridDirection[] = [];

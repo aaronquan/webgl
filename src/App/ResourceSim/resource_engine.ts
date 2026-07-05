@@ -82,6 +82,10 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     this.side_interface.setClearFunction(() => {
       this.main_game.clear();
     });
+
+    this.side_interface.setGenGraphFunction(() => {
+      this.main_game.
+    });
   }
   
   protected handleMouseMove(ev: MouseEvent){
@@ -149,6 +153,8 @@ class MainGame{
   chunk_holder: Grid.ChunkHolder;
 
   key_nodes: Node.NodeCollection;
+
+  road_graph: NodeGraph.RoadGraph | undefined;
 
   test_save: string | undefined;
 
@@ -287,12 +293,7 @@ class MainGame{
         //to test
         //add key node
         console.log("adding key node");
-        const node = new Node.KeyNode(tile);
-        this.key_nodes.addNode(node);
-        if(!tile.is_key){
-          tile.is_key = true;
-          tile.is_preview = false;
-        }
+        this.addKeyNodeOnTile(tile);
       }
       
     }
@@ -304,6 +305,15 @@ class MainGame{
       if(tile != undefined){
         this.addOnTile(tile, this.hover_side, state);
       }
+    }
+  }
+
+  addKeyNodeOnTile(tile: Grid.WallTile){
+    const node = new Node.KeyNode(tile);
+    this.key_nodes.addNode(node);
+    if(!tile.is_key){
+      tile.is_key = true;
+      tile.is_preview = false;
     }
   }
 
@@ -365,31 +375,44 @@ class MainGame{
     content += grid_ser.serialised_string;
     console.log(content);
     this.test_save = content;
+    //todo: save to other locations
   }
   loadFromSave(){
     console.log(this.test_save);
     if(this.test_save == undefined) return;
+    this.clear();
     const sp = this.test_save.split("\n");
     const nums = sp[0].split(",");
     const num_nodes = parseInt(nums[0]);
     const num_tiles = parseInt(nums[1]);
     let ln = 1
-    console.log("nodes");
     for(let i = 0; i < num_nodes; i++){
-      console.log(sp[ln]);
-      
+      this.deserialiseNode(sp[ln]);
       ln++;
     }
-    console.log("tiles");
     for(let i = 0; i < num_tiles; i++){
-      console.log(sp[ln]);
+      this.chunk_holder.deserialise(sp[ln]);
       ln++;
     }
+  }
+  deserialiseNode(s: string){
+    const sp = s.split(',');
+    const x = parseInt(sp[0]);
+    const y = parseInt(sp[1]);
+    const tile = this.chunk_holder.getTile(x, y);
+    if(tile != undefined){
+      this.addKeyNodeOnTile(tile);
+    }
+  }
+  generateRoadGraph(){
+    this.road_graph = new NodeGraph.RoadGraph();
   }
   clear(){
     this.key_nodes.clear();
     this.chunk_holder.clearChunks();
+    this.road_graph = undefined;
   }
+
 }
 
 class SimSideInterface{
@@ -458,6 +481,10 @@ class SimSideInterface{
     const clear_button = new Button.BasicButton(x+5, y+140, 100, 15, 12);
     clear_button.text = "Clear";
     this.buttons.addButton(clear_button);
+
+    const generate_graph_button = new Button.BasicButton(x+5, y+160, 100, 15, 12);
+    generate_graph_button.text = "Gen Graph";
+    this.buttons.addButton(generate_graph_button);
   }
   setLoadFunction(f: VoidFunction){
     this.buttons.buttons[2].onPressed = f;
@@ -471,6 +498,10 @@ class SimSideInterface{
 
   setDebugKeyFunction(f: VoidFunction){
     this.buttons.buttons[0].onPressed = f;
+  }
+
+  setGenGraphFunction(f: VoidFunction){
+    this.buttons.buttons[4].onPressed = f;
   }
 
   setTheme(theme: Theme.InterfaceTheme){

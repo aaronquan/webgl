@@ -45,7 +45,7 @@ export class NodeCollection{
     let number_of_nodes = 0;
     for(const [key, node] of this.nodes){
       if(node.tile != undefined){
-        node_string += `${key},${node.tile!.x},${node.tile!.y}\n`;
+        node_string += `${node.tile!.x},${node.tile!.y}\n`;
         number_of_nodes++;
       }
     }
@@ -58,7 +58,7 @@ export class NodeCollection{
 
 //no capacity
 export class KeyNode{
-  static current_id: Int32 = 0
+  static current_id: Int32 = 0;
   //x: Int32;
   //y: Int32;
   inventory: Map<Resource.Resource, Int32>;

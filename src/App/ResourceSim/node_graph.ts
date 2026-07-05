@@ -83,8 +83,10 @@ export class RoadGraph{
     //indexes road nodes (NOT key nodes)
     for(const [id, node] of nodes){
       //const node = nodes[i];
-      const key = getKey(node.x, node.y);
-      node_map[key] = id;
+      if(node.tile != undefined){
+        const key = getKey(node.tile.x, node.tile.y);
+        node_map[key] = id;
+      }
     }
 
     console.log(node_map);
@@ -214,6 +216,25 @@ export class RoadGraph{
     console.log(this.nodes);
     console.log(this.key_map);
   }
+  generateGraphFromChunks(chunks: Grid.ChunkHolder, nodes: Node.NodeCollection){
+    this.nodes = [];
+    this.key_map = new Map();
+
+    const key_node_position_map: Map<Int32, Map<Int32, Int32>> = new Map<Int32, Map<Int32, Int32>>(); //keys y, x
+    for(const [id, node] of nodes.nodes){
+      if(node.tile != undefined){
+        if(!key_node_position_map.has(node.tile.y)){
+          key_node_position_map.set(node.tile.y, new Map());
+        }
+        const y_node_map = key_node_position_map.get(node.tile.y)!;
+        y_node_map.set(node.tile.x, id);
+      }
+    }
+
+    //to finish off
+    const road_node_reference = new Map();
+  }
+
   shortestPath(from: Int32, to: Int32): RoadConnection[] | undefined{
     type PathTo = {
       node: RoadNode;
