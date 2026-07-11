@@ -1,3 +1,4 @@
+import * as WebGL from './../../WebGL/globals';
 import * as Grid from './grid';
 import * as Node from './nodes';
 import * as ArrayUtil from './../../utils/array';
@@ -98,9 +99,9 @@ export class RoadGraph{
 
     const position_queue: Grid.GridPosition[] = [];
     let current_road_node_index = 0;
-    position_queue.push(new Grid.GridPosition(first_node.x, first_node.y));
+    position_queue.push(new Grid.GridPosition(first_node.tile!.x, first_node.tile!.y));
 
-    const starting_position = new Grid.GridPosition(first_node.x, first_node.y);
+    const starting_position = new Grid.GridPosition(first_node.tile!.x, first_node.tile!.y);
     let next_directions = grid.getTileFromPosition(starting_position)!.getDirections();
     const first_id = first_node.getId();
     const start_node = new RoadNode(starting_position.copy(), current_road_node_index, first_id);
@@ -217,6 +218,7 @@ export class RoadGraph{
     console.log(this.key_map);
   }
   generateGraphFromChunks(chunks: Grid.ChunkHolder, nodes: Node.NodeCollection){
+    if(nodes.nodes.size == 0) return;
     this.nodes = [];
     this.key_map = new Map();
 
@@ -232,7 +234,20 @@ export class RoadGraph{
     }
 
     //to finish off
-    const road_node_reference = new Map();
+    const road_node_reference: Map<Int32, Map<Int32, Int32>> = new Map();
+    const road_node_directions: WebGL.Utils.Map.PositionMap2D<Grid.ActiveDirections> = new WebGL.Utils.Map.PositionMap2D();
+
+    const start_node = nodes.nodes.values().next().value!;
+
+    const position_queue: Grid.GridPosition[] = [];
+    position_queue.push(new Grid.GridPosition(start_node.tile!.x, start_node.tile!.y));
+    let i = 0;
+
+    while(i < position_queue.length){
+
+      i++;
+    }
+
   }
 
   shortestPath(from: Int32, to: Int32): RoadConnection[] | undefined{
