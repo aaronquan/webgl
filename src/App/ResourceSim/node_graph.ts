@@ -244,7 +244,23 @@ export class RoadGraph{
     let i = 0;
 
     while(i < position_queue.length){
-
+      const position = position_queue[i];
+      const tile = chunks.getTileFromPosition(position);
+      if(tile == undefined){
+        i++;
+        continue;
+      }
+      const directions = tile.getDirections();
+      //const node_directions_seen = road_node_directions.get(position.x, position.y);
+      if(road_node_directions.has(position.x, position.y)){
+        road_node_directions.set(position.x, position.y, Grid.DirectionUtil.blankActiveDirections());
+      }
+      const node_directions_seen = road_node_directions.get(position.x, position.y)!;
+      for(const dir of directions){
+        if(!Grid.DirectionUtil.isActiveDirection(node_directions_seen, dir)){
+          console.log(Grid.DirectionUtil.toString(dir));
+        }
+      }
       i++;
     }
 

@@ -8,12 +8,22 @@ export class PositionMap2D<T>{
     this.map = new Map();
   }
 
-  add(x: Int32, y: Int32, t: T){
+  set(x: Int32, y: Int32, t: T){
     if(!this.map.has(y)){
       this.map.set(y, new Map());
     }
     const y_map = this.map.get(y)!;
     y_map.set(x, t);
+  }
+  has(x: Int32, y:Int32): boolean{
+    if(!this.map.has(y)){
+      return false;
+    }
+    const y_map = this.map.get(y)!;
+    if(!y_map.has(x)){
+      return false;
+    }
+    return true;
   }
   get(x: Int32, y: Int32): T | undefined{
     if(!this.map.has(y)){
