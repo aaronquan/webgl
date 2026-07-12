@@ -20,22 +20,13 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.grid_colours = [];
   }
   render(engine: PuzzleEngine){
-    engine.option_select.draw(this.orthographic, this.colour_shader, this.text_drawer);
-
-    //this.drawStaticShapeLabel(engine.my_shapes[2], 200, 200);
-
-    this.drawShapeGrid(engine, engine.interface_grid);
-
-    for(const label of engine.shape_labels){
-      this.drawShapeLabel(label);
-    }
-
-    if(engine.dragged_shape != undefined && engine.mouse_point != undefined){
-      this.drawShape(engine.dragged_shape, engine.mouse_point.x, engine.mouse_point.y);
-    }
-    const hovered_shape_id = engine.getHoveredShapeId();
-    if(hovered_shape_id != undefined){
-      this.text_drawer.drawText(this.orthographic, 50, 50, hovered_shape_id.toString(), 15);
+    switch(engine.applet_display){
+      case PEngine.PuzzleAppletDisplayEnum.Puzzle:
+        this.drawPuzzleApp(engine);
+        break;
+      case PEngine.PuzzleAppletDisplayEnum.Tetris:
+        this.drawTetrisApp(engine);
+        break;
     }
 
     engine.interface.draw(this.orthographic, this.colour_shader, this.text_drawer);
@@ -105,7 +96,23 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
       sy += cell_size;
     }
   }
-  renderTetris(engine: PuzzleEngine){
+  drawPuzzleApp(engine: PuzzleEngine){
+    engine.option_select.draw(this.orthographic, this.colour_shader, this.text_drawer);
+    this.drawShapeGrid(engine, engine.interface_grid);
+
+    for(const label of engine.shape_labels){
+      this.drawShapeLabel(label);
+    }
+
+    if(engine.dragged_shape != undefined && engine.mouse_point != undefined){
+      this.drawShape(engine.dragged_shape, engine.mouse_point.x, engine.mouse_point.y);
+    }
+    const hovered_shape_id = engine.getHoveredShapeId();
+    if(hovered_shape_id != undefined){
+      this.text_drawer.drawText(this.orthographic, 50, 50, hovered_shape_id.toString(), 15);
+    }
+  }
+  drawTetrisApp(engine: PuzzleEngine){
     const red = WebGL.Colour.ColourUtils.red();
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
       10, 10, 

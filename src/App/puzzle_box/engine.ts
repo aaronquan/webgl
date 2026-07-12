@@ -328,7 +328,24 @@ export class PuzzleInterface{
   buttons: Button.ButtonSet;
   constructor(){
     this.buttons = new Button.ButtonSet();
+    this.addButtons();
   }
+  setPuzzleFunction(f: VoidFunction){
+    this.buttons.buttons[0].onPressed = f;
+  }
+  setTetrisFunction(f: VoidFunction){
+    this.buttons.buttons[1].onPressed = f;
+  }
+
+  private addButtons(){
+    const puzzle_button = new Button.BasicButton(5, 600, 100, 15, 10);
+    puzzle_button.text = "Puzzle";
+    this.buttons.addButton(puzzle_button);
+    const tetris_button = new Button.BasicButton(5, 620, 100, 15, 10);
+    tetris_button.text = "Tetris";
+    this.buttons.addButton(tetris_button);
+  }
+
   onMouseMove(point: WebGL.Matrix.Point2D){
       this.buttons.updateMouse(point);
     }
@@ -342,6 +359,13 @@ export class PuzzleInterface{
     this.buttons.draw(vp, colour_shader, text_drawer);
   }
 }
+
+export const PuzzleAppletDisplayEnum = {
+  Puzzle: 0,
+  Tetris: 1
+} as const;
+
+export type PuzzleAppletDisplay = (typeof PuzzleAppletDisplayEnum)[keyof typeof PuzzleAppletDisplayEnum];
 
 export class PuzzleEngine extends WebGL.App.BaseEngine{
   option_select: WebGL.Interface.Options.DropdownOptions;
@@ -367,6 +391,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
   tetris: TetrisEngine;
   interface: PuzzleInterface;
+
+  applet_display: PuzzleAppletDisplay;
 
   constructor(){
     super();
@@ -398,6 +424,14 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
     this.tetris = new TetrisEngine();
     this.interface = new PuzzleInterface();
+    this.applet_display = PuzzleAppletDisplayEnum.Puzzle;
+
+    this.interface.setPuzzleFunction(() => {
+      this.applet_display = PuzzleAppletDisplayEnum.Puzzle;
+    })
+    this.interface.setTetrisFunction(() => {
+      this.applet_display = PuzzleAppletDisplayEnum.Tetris;
+    })
   }
   createShapes(): GridShape[]{
     const one = new GridShape(1, 1, [true]);

@@ -21,8 +21,9 @@ export * as Line from "./Shapes/Line";
 export * as Shader from "./Shaders/custom";
 export * as App from "./app";
 //export * as FileUtil from "./Util/file";
-export * as Utils from "./Util/utils"
+export * as Utils from "./Util/utils";
 export * as Interface from "./Interface/interface";
+export * as Grid from "./Grid/grid";
 
 type VoidFunction = () => void;
 
