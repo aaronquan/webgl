@@ -1,7 +1,10 @@
 import * as WebGL from "./../../WebGL/globals";
+import { TetrisEngine } from "./tetris";
 
 type Int32 = number;
 type Float = number;
+
+import Button = WebGL.Interface.Button;
 
 class IdGrid{
   width: Int32;
@@ -321,6 +324,25 @@ type Coord = {
   y: Int32
 }
 
+export class PuzzleInterface{
+  buttons: Button.ButtonSet;
+  constructor(){
+    this.buttons = new Button.ButtonSet();
+  }
+  onMouseMove(point: WebGL.Matrix.Point2D){
+      this.buttons.updateMouse(point);
+    }
+  onMouseDown(point: WebGL.Matrix.Point2D){
+    this.buttons.mouseDown();
+  }
+  onMouseUp(){
+    this.buttons.mouseUp();
+  }
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
+    this.buttons.draw(vp, colour_shader, text_drawer);
+  }
+}
+
 export class PuzzleEngine extends WebGL.App.BaseEngine{
   option_select: WebGL.Interface.Options.DropdownOptions;
   mouse_point: WebGL.Matrix.Point2D | undefined;
@@ -341,6 +363,10 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   pieces_on_grid: Map<Int32, GridShapeInstance>;
 
   preview_positions: Coord[];
+
+
+  tetris: TetrisEngine;
+  interface: PuzzleInterface;
 
   constructor(){
     super();
@@ -369,6 +395,9 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
     this.pieces_on_grid = new Map();
     this.preview_positions = [];
+
+    this.tetris = new TetrisEngine();
+    this.interface = new PuzzleInterface();
   }
   createShapes(): GridShape[]{
     const one = new GridShape(1, 1, [true]);
@@ -431,6 +460,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     this.hovered_grid_coord = this.interface_grid.getCoord(point);
     this.mouse_grid_point = this.interface_grid.trueCoord(this.mouse_point);
     this.refreshPreviewPositions();
+    this.interface.onMouseMove(this.mouse_point);
     /*
     if(this.dragged_shape != undefined && this.mouse_grid_point != undefined){
       const coord = this.getInstanceCoord(this.mouse_grid_point, this.dragged_shape);
@@ -450,6 +480,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   override handleMouseDown(ev: MouseEvent){
     if(this.mouse_point != undefined){  
       this.option_select.onMouseDown(this.mouse_point);
+      this.interface.onMouseDown(this.mouse_point);
     }
     const hov_id = this.getHoveredShapeId();
     if(hov_id != undefined){
@@ -463,7 +494,6 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
         this.dragged_shape = new GridShapeInstance(label.shape);
       }
     }
-    
   };
   //to override
   override handleMouseUp(ev: MouseEvent){
@@ -481,6 +511,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     }
 
     this.dragged_shape = undefined;
+    this.interface.onMouseUp();
   };
   // to override
   protected override handleScrollWheel(ev: WheelEvent){

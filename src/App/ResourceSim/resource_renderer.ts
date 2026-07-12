@@ -85,7 +85,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
       const x_off = engine.main_game.x + (x-engine.main_game.grid_left)*gs;
       const y_off = engine.main_game.y + (y-engine.main_game.grid_top)*gs;
       const model = WebGL.WebGL.rectangleModel(x_off, y_off, gs, gs);
-      if(tile.isKey()){
+      if(tile.isKeyNode()){
         this.multi_colour_centre_circle_shader.use();
         this.multi_colour_centre_circle_shader.setMvp(this.orthographic.multiplyCopy(model));
         this.setTileShader(this.multi_colour_centre_circle_shader, tile);
@@ -133,7 +133,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     else if(tile.is_selected){
       return this.tile_state_colours.get(Grid.TileStateEnum.Highlight)!;
     }
-    //else if(tile.isKey()){
+    //else if(tile.isKeyNode()){
     //  return this.tile_state_colours.get(Grid.TileStateEnum.Path)!;
     //}
     return this.tile_state_colours.get(Grid.TileStateEnum.Nothing)!;

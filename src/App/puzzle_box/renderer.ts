@@ -37,6 +37,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     if(hovered_shape_id != undefined){
       this.text_drawer.drawText(this.orthographic, 50, 50, hovered_shape_id.toString(), 15);
     }
+
+    engine.interface.draw(this.orthographic, this.colour_shader, this.text_drawer);
   }
 
   fillColours(n_colours: Int32){
@@ -103,5 +105,13 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
       sy += cell_size;
     }
   }
-  
+  renderTetris(engine: PuzzleEngine){
+    const red = WebGL.Colour.ColourUtils.red();
+    WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
+      10, 10, 
+      200, 200, 
+      red
+    );
+    
+  }
 }

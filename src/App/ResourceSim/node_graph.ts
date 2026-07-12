@@ -22,13 +22,20 @@ class RoadConnection{
   //generateReverse(): RoadConnection{
   //  return new RoadConnection([...this.path].reverse());
   //}
+  static reversePath(path: Grid.GridPosition[], end: Grid.GridPosition): Grid.GridPosition[]{
+    const new_path = [...path];
+    new_path.pop();
+    ArrayUtil.reverse(new_path);
+    new_path.push(end);
+    return new_path;
+  }
 }
 
 class RoadNode{
   //connections: Map<Int32, RoadConnection>;
   connections: RoadConnection[];
   position: Grid.GridPosition;
-  key_node_id: Int32 | undefined;
+  key_node_id: Int32 | undefined; // a road node may not be a key node, it might be a 
   id: Int32;
 
 
@@ -222,29 +229,34 @@ export class RoadGraph{
     this.nodes = [];
     this.key_map = new Map();
 
-    const key_node_position_map: Map<Int32, Map<Int32, Int32>> = new Map<Int32, Map<Int32, Int32>>(); //keys y, x
+    //const map_nodes = nodes. //could filter for nodes that contain tiles
+
+    const key_node_position_map: WebGL.Utils.Map.PositionMap2D<Int32> = new WebGL.Utils.Map.PositionMap2D();
     for(const [id, node] of nodes.nodes){
       if(node.tile != undefined){
-        if(!key_node_position_map.has(node.tile.y)){
-          key_node_position_map.set(node.tile.y, new Map());
-        }
-        const y_node_map = key_node_position_map.get(node.tile.y)!;
-        y_node_map.set(node.tile.x, id);
+        key_node_position_map.set(node.tile.x, node.tile.y, id);
       }
     }
 
     //to finish off
-    const road_node_reference: Map<Int32, Map<Int32, Int32>> = new Map();
+    const road_node_reference: WebGL.Utils.Map.PositionMap2D<Int32> = new WebGL.Utils.Map.PositionMap2D();
+    let road_node_index = 0;
     const road_node_directions: WebGL.Utils.Map.PositionMap2D<Grid.ActiveDirections> = new WebGL.Utils.Map.PositionMap2D();
-
+    
     const start_node = nodes.nodes.values().next().value!;
+    const start_position = new Grid.GridPosition(start_node.tile!.x, start_node.tile!.y);
+    const first_road_node = new RoadNode(start_position, road_node_index, start_node.getId())
+    road_node_index++;
+    this.nodes.push(first_road_node);
+    road_node_reference.set(start_position.x, start_position.y, first_road_node.id);
 
     const position_queue: Grid.GridPosition[] = [];
-    position_queue.push(new Grid.GridPosition(start_node.tile!.x, start_node.tile!.y));
+    position_queue.push(start_position);
     let i = 0;
 
     while(i < position_queue.length){
       const position = position_queue[i];
+      const position_node = this.nodes[road_node_reference.get(position.x, position.y)!];
       const tile = chunks.getTileFromPosition(position);
       if(tile == undefined){
         i++;
@@ -252,18 +264,92 @@ export class RoadGraph{
       }
       const directions = tile.getDirections();
       //const node_directions_seen = road_node_directions.get(position.x, position.y);
-      if(road_node_directions.has(position.x, position.y)){
+      if(!road_node_directions.has(position.x, position.y)){
         road_node_directions.set(position.x, position.y, Grid.DirectionUtil.blankActiveDirections());
       }
       const node_directions_seen = road_node_directions.get(position.x, position.y)!;
       for(const dir of directions){
-        if(!Grid.DirectionUtil.isActiveDirection(node_directions_seen, dir)){
-          console.log(Grid.DirectionUtil.toString(dir));
+        if(Grid.DirectionUtil.isActiveDirection(node_directions_seen, dir)){
+          continue;
+        }
+        console.log(Grid.DirectionUtil.toString(dir));
+        const curr_pos = position.copy();
+        let next_direction = dir;
+        const path = [];
+        let broken = false;
+        do{
+          Grid.DirectionUtil.movePosition(next_direction, curr_pos);
+          const opp = Grid.DirectionUtil.opposite(next_direction);
+          const next_tile = chunks.getTileFromPosition(curr_pos);
+          path.push(curr_pos.copy());
+          if(next_tile != undefined){
+            if(next_tile.directionHasPath(opp)){
+              console.log("path to tile");
+              if(next_tile.isKeyNode()){
+                break;
+              }
+              const next_directions = next_tile.getDirectionsOtherThan(opp);
+              if(next_directions.length == 1){
+                console.log("continue_path");
+                next_direction = next_directions[0];
+              }else{
+                // new key location
+                break;
+              }
+            }else{
+              //there is no path leading to next tile
+              broken = true;
+              break;
+            }
+          }else{
+            //next tile is undefined
+            broken = true;
+            break;
+          }
+        }while(true);
+        
+        if(broken){
+          console.log("broken");
+        }else{
+          //position is starting position (from)
+          //curr is ending position (to)
+
+          console.log(path);
+          console.log(curr_pos);
+          console.log(position);
+
+          //add node if not found
+          if(!road_node_reference.has(curr_pos.x, curr_pos.y)){
+            const new_road_node = new RoadNode(curr_pos, road_node_index, key_node_position_map.get(curr_pos.x, curr_pos.y));
+            road_node_index++;
+            this.nodes.push(new_road_node);
+            road_node_reference.set(curr_pos.x, curr_pos.y, new_road_node.id);
+            road_node_directions.set(curr_pos.x, curr_pos.y, Grid.DirectionUtil.blankActiveDirections());
+          }
+          const current_node = this.nodes[road_node_reference.get(curr_pos.x, curr_pos.y)!]
+
+          //add connection //todo
+          const connection_to_current = new RoadConnection([...path], position_node.id, current_node.id);
+          position_node.addConnection(connection_to_current);
+
+          const connection_to_position = new RoadConnection(RoadConnection.reversePath(path, position), current_node.id, position_node.id);
+
+          console.log(connection_to_current);
+          console.log(connection_to_position);
+          position_node.addConnection(connection_to_current);
+          console.log(`Added dir ${Grid.DirectionUtil.toString(dir)}`);
+          console.log(road_node_directions.get(position.x, position.y));
+          Grid.DirectionUtil.setActiveDirection(road_node_directions.get(position.x, position.y)!, true, dir);
+
+          current_node.addConnection(connection_to_position);
+          const opposite_last = Grid.DirectionUtil.opposite(next_direction)
+          console.log(`Added opp ${Grid.DirectionUtil.toString(opposite_last)}`);
+          Grid.DirectionUtil.setActiveDirection(road_node_directions.get(curr_pos.x, curr_pos.y)!, true, opposite_last);
         }
       }
       i++;
     }
-
+    console.log(this.nodes);
   }
 
   shortestPath(from: Int32, to: Int32): RoadConnection[] | undefined{

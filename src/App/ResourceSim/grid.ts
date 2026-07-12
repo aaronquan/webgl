@@ -551,9 +551,6 @@ export class WallTile{
   static emptyTile(ts: TileState): boolean{
     return ts == TileStateEnum.Nothing || ts == TileStateEnum.Preview;
   }
-  isKey(): boolean{
-    return this.key_node != undefined;
-  }
   /* no longer a thing
   setDirection(direction: GridDirection, value: boolean){
     switch(direction){
@@ -716,7 +713,7 @@ export class WallTile{
     this.top = randomTileState();
   }
   isKeyNode(): boolean{
-    return this.node_id != undefined;
+    return this.node_id != undefined || this.key_node != undefined;
   }
   isSerialisable(): boolean{
     return (this.left != TileStateEnum.Nothing ||

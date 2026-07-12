@@ -185,6 +185,17 @@ class MainGame{
     //this.chunk_holder.getTile(2, 1)?.setTileState(Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
 
     this.key_nodes = new Node.NodeCollection();
+
+    this.test_save = `3,6
+4,2
+4,3
+2,2
+2,2,0,0,1,0
+3,2,1,0,1,0
+4,2,1,0,1,1
+5,2,1,0,0,1
+4,3,0,1,0,0
+5,3,0,1,1,0`;
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
@@ -237,7 +248,7 @@ class MainGame{
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
           }
         }else{
-          if(!tile.isKey()){
+          if(!tile.isKeyNode()){
             tile.is_preview = true;
             this.hovered_preview = {side: this.hover_side, position: this.mouse_grid_position.copy()};
           }
@@ -413,7 +424,9 @@ class MainGame{
     }
   }
   generateRoadGraph(){
+    console.log("generating graph");
     this.road_graph = new NodeGraph.RoadGraph();
+    this.road_graph.generateGraphFromChunks(this.chunk_holder, this.key_nodes);
   }
   clearHighlights(){
     this.chunk_holder.clearHighlights();
