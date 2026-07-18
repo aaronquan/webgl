@@ -87,6 +87,10 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       this.main_game.generateRoadGraph();
     });
 
+    this.side_interface.setClosestPathFunction(() => {
+
+    });
+
     this.side_interface.setAddCarFunction(() => {
       //this.main_game.
     });
@@ -166,6 +170,8 @@ class MainGame{
 
   test_save: string | undefined;
 
+  selected_key_nodes: Int32[];
+
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
     this.y = y;
@@ -196,6 +202,8 @@ class MainGame{
 5,2,1,0,0,1
 4,3,0,1,0,0
 5,3,0,1,1,0`;
+
+    this.selected_key_nodes = [];
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);

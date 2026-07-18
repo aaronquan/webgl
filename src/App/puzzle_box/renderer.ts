@@ -1,6 +1,9 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as PEngine from "./engine";
+import * as Shape from "./shape";
 import { PuzzleEngine } from "./engine";
+import type { TetrisEngine } from "./tetris";
+import * as Tetris from "./tetris";
 
 
 
@@ -11,6 +14,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
   my_shape_colour: WebGL.Colour.ColourRGB;
   grid_colours: WebGL.Colour.ColourRGB[];
+
+  tetris_colours: WebGL.Colour.ColourRGB[];
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.font_names.push("font16-Sheet.png");
@@ -18,6 +23,18 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.my_shape_colour = WebGL.Colour.ColourUtils.red();
     this.grid_colours = [];
+
+
+    this.tetris_colours = [];
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.red());
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.blue());
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.green());
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.cyan());
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.yellow());
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.pink());
+    this.tetris_colours.push(WebGL.Colour.ColourUtils.grey());
+
+    WebGL.BasicModel.init();
   }
   render(engine: PuzzleEngine){
     switch(engine.applet_display){
@@ -25,7 +42,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
         this.drawPuzzleApp(engine);
         break;
       case PEngine.PuzzleAppletDisplayEnum.Tetris:
-        this.drawTetrisApp(engine);
+        this.drawTetrisApp(engine.tetris);
         break;
     }
 
@@ -74,7 +91,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
   drawShapeLabel(label: PEngine.ShapeLabel){
     label.draw(this.orthographic, this.colour_shader);
   }
-  drawShape(shape: PEngine.GridShapeInstance, x: Int32, y: Int32){
+  drawShape(shape: Shape.GridShapeInstance, x: Int32, y: Int32){
     const mx = x+(shape.width*0.5);
     const my = y+(shape.height*0.5);
     const cell_size = 24;
@@ -112,13 +129,34 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
       this.text_drawer.drawText(this.orthographic, 50, 50, hovered_shape_id.toString(), 15);
     }
   }
-  drawTetrisApp(engine: PuzzleEngine){
-    const red = WebGL.Colour.ColourUtils.red();
-    WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
-      10, 10, 
-      200, 200, 
-      red
-    );
+  drawTetrisApp(te: TetrisEngine){
+    if(te.active_piece != undefined){
+      this.drawTetrisActivePiece(te, te.active_piece);
+    }
+
+    for(let i = 0; i < te.grid.grid.length; i++){
+      const c = te.grid.grid[i];
+      if(c != undefined){
+        const coord = te.grid.getCoord(i);
+        te.grid_interface.drawColourCoord(this.orthographic, this.colour_shader, coord, this.tetris_colours[c]);
+      }
+    }
+
+    const grid_model = te.grid_interface.generateModel(2);
+
+    grid_model.draw(this.orthographic);
+
+    if(te.game_state == Tetris.TetrisGameStateEnum.Setup){
+      te.play_button.draw(this.orthographic, this.colour_shader, this.text_drawer);
+    }
     
+  }
+  drawTetrisActivePiece(te: TetrisEngine, piece: Shape.GridShapeInstance){
+    const coordinates = piece.getCoordinates();
+    for(const coord of coordinates){
+      if(te.grid.isInside(coord.x, coord.y)){
+        te.grid_interface.drawColourCoord(this.orthographic, this.colour_shader, coord, WebGL.Colour.ColourUtils.green());
+      }
+    }
   }
 }

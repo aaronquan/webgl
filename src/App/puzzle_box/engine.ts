@@ -1,10 +1,12 @@
 import * as WebGL from "./../../WebGL/globals";
+import * as Shape from "./shape";
 import { TetrisEngine } from "./tetris";
 
 type Int32 = number;
 type Float = number;
 
 import Button = WebGL.Interface.Button;
+import Rotation = WebGL.Geometry.Rotation;
 
 class IdGrid{
   width: Int32;
@@ -57,7 +59,7 @@ class ShapeIdGrid extends IdGrid{
   isFree(x: Int32, y: Int32): boolean{
     return this.object_id[x+y*this.width] == undefined;
   }
-  canFitShape(shape: GridShapeInstance, x: Int32, y: Int32): boolean{
+  canFitShape(shape: Shape.GridShapeInstance, x: Int32, y: Int32): boolean{
     //test borders
     if(x < 0 || y < 0 || x+shape.width > this.width || y+shape.height > this.height){
       return false;
@@ -73,7 +75,7 @@ class ShapeIdGrid extends IdGrid{
     }
     return true;
   }
-  addShape(shape: GridShapeInstance, x: Int32, y: Int32){
+  addShape(shape: Shape.GridShapeInstance, x: Int32, y: Int32){
     for(let py = 0; py < shape.height; py++){
       for(let px = 0; px < shape.width; px++){
         if(shape.getPart(px, py)){
@@ -83,7 +85,7 @@ class ShapeIdGrid extends IdGrid{
     }
     shape.placement = {x, y};
   }
-  removeShape(shape: GridShapeInstance){
+  removeShape(shape: Shape.GridShapeInstance){
     console.log(shape);
     if(shape.placement == undefined){
       return;
@@ -100,7 +102,7 @@ class ShapeIdGrid extends IdGrid{
   }
 }
 
-
+/*
 export const RotationEnum = {
   None: 0,
   Right: 1,
@@ -135,113 +137,14 @@ class RotationUtil{
         return RotationEnum.None;
     }
   }
-}
-
-//shape made out of grid pieces
-export class GridShape{
-  width: Int32;
-  height: Int32;
-  parts: boolean[];
-
-  constructor(w: Int32, h: Int32, parts?: boolean[]){
-    this.width = w;
-    this.height = h;
-    this.parts = parts != undefined ? parts : Array.from({length: this.height*this.width}, () => false);
-  }
-  addPart(x: Int32, y: Int32){
-    this.parts[this.getIndexKey(x, y)] = true;
-  }
-  private getIndexKey(x: Int32, y: Int32){
-    return x+(y*this.width);
-  }
-  hasPartAt(x: Int32, y: Int32){
-    return this.parts[this.getIndexKey(x, y)];
-  }
-
-  static equals(s1: GridShape, s2: GridShape){
-
-  }
-}
-
-export class GridShapeInstance{
-  static current_id = 0;
-  id: Int32;
-  shape: GridShape;
-  private rotation: Rotation;
-  width: Int32;
-  height: Int32;
-  placement: Coord | undefined;
-  constructor(shape: GridShape){
-    this.id = GridShapeInstance.current_id;
-    GridShapeInstance.current_id++;
-    this.shape = shape;
-    this.rotation = RotationEnum.None;
-    this.width = this.shape.width;
-    this.height = this.shape.height;
-  }
-  rotateClockwise(){
-    const new_rot = RotationUtil.clockwise(this.rotation);
-    this.setRotation(new_rot);
-  }
-  rotateAntiClockwise(){
-    const new_rot = RotationUtil.anticlockwise(this.rotation);
-    this.setRotation(new_rot);
-  }
-  setRotation(rotation: Rotation){
-    this.rotation = rotation;
-    if(this.rotation == RotationEnum.Left || this.rotation == RotationEnum.Right){
-      this.width = this.shape.height;
-      this.height = this.shape.width;
-    }else{
-      this.width = this.shape.width;
-      this.height = this.shape.height;
-    }
-  }
-  isInside(x: Int32, y: Int32){
-    const in_x = 0 <= x && x < this.width;
-    const in_y = 0 <= y && y < this.height;
-    return in_x && in_y;
-  }
-  getTrueCoord(x: Int32, y: Int32, rotation: Rotation=RotationEnum.None): {x: Int32, y: Int32}{
-    switch(rotation){
-      case RotationEnum.Left:
-        return {x: this.height-1-y, y: x};
-      case RotationEnum.Right:
-        return {x: y, y: this.width-1-x};
-      case RotationEnum.Down:
-        return {x: this.width-1-x, y: this.height-1-y};
-    }
-    return {x, y};
-  }
-  getIndexKey(x: Int32, y: Int32, rotation: Rotation=RotationEnum.None){
-    switch(rotation){
-      case RotationEnum.Left:
-        return (this.height-1-y) + x*this.height;
-      case RotationEnum.Right:
-        return (y) + (this.width-1-x)*this.height;
-      case RotationEnum.Down:
-        return (this.width-1-x) + (this.height-1-y)*this.width;
-    }
-    return x + y*this.width;
-  }
-  getPart(x: Int32, y: Int32): boolean | undefined{
-    if(!this.isInside(x, y)) return undefined;
-    return this.shape.parts[this.getIndexKey(x, y, this.rotation)];
-  }
-  isPlaced(): boolean{
-    return this.placement != undefined;
-  }
-  place(x: Int32, y: Int32){
-    this.placement = {x, y};
-  }
-}
+}*/
 
 
 export class ShapeLabel extends WebGL.Interface.InterfaceElement.InterfaceElement{
-  shape: GridShape;
+  shape: Shape.GridShape;
   is_hovered: boolean;
-  onSelect: ((shape: GridShape) => void) | undefined;
-  constructor(x: Int32, y: Int32, width: Int32, height: Int32, shape: GridShape, on_select?: () => void){
+  onSelect: ((shape: Shape.GridShape) => void) | undefined;
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, shape: Shape.GridShape, on_select?: () => void){
     super(x, y, width, height);
     this.shape = shape;
     this.is_hovered = false;
@@ -266,12 +169,12 @@ export class ShapeLabel extends WebGL.Interface.InterfaceElement.InterfaceElemen
     const cell_size = 24;
     const rect_size = 20;
     const clear_border = (cell_size-rect_size)*0.5;
-    let y = my-(cell_size*this.shape.height*0.5);
-    const sx = mx-(cell_size*this.shape.width*0.5);
+    let y = my-(cell_size*this.shape.getHeight()*0.5);
+    const sx = mx-(cell_size*this.shape.getWidth()*0.5);
     let gx = sx;
-    for(let py = 0; py < this.shape.height; py++){
+    for(let py = 0; py < this.shape.getHeight(); py++){
       gx = sx;
-      for(let px = 0; px < this.shape.width; px++){
+      for(let px = 0; px < this.shape.getWidth(); px++){
         if(this.shape.hasPartAt(px, py)){
           WebGL.WebGL.drawColourRect(vp, colour_shader, 
             gx+clear_border, y+clear_border, 
@@ -371,12 +274,12 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   option_select: WebGL.Interface.Options.DropdownOptions;
   mouse_point: WebGL.Matrix.Point2D | undefined;
 
-  my_shapes: GridShape[]; 
+  my_shapes: Shape.GridShape[]; 
 
   shape_label_layout: GridLayout;
   shape_labels: ShapeLabel[];
 
-  dragged_shape: GridShapeInstance | undefined;
+  dragged_shape: Shape.GridShapeInstance | undefined;
 
   grid: ShapeIdGrid;
   interface_grid: ShapeGridInterface;
@@ -384,7 +287,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   hovered_grid_coord: Coord | undefined;
   mouse_grid_point: WebGL.Matrix.Point2D | undefined;
 
-  pieces_on_grid: Map<Int32, GridShapeInstance>;
+  pieces_on_grid: Map<Int32, Shape.GridShapeInstance>;
 
   preview_positions: Coord[];
 
@@ -394,8 +297,11 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
   applet_display: PuzzleAppletDisplay;
 
+  time: Float;
+
   constructor(){
     super();
+    this.time = 0;
     this.option_select = new WebGL.Interface.Options.DropdownOptions(100, 100, 150, 25, ["hello", "good", "bye"]);
     this.my_shapes = this.createShapes();
 
@@ -424,7 +330,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
     this.tetris = new TetrisEngine();
     this.interface = new PuzzleInterface();
-    this.applet_display = PuzzleAppletDisplayEnum.Puzzle;
+    this.applet_display = PuzzleAppletDisplayEnum.Tetris;
 
     this.interface.setPuzzleFunction(() => {
       this.applet_display = PuzzleAppletDisplayEnum.Puzzle;
@@ -433,15 +339,22 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
       this.applet_display = PuzzleAppletDisplayEnum.Tetris;
     })
   }
-  createShapes(): GridShape[]{
-    const one = new GridShape(1, 1, [true]);
-    const two = new GridShape(2, 1, [true, true]);
-    const l = new GridShape(3, 2, [false, false, true, true, true, true]);
-    const t = new GridShape(3, 2, [false, true, false, true, true, true]);
+  update(t: Float){
+    const dt = t-this.time;
+    if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+      this.tetris.update(dt);
+    }
+    this.time = t;
+  } 
+  createShapes(): Shape.GridShape[]{
+    const one = new Shape.GridShape(1, 1, [true]);
+    const two = new Shape.GridShape(2, 1, [true, true]);
+    const l = new Shape.GridShape(3, 2, [false, false, true, true, true, true]);
+    const t = new Shape.GridShape(3, 2, [false, true, false, true, true, true]);
     return [one, two, l, t];
   }
 
-  getInstanceCoord(point: WebGL.Matrix.Point2D, instance: GridShapeInstance): Coord{
+  getInstanceCoord(point: WebGL.Matrix.Point2D, instance: Shape.GridShapeInstance): Coord{
     const px = point.x - (instance.width*0.5 - 0.5);
     const py = point.y - (instance.height*0.5 - 0.5);
     const x = Math.floor(px);
@@ -480,12 +393,17 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     return this.grid.getId(this.hovered_grid_coord.x, this.hovered_grid_coord.y);
   }
 
-  override handleKeyDown(ev: KeyboardEvent){};
+  override handleKeyDown(ev: KeyboardEvent){
+    this.tetris.onKeyDown(ev);
+  };
   //to override
   override handleKeyUp(ev: KeyboardEvent){};
   //to override
   override handleMouseMove(ev: MouseEvent){
     const point = new WebGL.Matrix.Point2D(ev.clientX, ev.clientY);
+    if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+      this.tetris.onMouseMove(point);
+    }
     this.mouse_point = point;
     this.option_select.onMouseOver(point);
     for(const label of this.shape_labels){
@@ -515,6 +433,9 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     if(this.mouse_point != undefined){  
       this.option_select.onMouseDown(this.mouse_point);
       this.interface.onMouseDown(this.mouse_point);
+      if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+        this.tetris.onMouseDown(this.mouse_point);
+      }
     }
     const hov_id = this.getHoveredShapeId();
     if(hov_id != undefined){
@@ -525,13 +446,16 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
       const label = this.shape_labels[i];
       label.onMouseDown();
       if(label.is_hovered){
-        this.dragged_shape = new GridShapeInstance(label.shape);
+        this.dragged_shape = new Shape.GridShapeInstance(label.shape);
       }
     }
   };
   //to override
   override handleMouseUp(ev: MouseEvent){
     if(this.mouse_point != undefined){ 
+      if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+        this.tetris.onMouseUp(this.mouse_point);
+      }
       //const true_coord = this.interface_grid.trueCoord(this.mouse_point);
       if(this.dragged_shape != undefined && this.mouse_grid_point != undefined){
         const coord = this.getInstanceCoord(this.mouse_grid_point, this.dragged_shape);

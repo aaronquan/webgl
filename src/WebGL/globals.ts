@@ -24,6 +24,7 @@ export * as App from "./app";
 export * as Utils from "./Util/utils";
 export * as Interface from "./Interface/interface";
 export * as Grid from "./Grid/grid";
+export * as Geometry from "./Geometry/geometry";
 
 type VoidFunction = () => void;
 

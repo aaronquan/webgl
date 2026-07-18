@@ -84,13 +84,15 @@ export class BasicButton{
     const sy = y - this.y;
     return 0 < sx && sx < this.width && 0 < sy && sy < this.height;
   }
-  mouseDown(){
+  onMouseDown(){
+    console.log("click");
     if(this.state == ButtonStateEnum.Hovered){
       this.state = ButtonStateEnum.PressedHovered;
       this.onPressed();
+      console.log("press");
     }
   }
-  mouseUp(){
+  onMouseUp(){
     if(this.state === ButtonStateEnum.Pressed){
       this.state = ButtonStateEnum.Off;
       this.onPressedOut();
@@ -99,7 +101,7 @@ export class BasicButton{
       this.onPressedOut();
     }
   }
-  updateMouse(point: Point){
+  onMouseMove(point: Point){
     if(this.isInside(point.x, point.y)){
       if(this.state == ButtonStateEnum.Off){
         this.state = ButtonStateEnum.Hovered;
@@ -149,17 +151,17 @@ export class ButtonSet{
   }
   updateMouse(pt: Point){
     for(const button of this.buttons){
-      button.updateMouse(pt);
+      button.onMouseMove(pt);
     }
   }
   mouseDown(){
     for(const button of this.buttons){
-      button.mouseDown();
+      button.onMouseDown();
     }
   }
   mouseUp(){
     for(const button of this.buttons){
-      button.mouseUp();
+      button.onMouseUp();
     }
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){

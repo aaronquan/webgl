@@ -54,9 +54,9 @@ const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
 //const app = new App.App(card_engine, card_renderer);
 //const app = new App.App(engine, renderer);
-const app = newPuzzleApp(canvas.width, canvas.height);
+//const app = newPuzzleApp(canvas.width, canvas.height);
 //const app = newITApp(canvas.width, canvas.height);
-//const app = ResourceApp.newApp(canvas.width, canvas.height);
+const app = ResourceApp.newApp(canvas.width, canvas.height);
 
 app.loadResources(() => {
   console.log("running app");

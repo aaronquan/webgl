@@ -52,7 +52,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
   protected handleMouseMove(ev: MouseEvent): void {
     this.global_mouse = new Point2D(ev.clientX, ev.clientY);
 
-    this.button.updateMouse(this.global_mouse);
+    this.button.onMouseMove(this.global_mouse);
     this.toggle_button.updateMouse(this.global_mouse);
     //this.vwindow.onMouseMove(this.global_mouse);
     //this.hwindow.onMouseMove(this.global_mouse);
@@ -71,14 +71,14 @@ export class ITEngine extends WebGL.App.BaseEngine{
     WebGL.WebGL.setCursor(cursor);
   }
   protected handleMouseDown(ev: MouseEvent): void {
-    this.button.mouseDown();
+    this.button.onMouseDown();
     this.toggle_button.mouseDown();
     //this.vwindow.onMouseDown(this.global_mouse);
     //this.hwindow.onMouseDown(this.global_mouse);
     this.windows.onMouseDown(this.global_mouse);
   }
   protected handleMouseUp(ev: MouseEvent): void {
-    this.button.mouseUp();
+    this.button.onMouseUp();
     this.toggle_button.mouseUp();
     //this.vwindow.onMouseUp();
     //this.hwindow.onMouseUp();

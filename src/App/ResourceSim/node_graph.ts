@@ -268,6 +268,8 @@ export class RoadGraph{
         road_node_directions.set(position.x, position.y, Grid.DirectionUtil.blankActiveDirections());
       }
       const node_directions_seen = road_node_directions.get(position.x, position.y)!;
+      console.log("directions seen:")
+      console.log(node_directions_seen);
       for(const dir of directions){
         if(Grid.DirectionUtil.isActiveDirection(node_directions_seen, dir)){
           continue;
@@ -325,22 +327,22 @@ export class RoadGraph{
             this.nodes.push(new_road_node);
             road_node_reference.set(curr_pos.x, curr_pos.y, new_road_node.id);
             road_node_directions.set(curr_pos.x, curr_pos.y, Grid.DirectionUtil.blankActiveDirections());
+
+            position_queue.push(curr_pos.copy());
           }
           const current_node = this.nodes[road_node_reference.get(curr_pos.x, curr_pos.y)!]
 
-          //add connection //todo
+          //add connection 
           const connection_to_current = new RoadConnection([...path], position_node.id, current_node.id);
-          position_node.addConnection(connection_to_current);
-
-          const connection_to_position = new RoadConnection(RoadConnection.reversePath(path, position), current_node.id, position_node.id);
 
           console.log(connection_to_current);
-          console.log(connection_to_position);
           position_node.addConnection(connection_to_current);
           console.log(`Added dir ${Grid.DirectionUtil.toString(dir)}`);
           console.log(road_node_directions.get(position.x, position.y));
           Grid.DirectionUtil.setActiveDirection(road_node_directions.get(position.x, position.y)!, true, dir);
 
+          const connection_to_position = new RoadConnection(RoadConnection.reversePath(path, position), current_node.id, position_node.id);
+          console.log(connection_to_position);
           current_node.addConnection(connection_to_position);
           const opposite_last = Grid.DirectionUtil.opposite(next_direction)
           console.log(`Added opp ${Grid.DirectionUtil.toString(opposite_last)}`);
