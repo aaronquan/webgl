@@ -88,7 +88,8 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     });
 
     this.side_interface.setClosestPathFunction(() => {
-
+      console.log("cl path");
+      this.main_game.generateClosestPathFromSelected();
     });
 
     this.side_interface.setAddCarFunction(() => {
@@ -133,7 +134,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
         break;
       case Consts.WallEditStateEnum.Selecting:
         this.main_game.printHoveredTile();
-      
+        this.main_game.selectNodeOnMouse();
     }
   }
 
@@ -170,7 +171,7 @@ class MainGame{
 
   test_save: string | undefined;
 
-  selected_key_nodes: Int32[];
+  selected_key_nodes: Set<Int32>;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
@@ -203,7 +204,7 @@ class MainGame{
 4,3,0,1,0,0
 5,3,0,1,1,0`;
 
-    this.selected_key_nodes = [];
+    this.selected_key_nodes = new Set();
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
@@ -234,6 +235,19 @@ class MainGame{
       this.hover_side = this.sideOnGrid(this.grid_point);
     }else{
       this.hover_side = undefined;
+    }
+  }
+  selectNodeOnMouse(){
+    if(this.mouse_grid_position != undefined){
+      const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
+      if(tile != undefined && tile.key_node != undefined){
+        const id = tile.key_node.getId();
+        if(!this.selected_key_nodes.has(id)){
+          this.selected_key_nodes.add(id);
+        }else{
+          this.selected_key_nodes.delete(id);
+        }
+      }
     }
   }
   onMouseDown(global_point: Point){
@@ -436,8 +450,20 @@ class MainGame{
     this.road_graph = new NodeGraph.RoadGraph();
     this.road_graph.generateGraphFromChunks(this.chunk_holder, this.key_nodes);
   }
+  generateClosestPathFromSelected(){
+    console.log("generating path");
+    if(this.road_graph == undefined || this.selected_key_nodes.size != 2){
+      return;
+    }
+    const values = this.selected_key_nodes.values();
+    const id_1 = values.next().value!;
+    const id_2 = values.next().value!;
+    console.log(`${id_1} ${id_2}`);
+    this.road_graph.shortestPath(id_1, id_2);
+  }
   clearHighlights(){
     this.chunk_holder.clearHighlights();
+    this.selected_key_nodes.clear();
   }
   clear(){
     this.key_nodes.clear();
@@ -535,32 +561,27 @@ class SimSideInterface{
     this.buttons.addButton(clear_highlights_button);
 
   }
-  setLoadFunction(f: VoidFunction){
-    this.buttons.buttons[2].onPressed = f;
+  setDebugKeyFunction(f: VoidFunction){
+    this.buttons.buttons[0].onPressed = f;
   }
   setSaveFunction(f: VoidFunction){
     this.buttons.buttons[1].onPressed = f;
   }
+  setLoadFunction(f: VoidFunction){
+    this.buttons.buttons[2].onPressed = f;
+  }
   setClearFunction(f: VoidFunction){
     this.buttons.buttons[3].onPressed = f;
   }
-
-  setDebugKeyFunction(f: VoidFunction){
-    this.buttons.buttons[0].onPressed = f;
-  }
-
   setGenGraphFunction(f: VoidFunction){
     this.buttons.buttons[4].onPressed = f;
   }
-
   setAddCarFunction(f: VoidFunction){
     this.buttons.buttons[5].onPressed = f;
   }
-
   setCarDestFunction(f: VoidFunction){
     this.buttons.buttons[6].onPressed = f;
   }
-
   setClosestPathFunction(f: VoidFunction){
     this.buttons.buttons[7].onPressed = f;
   }

@@ -89,6 +89,11 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
         this.multi_colour_centre_circle_shader.use();
         this.multi_colour_centre_circle_shader.setMvp(this.orthographic.multiplyCopy(model));
         this.setTileShader(this.multi_colour_centre_circle_shader, tile);
+        
+        //center colour for selected key nodes
+        if(engine.main_game.selected_key_nodes.has(tile.key_node!.getId())){
+          this.multi_colour_centre_circle_shader.setMidColourFromColourRGB(this.tile_state_colours.get(Grid.TileStateEnum.Highlight)!);
+        }
       }else{
         this.multi_colour_tile_shader.use();
         this.multi_colour_tile_shader.setMvp(this.orthographic.multiplyCopy(model));
