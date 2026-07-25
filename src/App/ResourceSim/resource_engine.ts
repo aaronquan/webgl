@@ -87,16 +87,20 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       this.main_game.generateRoadGraph();
     });
 
-    this.side_interface.setClosestPathFunction(() => {
-      console.log("cl path");
-      this.main_game.generateClosestPathFromSelected();
-    });
-
     this.side_interface.setAddCarFunction(() => {
       //this.main_game.
     });
 
     this.side_interface.setCarDestFunction(() => {
+
+    });
+
+    this.side_interface.setClosestPathFunction(() => {
+      console.log("cl path");
+      this.main_game.generateClosestPathFromSelected();
+    });
+
+    this.side_interface.setClearHighlightsFunction(() => {
 
     });
   }
@@ -459,7 +463,15 @@ class MainGame{
     const id_1 = values.next().value!;
     const id_2 = values.next().value!;
     console.log(`${id_1} ${id_2}`);
-    this.road_graph.shortestPath(id_1, id_2);
+    const path = this.road_graph.shortestPath(id_1, id_2);
+    if(path == undefined) return;
+    const position_path = NodeGraph.RoadNode.unpackGridPositionPath(path.connections, path.starting_position);
+    const position_direction_path = Grid.GridAlgorithms.positionPathToDirectionPath(position_path);
+    for(const pd of position_direction_path){
+      const tile = this.chunk_holder.getTileFromPosition(pd.position);
+      if(tile == undefined) continue;
+      tile.setTileActiveDirection(pd.directions, Grid.TileStateEnum.Highlight);
+    }
   }
   clearHighlights(){
     this.chunk_holder.clearHighlights();

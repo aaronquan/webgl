@@ -6,7 +6,7 @@ import { PriorityQueue } from '@datastructures-js/priority-queue';
 
 type Int32 = number;
 
-class RoadConnection{
+export class RoadConnection{
   path: Grid.GridPosition[];
   from: Int32;
   to: Int32;
@@ -31,7 +31,7 @@ class RoadConnection{
   }
 }
 
-class RoadNode{
+export class RoadNode{
   //connections: Map<Int32, RoadConnection>;
   connections: RoadConnection[];
   position: Grid.GridPosition;
@@ -50,8 +50,8 @@ class RoadNode{
     this.connections.push(conn);
   }
 
-  static unpackGridPositionPath(conns: RoadConnection[]): Grid.GridPosition[]{
-    const positions: Grid.GridPosition[] = [];
+  static unpackGridPositionPath(conns: RoadConnection[], start: Grid.GridPosition): Grid.GridPosition[]{
+    const positions: Grid.GridPosition[] = [start.copy()];
     for(const conn of conns){
       for(const pos of conn.path){
         positions.push(pos);
@@ -59,6 +59,11 @@ class RoadNode{
     }
     return positions;
   }
+}
+
+export type ShortestPathResult = {
+  starting_position: Grid.GridPosition;
+  connections: RoadConnection[];
 }
 
 export class RoadGraph{
@@ -245,8 +250,9 @@ export class RoadGraph{
     
     const start_node = nodes.nodes.values().next().value!;
     const start_position = new Grid.GridPosition(start_node.tile!.x, start_node.tile!.y);
-    const first_road_node = new RoadNode(start_position, road_node_index, start_node.getId())
+    const first_road_node = new RoadNode(start_position, road_node_index, start_node.getId());
     road_node_index++;
+    this.key_map.set(0, start_node.getId());
     this.nodes.push(first_road_node);
     road_node_reference.set(start_position.x, start_position.y, first_road_node.id);
 
@@ -322,13 +328,19 @@ export class RoadGraph{
 
           //add node if not found
           if(!road_node_reference.has(curr_pos.x, curr_pos.y)){
-            const new_road_node = new RoadNode(curr_pos, road_node_index, key_node_position_map.get(curr_pos.x, curr_pos.y));
+            const key_id = key_node_position_map.get(curr_pos.x, curr_pos.y);
+            const new_road_node = new RoadNode(curr_pos, road_node_index, key_id);
             road_node_index++;
             this.nodes.push(new_road_node);
             road_node_reference.set(curr_pos.x, curr_pos.y, new_road_node.id);
             road_node_directions.set(curr_pos.x, curr_pos.y, Grid.DirectionUtil.blankActiveDirections());
 
             position_queue.push(curr_pos.copy());
+
+            if(key_id != undefined){
+              this.key_map.set(key_id, new_road_node.id);
+            }
+
           }
           const current_node = this.nodes[road_node_reference.get(curr_pos.x, curr_pos.y)!]
 
@@ -352,9 +364,10 @@ export class RoadGraph{
       i++;
     }
     console.log(this.nodes);
+    console.log(this.key_map);
   }
 
-  shortestPath(from: Int32, to: Int32): RoadConnection[] | undefined{
+  shortestPath(from: Int32, to: Int32): ShortestPathResult | undefined{
     type PathTo = {
       node: RoadNode;
       distance: Int32;
@@ -372,6 +385,8 @@ export class RoadGraph{
 
     console.log(from_node);
     console.log(to_node);
+
+    const starting_position = from_node.position;
 
     //run bfs until to_node
 
@@ -408,7 +423,7 @@ export class RoadGraph{
         }
         ArrayUtil.reverse(connections);
         console.log(connections);
-        return connections;
+        return {connections, starting_position};
       }
       console.log(curr);
       //console.log(curr.node.connections);
