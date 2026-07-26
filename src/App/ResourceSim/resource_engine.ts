@@ -273,6 +273,7 @@ class MainGame{
       //todo
       if(node != undefined){
         const car = this.cars.addCarOnNode(node);
+        console.log("adding car");
       }
     }
   }

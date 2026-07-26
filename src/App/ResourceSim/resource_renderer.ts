@@ -32,6 +32,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   multi_colour_centre_circle_shader: WebGL.Shader.MVPMultiColourCentreCirclePathProgram;
 
   tile_state_colours: Map<Grid.TileState, Colour.ColourRGB>;
+  car_colour: Colour.ColourRGB;
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.font_names.push("font16-Sheet.png");
@@ -48,6 +49,8 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.multi_colour_tile_shader = new WebGL.Shader.MVPMultiColourPathProgram();
     this.multi_colour_centre_circle_shader = new WebGL.Shader.MVPMultiColourCentreCirclePathProgram();
 
+    this.car_colour = Colour.ColourUtils.fromRGB(0.2, 0.8, 0.8);
+
     this.setInitialTextureParameters();
   }
 
@@ -63,8 +66,11 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.multi_colour_centre_circle_shader.setBackgroundColourFromColourRGB(default_colour);
   }
 
-  gridToOrthPoint(gx: Float, gy: Float): OrthPoint{
-
+  gridToOrthPoint(engine: ResourceSimEngine, gx: Float, gy: Float): OrthPoint{
+    const gs =  engine.main_game.grid_size;
+    const x = engine.main_game.x + (gx-engine.main_game.grid_left)*gs;
+    const y = engine.main_game.y + (gy-engine.main_game.grid_top)*gs;
+    return {x, y};
   }
 
   render(engine: ResourceSimEngine){
@@ -167,7 +173,9 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     //todo
     for(const [id, car] of e.main_game.cars.cars){
       if(e.main_game.isInsideGrid(car.x, car.y)){
-        WebGL.WebGL.drawColourRect(this.o)
+        const orth_point = this.gridToOrthPoint(e, car.x, car.y);
+        WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
+          orth_point.x, orth_point.y, car.size, car.size, this.car_colour);
       }
     }
   }
