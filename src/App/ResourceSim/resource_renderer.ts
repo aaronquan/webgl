@@ -152,4 +152,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     const mid_colour = this.getMidColour(tile);
     shader.setMidColourFromColourRGB(mid_colour);
   }
+  drawCar(){
+    //todo
+  }
 }

@@ -128,8 +128,10 @@ export class ResourceCar extends Car{
     return this.car_state == CarStateEnum.Waiting;
   }
   centerCarOnNode(node: Node.KeyNode){
-    this.x = node.x+0.5;
-    this.y = node.y+0.5;
+    if(node.tile){
+      this.x = node.tile.x+0.5;
+      this.y = node.tile.y+0.5;
+    }
   }
   //findClosestResourceNode(engine: WallEngine){
     
@@ -144,9 +146,11 @@ export class CarCollection{
     this.cars = new Map();
     this.current_id = 0;
   }
-  addCarOnNode(node: Node.KeyNode){
-    this.cars.set(this.current_id, new ResourceCar(this.current_id, node));
+  addCarOnNode(node: Node.KeyNode): ResourceCar{
+    const car = new ResourceCar(this.current_id, node)
+    this.cars.set(this.current_id, car);
     this.current_id++;
+    return car;
   }
   get(i: Int32): ResourceCar | undefined{
     return this.cars.get(i);

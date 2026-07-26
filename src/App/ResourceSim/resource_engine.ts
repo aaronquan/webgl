@@ -88,7 +88,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     });
 
     this.side_interface.setAddCarFunction(() => {
-      //this.main_game.
+      this.main_game.addCarOnSelected();
     });
 
     this.side_interface.setCarDestFunction(() => {
@@ -101,7 +101,8 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     });
 
     this.side_interface.setClearHighlightsFunction(() => {
-
+      console.log("clearing highlights");
+      this.main_game.clearHighlights();
     });
   }
   
@@ -177,6 +178,8 @@ class MainGame{
 
   selected_key_nodes: Set<Int32>;
 
+  cars: Car.CarCollection;
+
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
     this.y = y;
@@ -209,6 +212,7 @@ class MainGame{
 5,3,0,1,1,0`;
 
     this.selected_key_nodes = new Set();
+    this.cars = new Car.CarCollection();
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
@@ -262,6 +266,17 @@ class MainGame{
   onMouseUp(){
     this.drag_point = undefined;
   }
+  addCarOnSelected(){
+    if(this.selected_key_nodes.size == 1){
+      const node_id = this.selected_key_nodes.values().next().value!;
+      const node = this.key_nodes.getNode(node_id);
+      //todo
+      if(node != undefined){
+        const car = this.cars.addCarOnNode(node);
+      }
+    }
+  }
+
   updatePreview(){
     this.removeHoveredPreview();
     if(this.mouse_grid_position != undefined && this.hover_side != undefined){
@@ -375,6 +390,11 @@ class MainGame{
   isInside(global_point: Point): boolean{
     const in_x = this.x <= global_point.x && global_point.x <= this.x+this.width;
     const in_y = this.y <= global_point.y && global_point.y <= this.y+this.height;
+    return in_x && in_y;
+  }
+  isInsideGrid(grid_point: Point): boolean{
+    const in_x = this.grid_left <= grid_point.x && grid_point.y <= this.grid_right;
+    const in_y = this.grid_top <= grid_point.y && grid_point.y <= this.grid_bot;
     return in_x && in_y;
   }
   getGridPoint(global_point: Point): Point{

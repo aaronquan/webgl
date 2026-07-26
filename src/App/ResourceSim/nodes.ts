@@ -159,6 +159,12 @@ export class KeyNode{
     }
     return 0;
   }
+  getX(): Int32 | undefined{
+    return this.tile?.x;
+  }
+  getY(): Int32 | undefined{
+    return this.tile?.y;
+  }
 
   //
   /*
