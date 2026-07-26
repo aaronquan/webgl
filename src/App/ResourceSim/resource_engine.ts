@@ -392,9 +392,9 @@ class MainGame{
     const in_y = this.y <= global_point.y && global_point.y <= this.y+this.height;
     return in_x && in_y;
   }
-  isInsideGrid(grid_point: Point): boolean{
-    const in_x = this.grid_left <= grid_point.x && grid_point.y <= this.grid_right;
-    const in_y = this.grid_top <= grid_point.y && grid_point.y <= this.grid_bot;
+  isInsideGrid(gx: Float, gy: Float): boolean{
+    const in_x = this.grid_left <= gx && gx <= this.grid_right;
+    const in_y = this.grid_top <= gy && gy <= this.grid_bot;
     return in_x && in_y;
   }
   getGridPoint(global_point: Point): Point{

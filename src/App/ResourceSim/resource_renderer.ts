@@ -20,6 +20,11 @@ interface MultiColourTileShader{
   setMidColourFromColourRGB:(c: Colour.ColourRGB) => void;
 }
 
+type OrthPoint = {
+  x: Float,
+  y: Float
+}
+
 export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSimEngine>{
   colour_shader: WebGL.Shader.MVPColourProgram;
 
@@ -58,6 +63,10 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.multi_colour_centre_circle_shader.setBackgroundColourFromColourRGB(default_colour);
   }
 
+  gridToOrthPoint(gx: Float, gy: Float): OrthPoint{
+
+  }
+
   render(engine: ResourceSimEngine){
     engine.side_interface.draw(this.orthographic, this.colour_shader, this.text_drawer);
 
@@ -76,6 +85,8 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     
     //engine.main_game.drawGrid(this.orthographic, this.colour_shader, 2);
   }
+
+
 
   drawTile(engine: ResourceSimEngine, x: Int32, y: Int32){
     const gs = engine.main_game.grid_size;
@@ -152,7 +163,12 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     const mid_colour = this.getMidColour(tile);
     shader.setMidColourFromColourRGB(mid_colour);
   }
-  drawCar(){
+  drawCars(e: ResourceSimEngine){
     //todo
+    for(const [id, car] of e.main_game.cars.cars){
+      if(e.main_game.isInsideGrid(car.x, car.y)){
+        WebGL.WebGL.drawColourRect(this.o)
+      }
+    }
   }
 }
