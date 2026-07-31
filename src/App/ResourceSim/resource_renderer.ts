@@ -83,6 +83,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     if(engine.side_interface.grid_on){
       engine.main_game.drawGrid(this.orthographic, this.colour_shader, 2);
     }
+    this.drawCars(engine);
     engine.main_game.disableScissors();
   }
 
@@ -171,12 +172,16 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   }
   drawCars(e: ResourceSimEngine){
     //todo
-    for(const [id, car] of e.main_game.cars.cars){
+    const gs = e.main_game.grid_size;
+    const hgs = gs*0.5;
+    e.main_game.cars.forEach((car) => {
       if(e.main_game.isInsideGrid(car.x, car.y)){
         const orth_point = this.gridToOrthPoint(e, car.x, car.y);
         WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
-          orth_point.x, orth_point.y, car.size, car.size, this.car_colour);
+          orth_point.x-hgs, orth_point.y-hgs, car.size*gs, car.size*gs, this.car_colour);
+
+        //console.log(orth_point);
       }
-    }
+    });
   }
 }

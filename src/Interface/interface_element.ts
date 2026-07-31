@@ -1,6 +1,10 @@
 import * as WebGL from "./../WebGL/globals";
 type Int32 = number;
 
+export class Rect{
+  //todo
+}
+
 export class InterfaceElement{
   x: Int32;
   y: Int32;

@@ -152,6 +152,11 @@ export class CarCollection{
     this.current_id++;
     return car;
   }
+  forEach(f: (car:ResourceCar) => void){
+    for(const [id, car] of this.cars){
+      f(car);
+    }
+  }
   get(i: Int32): ResourceCar | undefined{
     return this.cars.get(i);
   }

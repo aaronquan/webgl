@@ -270,10 +270,12 @@ class MainGame{
     if(this.selected_key_nodes.size == 1){
       const node_id = this.selected_key_nodes.values().next().value!;
       const node = this.key_nodes.getNode(node_id);
-      //todo
       if(node != undefined){
         const car = this.cars.addCarOnNode(node);
         console.log("adding car");
+        this.cars.forEach((car) => {
+          console.log(car);
+        });
       }
     }
   }
