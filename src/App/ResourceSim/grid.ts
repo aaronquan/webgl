@@ -1,7 +1,11 @@
-import * as Matrix from "../../WebGL/Matrix/matrix";
+import * as WebGL from "./../../WebGL/globals"
+//import * as Matrix from "../../WebGL/Matrix/matrix";
 import * as ArrayUtils from "../../utils/array";
 import * as Node from "./nodes";
 import * as PQ from "@datastructures-js/priority-queue"
+
+import Matrix = WebGL.Matrix;
+import Rect = WebGL.Interface.InterfaceElement.Rect;
 
 type Int32 = number;
 type Float = number;
@@ -1108,6 +1112,10 @@ export class ChunkHolder{
         }
       }
     }
+  }
+
+  requestChunkRangeRect(rect: Rect){
+    this.requestChunkRange(rect.left, rect.right, rect.bot, rect.top);
   }
 
 

@@ -18,6 +18,7 @@ import Theme = WebGL.Interface.Theme;
 import Point = WebGL.Matrix.Point2D;
 import Mat3 = WebGL.Matrix.TransformationMatrix3x3;
 import Colour = WebGL.Colour;
+import Rect = WebGL.Interface.InterfaceElement.Rect;
 
 type Int32 = number;
 type Float = number;
@@ -156,10 +157,12 @@ class MainGame{
   height: Int32;
   grid_size: Int32;
 
-  grid_left: Float;
-  grid_top: Float;
-  grid_right: Float;
-  grid_bot: Float;
+  //grid_left: Float;
+  //grid_top: Float;
+  //grid_right: Float;
+  //grid_bot: Float;
+
+  grid_rect: Rect;
 
   grid_point: Point | undefined;
   drag_point: Point | undefined;
@@ -188,13 +191,16 @@ class MainGame{
 
     this.grid_size = 60; // 50 with 0.1 radius gives misaligned grid
 
-    this.grid_left = -1.0;
-    this.grid_top = 1.5;
-    this.grid_right = this.getRight();
-    this.grid_bot = this.getBot();
+    //this.grid_left = -1.0;
+    //this.grid_top = 1.5;
+    //this.grid_right = this.getRight();
+    //this.grid_bot = this.getBot();
+    const l = -1;
+    const b = 1.5;
+    this.grid_rect = new Rect(l, l+this.getGridWidth(), b, b+this.getGridHeight());
 
     this.chunk_holder = new Grid.ChunkHolder();
-    this.chunk_holder.requestChunkRange(this.grid_left, this.grid_right, this.grid_top, this.grid_bot);
+    this.chunk_holder.requestChunkRangeRect(this.grid_rect);
 
     //this.chunk_holder.getTile(2, 1)?.setTileState(Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
 
@@ -235,10 +241,12 @@ class MainGame{
         //drag move grid
         const dx = this.grid_point.x - this.drag_point.x;
         const dy = this.grid_point.y - this.drag_point.y;
+        this.grid_rect.move(-dx, -dy);
+        /*
         this.grid_left -= dx;
         this.grid_top -= dy;
         this.grid_right = this.getRight();
-        this.grid_bot = this.getBot();
+        this.grid_bot = this.getBot();*/
       }
       this.hover_side = this.sideOnGrid(this.grid_point);
     }else{
@@ -396,14 +404,12 @@ class MainGame{
     return in_x && in_y;
   }
   isInsideGrid(gx: Float, gy: Float): boolean{
-    const in_x = this.grid_left <= gx && gx <= this.grid_right;
-    const in_y = this.grid_top <= gy && gy <= this.grid_bot;
-    return in_x && in_y;
+    return this.grid_rect.isInside(gx, gy);
   }
   getGridPoint(global_point: Point): Point{
     const gx = global_point.x - this.x;
     const gy = global_point.y - this.y;
-    return new Point(this.grid_left+gx/this.grid_size, this.grid_top+gy/this.grid_size);
+    return new Point(this.grid_rect.left+gx/this.grid_size, this.grid_rect.bot+gy/this.grid_size);
   }
   getGridWidth(): Float{
     return this.width / this.grid_size;
@@ -412,10 +418,10 @@ class MainGame{
     return this.height / this.grid_size;
   }
   getRight(): Float{
-    return this.grid_left + this.getGridWidth();
+    return this.grid_rect.right + this.getGridWidth();
   }
   getBot(): Float{
-    return this.grid_top + this.getGridHeight();
+    return this.grid_rect.bot + this.getGridHeight();
   }
   drawBackground(vp: Mat3, colour_shader: WebGL.Shader.MVPColourProgram){
     WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, this.y, this.width, this.height, Colour.ColourUtils.yellow());
@@ -423,14 +429,14 @@ class MainGame{
   drawGrid(vp: Mat3, colour_shader: WebGL.Shader.MVPColourProgram, size: Float){
     const colour = Colour.ColourUtils.red()
     const hs = size*0.5;
-
-    const sx = this.grid_left < 0 ? -(this.grid_left % 1) : 1 - (this.grid_left % 1);
-    for(let x = sx; x < this.grid_right-this.grid_left; x++){
+    const left = this.grid_rect.left
+    const sx = left < 0 ? -(left % 1) : 1 - (left % 1);
+    for(let x = sx; x < this.grid_rect.right-left; x++){
       WebGL.WebGL.drawColourRect(vp, colour_shader, this.x+x*this.grid_size-hs, this.y, size, this.height, colour);
     }
-
-    const sy = this.grid_top < 0 ? -(this.grid_top % 1) : 1 - (this.grid_top % 1);
-    for(let y = sy; y < this.grid_bot-this.grid_top; y++){
+    const bot = this.grid_rect.bot;
+    const sy = bot < 0 ? -(bot % 1) : 1 - (bot % 1);
+    for(let y = sy; y < this.grid_rect.top-bot; y++){
       WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, this.y+y*this.grid_size-hs, this.width, size, colour);
     }
   }
