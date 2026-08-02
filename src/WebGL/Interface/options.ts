@@ -187,7 +187,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
 
   border_width: Int32;
 
-  onSelect: (id: Int32) => void;
+  onSelect: (id: Int32, s: string) => void;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, options: string[]=[]){
     super(x, y, width, height);
@@ -203,6 +203,12 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
 
     this.border_width = 2;
     this.onSelect = () => {};
+  }
+  addOption(op: string){
+    this.options.push(op);
+  }
+  removeOption(op: string): boolean{
+    //todo: returns if option was removed;
   }
   setTheme(theme: Theme.InterfaceTheme){
     this.background_colour = theme.secondary_background;
@@ -240,7 +246,8 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     if(this.isOpen()){
       if(this.isHovered()){
         this.selected = this.getOptionIndexFromY(point.y);
-        this.onSelect(this.selected);
+        this.onSelect(this.selected, this.options[this.selected]);
+        console.log(this.options[this.selected]);
         this.state = DropdownStateEnum.ClosedHover;
         
         this.setStateFromMousePoint(point);
@@ -249,7 +256,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
         this.state = DropdownStateEnum.Closed;
       }
     }else{
-      if(this.isHovered()){
+      if(this.isHovered() && this.options.length > 0){
         this.state = DropdownStateEnum.OpenHover;
       }
     }

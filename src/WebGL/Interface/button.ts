@@ -85,11 +85,11 @@ export class BasicButton{
     return 0 < sx && sx < this.width && 0 < sy && sy < this.height;
   }
   onMouseDown(){
-    console.log("click");
+    //console.log("click");
     if(this.state == ButtonStateEnum.Hovered){
       this.state = ButtonStateEnum.PressedHovered;
       this.onPressed();
-      console.log("press");
+      //console.log("press");
     }
   }
   onMouseUp(){

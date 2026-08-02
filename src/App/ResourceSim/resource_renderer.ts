@@ -68,8 +68,8 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
 
   gridToOrthPoint(engine: ResourceSimEngine, gx: Float, gy: Float): OrthPoint{
     const gs =  engine.main_game.grid_size;
-    const x = engine.main_game.x + (gx-engine.main_game.grid_left)*gs;
-    const y = engine.main_game.y + (gy-engine.main_game.grid_top)*gs;
+    const x = engine.main_game.x + (gx-engine.main_game.grid_rect.left)*gs;
+    const y = engine.main_game.y + (gy-engine.main_game.grid_rect.bot)*gs;
     return {x, y};
   }
 
@@ -100,8 +100,8 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     const tile = engine.main_game.chunk_holder.getTile(x, y);
     if(tile != undefined){
       
-      const x_off = engine.main_game.x + (x-engine.main_game.grid_left)*gs;
-      const y_off = engine.main_game.y + (y-engine.main_game.grid_top)*gs;
+      const x_off = engine.main_game.x + (x-engine.main_game.grid_rect.left)*gs;
+      const y_off = engine.main_game.y + (y-engine.main_game.grid_rect.bot)*gs;
       const model = WebGL.WebGL.rectangleModel(x_off, y_off, gs, gs);
       if(tile.isKeyNode()){
         this.multi_colour_centre_circle_shader.use();
@@ -122,10 +122,10 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   }
 
   drawGridTiles(engine: ResourceSimEngine){
-    const sx = Math.floor(engine.main_game.grid_left);
-    const ex = Math.floor(engine.main_game.grid_right);
-    const sy = Math.floor(engine.main_game.grid_top);
-    const ey = Math.floor(engine.main_game.grid_bot);
+    const sx = Math.floor(engine.main_game.grid_rect.left);
+    const ex = Math.floor(engine.main_game.grid_rect.right);
+    const sy = Math.floor(engine.main_game.grid_rect.bot);
+    const ey = Math.floor(engine.main_game.grid_rect.top);
     //const gs = engine.main_game.grid_size;
     for(let y = sy; y <= ey; y++){
       for(let x = sx; x <= ex; x++){
@@ -171,16 +171,13 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     shader.setMidColourFromColourRGB(mid_colour);
   }
   drawCars(e: ResourceSimEngine){
-    //todo
     const gs = e.main_game.grid_size;
-    const hgs = gs*0.5;
     e.main_game.cars.forEach((car) => {
       if(e.main_game.isInsideGrid(car.x, car.y)){
+        const hcs = car.size*0.5*gs;
         const orth_point = this.gridToOrthPoint(e, car.x, car.y);
         WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
-          orth_point.x-hgs, orth_point.y-hgs, car.size*gs, car.size*gs, this.car_colour);
-
-        //console.log(orth_point);
+          orth_point.x-hcs, orth_point.y-hcs, car.size*gs, car.size*gs, this.car_colour);
       }
     });
   }

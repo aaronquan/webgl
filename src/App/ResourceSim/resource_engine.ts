@@ -89,7 +89,10 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     });
 
     this.side_interface.setAddCarFunction(() => {
-      this.main_game.addCarOnSelected();
+      const added_car = this.main_game.addCarOnSelectedNode();
+      if(added_car != undefined){
+        this.side_interface.car_options.addCar(added_car);
+      }
     });
 
     this.side_interface.setCarDestFunction(() => {
@@ -105,6 +108,14 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       console.log("clearing highlights");
       this.main_game.clearHighlights();
     });
+
+    this.side_interface.car_options.dropdown.onSelect = (id: Int32, car_str: string) => {
+      const car_id = car_str == "None" ? undefined : parseInt(car_str);
+      console.log(car_id);
+      //todo select on main game
+      this.main_game.selected_car_id = car_id;
+
+    }
   }
   
   protected handleMouseMove(ev: MouseEvent){
@@ -182,6 +193,7 @@ class MainGame{
   selected_key_nodes: Set<Int32>;
 
   cars: Car.CarCollection;
+  selected_car_id: Int32 | undefined;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
@@ -219,6 +231,9 @@ class MainGame{
 
     this.selected_key_nodes = new Set();
     this.cars = new Car.CarCollection();
+    this.selected_car_id = undefined;
+
+    console.log(this.grid_rect);
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
@@ -253,6 +268,9 @@ class MainGame{
       this.hover_side = undefined;
     }
   }
+  selectCarId(id: Int32 | undefined){
+    this.selected_car_id = id;
+  }
   selectNodeOnMouse(){
     if(this.mouse_grid_position != undefined){
       const tile = this.chunk_holder.getTileFromPosition(this.mouse_grid_position);
@@ -274,18 +292,22 @@ class MainGame{
   onMouseUp(){
     this.drag_point = undefined;
   }
-  addCarOnSelected(){
+  addCarOnSelectedNode(): Car.ResourceCar | undefined{
     if(this.selected_key_nodes.size == 1){
       const node_id = this.selected_key_nodes.values().next().value!;
       const node = this.key_nodes.getNode(node_id);
       if(node != undefined){
         const car = this.cars.addCarOnNode(node);
+        //todo: check that car should be added
         console.log("adding car");
-        this.cars.forEach((car) => {
-          console.log(car);
-        });
+        //this.cars.forEach((car) => {
+        //  console.log(car);
+        //});
+
+        return car;
       }
     }
+    return undefined;
   }
 
   updatePreview(){
@@ -527,6 +549,8 @@ class SimSideInterface{
   buttons: Button.ButtonSet;
   grid_on: boolean;
 
+  car_options: CarSelectInterface;
+
   constructor(x: Int32, y: Int32){
     this.x = x;
     this.y = y;
@@ -601,6 +625,9 @@ class SimSideInterface{
     clear_highlights_button.text = "Clear HLights";
     this.buttons.addButton(clear_highlights_button);
 
+    this.car_options = new CarSelectInterface(x, y+260);
+
+
   }
   setDebugKeyFunction(f: VoidFunction){
     this.buttons.buttons[0].onPressed = f;
@@ -630,6 +657,8 @@ class SimSideInterface{
     this.buttons.buttons[8].onPressed = f;
   }
 
+
+
   setTheme(theme: Theme.InterfaceTheme){
     this.edit_options.setTheme(theme);
     this.toggle_buttons.setTheme(theme);
@@ -639,9 +668,13 @@ class SimSideInterface{
     this.edit_options.onMouseOver(point);
     this.toggle_buttons.updateMouse(point);
     this.buttons.updateMouse(point);
+    this.car_options.dropdown.onMouseOver(point);
   }
   onMouseDown(point: WebGL.Matrix.Point2D){
     const selected_option = this.edit_options.onMouseDown(point);
+    if(selected_option) return;
+    const selected_car = this.car_options.dropdown.onMouseDown(point);
+    if(selected_car) return;
     if(!selected_option){
       this.toggle_buttons.mouseDown();
       this.buttons.mouseDown();
@@ -661,5 +694,28 @@ class SimSideInterface{
     this.buttons.draw(vp, colour_shader, text_drawer);
 
     this.edit_options.draw(vp, colour_shader, text_drawer);
+
+    this.car_options.draw(vp, colour_shader, text_drawer);
+  }
+}
+
+class CarSelectInterface{
+  dropdown: Options.DropdownOptions; 
+  constructor(x: Int32, y: Int32){
+    this.dropdown = new Options.DropdownOptions(x, y, 140, 20, ["None"]);
+  }
+  addCar(car: Car.ResourceCar){
+    console.log(`adding id ${car.id.toString()}`);
+    this.dropdown.addOption(car.id.toString());
+  }
+  deleteCar(car: Car.ResourceCar){
+    const car_str = car.id.toString();
+    const id = this.dropdown.options.findIndex((s) => s == car_str);
+    if(id != -1){
+      this.dropdown.options.splice(id, 1);
+    }
+  }
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
+    this.dropdown.draw(vp, colour_shader, text_drawer);
   }
 }
