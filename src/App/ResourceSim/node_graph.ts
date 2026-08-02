@@ -73,9 +73,20 @@ export class RoadGraph{
   nodes: RoadNode[];
   key_map: Map<Int32, Int32>;
 
+  private is_generated: boolean;
+
   constructor(){
     this.nodes = [];
     this.key_map = new Map();
+    this.is_generated = false;
+  }
+  reset(){
+    this.nodes = [];
+    this.key_map = new Map();
+    this.is_generated = false;
+  }
+  isGenerated(): boolean{
+    return this.is_generated;
   }
   generate(grid: Grid.WallGrid, nodes: Map<Int32, Node.KeyNode>){
     this.nodes = [];
@@ -228,6 +239,7 @@ export class RoadGraph{
     console.log(position_queue);
     console.log(this.nodes);
     console.log(this.key_map);
+    this.is_generated = true;
   }
   generateGraphFromChunks(chunks: Grid.ChunkHolder, nodes: Node.NodeCollection){
     if(nodes.nodes.size == 0) return;

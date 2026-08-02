@@ -134,17 +134,19 @@ export class ResourceCar extends Car{
     }
   }
   //findClosestResourceNode(engine: WallEngine){
-    
-  ///}
+  //  
+  //}
 }
 
 
 export class CarCollection{
   cars: Map<Int32, ResourceCar>;
   private current_id: Int32;
+  selected_car: Int32 | undefined;
   constructor(){
     this.cars = new Map();
     this.current_id = 0;
+    this.selected_car = undefined;
   }
   addCarOnNode(node: Node.KeyNode): ResourceCar{
     const car = new ResourceCar(this.current_id, node)
@@ -160,10 +162,25 @@ export class CarCollection{
   get(i: Int32): ResourceCar | undefined{
     return this.cars.get(i);
   }
+  getSelected(): ResourceCar | undefined{
+    if(this.selected_car == undefined){
+      return undefined;
+    }
+    return this.get(this.selected_car);
+  }
   select(id: Int32){
     const car = this.get(id);
     if(car != undefined){
       car.is_selected = true;
+    }
+
+  }
+  deselect(){
+    if(this.selected_car != undefined){
+      const car = this.get(this.selected_car);
+      if(car != undefined){
+        car.is_selected = false;
+      }
     }
   }
   update(t: Float){
@@ -174,8 +191,12 @@ export class CarCollection{
   clear(){
     this.cars.clear();
     this.current_id = 0;
+    this.selected_car = undefined;
   }
   delete(id: Int32){
     this.cars.delete(id);
+    if(this.selected_car == id){
+      this.selected_car = undefined;
+    }
   }
 }

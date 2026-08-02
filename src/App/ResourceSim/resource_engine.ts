@@ -96,7 +96,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     });
 
     this.side_interface.setCarDestFunction(() => {
-
+      this.main_game.setSelectedCarDest();
     });
 
     this.side_interface.setClosestPathFunction(() => {
@@ -113,7 +113,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       const car_id = car_str == "None" ? undefined : parseInt(car_str);
       console.log(car_id);
       //todo select on main game
-      this.main_game.selected_car_id = car_id;
+      this.main_game.selectCarId(id);
 
     }
   }
@@ -186,14 +186,14 @@ class MainGame{
 
   key_nodes: Node.NodeCollection;
 
-  road_graph: NodeGraph.RoadGraph | undefined;
+  road_graph: NodeGraph.RoadGraph;
 
   test_save: string | undefined;
 
   selected_key_nodes: Set<Int32>;
 
   cars: Car.CarCollection;
-  selected_car_id: Int32 | undefined;
+  //selected_car_id: Int32 | undefined;
 
   constructor(x: Int32, y: Int32, width: Int32, height: Int32){
     this.x = x;
@@ -217,6 +217,7 @@ class MainGame{
     //this.chunk_holder.getTile(2, 1)?.setTileState(Grid.DirectionEnum.Left, Grid.TileStateEnum.Path);
 
     this.key_nodes = new Node.NodeCollection();
+    this.road_graph = new NodeGraph.RoadGraph();
 
     this.test_save = `3,6
 4,2
@@ -231,7 +232,7 @@ class MainGame{
 
     this.selected_key_nodes = new Set();
     this.cars = new Car.CarCollection();
-    this.selected_car_id = undefined;
+    //this.selected_car_id = undefined;
 
     console.log(this.grid_rect);
   }
@@ -269,7 +270,13 @@ class MainGame{
     }
   }
   selectCarId(id: Int32 | undefined){
-    this.selected_car_id = id;
+    //this.selected_car_id = id;
+    //selected id is inside this.cars
+    if(id == undefined){
+      this.cars.deselect();
+    }else{
+      this.cars.select(id);
+    }
   }
   selectNodeOnMouse(){
     if(this.mouse_grid_position != undefined){
@@ -298,17 +305,43 @@ class MainGame{
       const node = this.key_nodes.getNode(node_id);
       if(node != undefined){
         const car = this.cars.addCarOnNode(node);
-        //todo: check that car should be added
+        //todo: check that car is added
         console.log("adding car");
-        //this.cars.forEach((car) => {
-        //  console.log(car);
-        //});
 
         return car;
       }
     }
     return undefined;
   }
+  setSelectedCarDest(){
+    const selected_car = this.cars.getSelected();
+
+    if(selected_car != undefined){
+      if(!this.road_graph.isGenerated()){
+        return;
+      }
+      const from_id = selected_car.starting_node.getId();
+      const to_id = this.getFirstSelectedId();
+      if(to_id == undefined){
+        return;
+      }
+      if(!this.road_graph.isGenerated()){
+        return;
+      }
+      const shortest_path = this.road_graph.shortestPath(from_id, to_id);
+      console.log(shortest_path);
+      //this.gr
+      //selected_car.setPlan();
+    }
+  }
+
+  private getFirstSelectedId(): Int32 | undefined{
+    if(this.selected_key_nodes.size >= 1){
+      return this.selected_key_nodes.values().next().value;
+    }
+
+    return undefined;
+  } 
 
   updatePreview(){
     this.removeHoveredPreview();
@@ -531,7 +564,8 @@ class MainGame{
   clear(){
     this.key_nodes.clear();
     this.chunk_holder.clearChunks();
-    this.road_graph = undefined;
+    this.road_graph.reset();
+    this.cars.clear();
   }
 
 }
