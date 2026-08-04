@@ -90,6 +90,14 @@ export class WebGL{
     this.gl?.enable(this.gl.SCISSOR_TEST);
     this.gl?.scissor(x, this.canvas!.clientHeight-(y+height), width, height);
   }
+  static enableScissorRect(rect: Interface.InterfaceElement.Rect){
+    //to test
+    const gl = this.gl!;
+    gl.enable(gl.SCISSOR_TEST);
+    const h = rect.getHeight();
+    const w = rect.getWidth();
+    gl.scissor(rect.left, this.canvas!.clientHeight-(rect.bot+h), w, h);
+  }
   static disableScissor(){
     this.gl?.disable(this.gl.SCISSOR_TEST);
   }
@@ -98,6 +106,17 @@ export class WebGL{
     if(WebGL.canvas != undefined){
       WebGL.canvas.style.cursor = cursor;
     }
+  }
+
+  static enableBlend(){
+    const gl = this.gl!;
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  }
+
+  static disableBlend(){
+    const gl = this.gl!;
+    gl.disable(gl.BLEND);
   }
 }
 

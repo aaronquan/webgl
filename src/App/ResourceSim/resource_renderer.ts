@@ -33,6 +33,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
 
   tile_state_colours: Map<Grid.TileState, Colour.ColourRGB>;
   car_colour: Colour.ColourRGB;
+  highlight_car_colour: Colour.ColourRGB;
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.font_names.push("font16-Sheet.png");
@@ -50,6 +51,7 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
     this.multi_colour_centre_circle_shader = new WebGL.Shader.MVPMultiColourCentreCirclePathProgram();
 
     this.car_colour = Colour.ColourUtils.fromRGB(0.2, 0.8, 0.8);
+    this.highlight_car_colour = Colour.ColourUtils.fromRGB(0.5, 1.0, 1.0);
 
     this.setInitialTextureParameters();
   }
@@ -173,11 +175,12 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   drawCars(e: ResourceSimEngine){
     const gs = e.main_game.grid_size;
     e.main_game.cars.forEach((car) => {
+      const c = car.is_selected ? this.highlight_car_colour : this.car_colour;
       if(e.main_game.isInsideGrid(car.x, car.y)){
         const hcs = car.size*0.5*gs;
         const orth_point = this.gridToOrthPoint(e, car.x, car.y);
         WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
-          orth_point.x-hcs, orth_point.y-hcs, car.size*gs, car.size*gs, this.car_colour);
+          orth_point.x-hcs, orth_point.y-hcs, car.size*gs, car.size*gs, c);
       }
     });
   }

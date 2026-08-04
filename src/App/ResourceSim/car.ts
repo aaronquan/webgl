@@ -163,12 +163,15 @@ export class CarCollection{
     return this.cars.get(i);
   }
   getSelected(): ResourceCar | undefined{
+    console.log(this.selected_car);
     if(this.selected_car == undefined){
       return undefined;
     }
     return this.get(this.selected_car);
   }
   select(id: Int32){
+    this.deselect();
+    this.selected_car = id;
     const car = this.get(id);
     if(car != undefined){
       car.is_selected = true;

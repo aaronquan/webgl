@@ -113,7 +113,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
       const car_id = car_str == "None" ? undefined : parseInt(car_str);
       console.log(car_id);
       //todo select on main game
-      this.main_game.selectCarId(id);
+      this.main_game.selectCarId(car_id);
 
     }
   }
@@ -315,24 +315,34 @@ class MainGame{
   }
   setSelectedCarDest(){
     const selected_car = this.cars.getSelected();
-
-    if(selected_car != undefined){
-      if(!this.road_graph.isGenerated()){
-        return;
-      }
-      const from_id = selected_car.starting_node.getId();
-      const to_id = this.getFirstSelectedId();
-      if(to_id == undefined){
-        return;
-      }
-      if(!this.road_graph.isGenerated()){
-        return;
-      }
-      const shortest_path = this.road_graph.shortestPath(from_id, to_id);
-      console.log(shortest_path);
-      //this.gr
-      //selected_car.setPlan();
+    if(selected_car == undefined){
+      console.log("car not selected");
+      return;
     }
+
+    if(!this.road_graph.isGenerated()){
+      console.log("road_graph needs generating");
+      return;
+    }
+    const from_id = selected_car.starting_node.getId();
+    const to_id = this.getFirstSelectedId();
+    if(to_id == undefined){
+      console.log("to_id not defined");
+      return;
+    }
+    const shortest_path = this.road_graph.shortestPath(from_id, to_id);
+    console.log(shortest_path);
+    if(shortest_path == undefined){
+      console.log("no path");
+      return;
+    }
+    const positions = NodeGraph.RoadNode.unpackGridPositionPath(shortest_path.connections, shortest_path.starting_position);
+    const track = Grid.GridAlgorithms.pathToTrack(positions);
+    console.log(track);
+
+    selected_car.setPlan(track);
+    //this.gr
+    //selected_car.setPlan();
   }
 
   private getFirstSelectedId(): Int32 | undefined{

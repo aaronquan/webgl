@@ -1,6 +1,10 @@
 import * as WebGL from "./../globals";
+import * as Geometry from "./../Geometry/base";
+
 type Int32 = number;
 type Float = number;
+
+import Point2D = Geometry.Point2D;
 
 export class InterfaceElement{
   x: Int32;
@@ -13,7 +17,7 @@ export class InterfaceElement{
     this.width = width;
     this.height = height;
   }
-  isInside(point: WebGL.Matrix.Point2D){
+  isInside(point: Point2D){
     const in_x = this.x < point.x && point.x < this.x+this.width;
     const in_y = this.y < point.y  && point.y < this.y+this.height;
     return in_x && in_y;
@@ -27,7 +31,15 @@ export class InterfaceElement{
     colour_shader.setMvp(vp.multiplyCopy(bg_model));
     WebGL.Shapes.Quad.draw();
   }
-
+  relativePoint(global_point: Point2D): Point2D{
+    return new Point2D(global_point.x-this.x, global_point.y-this.y);
+  }
+  enableScissors(){
+    WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
+  }
+  disableScissors(){
+    WebGL.WebGL.disableScissor();
+  }
 }
 
 export class Rect{
@@ -41,6 +53,12 @@ export class Rect{
     this.right = r;
     this.bot = b;
     this.top = t;
+  }
+  getWidth(): Float{
+    return this.right-this.left;
+  }
+  getHeight(): Float{
+    return this.top-this.bot;
   }
   move(x: Float, y: Float){
     this.left += x; this.right += x;

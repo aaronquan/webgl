@@ -377,6 +377,7 @@ export class RoadGraph{
     }
     console.log(this.nodes);
     console.log(this.key_map);
+    this.is_generated = true;
   }
 
   shortestPath(from: Int32, to: Int32): ShortestPathResult | undefined{
