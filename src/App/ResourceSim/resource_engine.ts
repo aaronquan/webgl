@@ -52,6 +52,8 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
   main_game: MainGame;
 
   side_interface: SimSideInterface;
+
+  time: Float;
   constructor(w: Int32, h: Int32){
     super();
     this.screen_width = w;
@@ -63,8 +65,19 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
     this.side_interface = new SimSideInterface(605, 10);
     this.side_interface.setTheme(theme);
 
+    this.time = 0;
     
     this.addInterfaceFunctions();
+  }
+
+  update(t: Float){
+    const dt = t - this.time;
+    this.main_game.update(dt); 
+
+
+    this.time = t;
+    //console.log(t);
+
   }
 
   addInterfaceFunctions(){
@@ -203,10 +216,6 @@ class MainGame{
 
     this.grid_size = 60; // 50 with 0.1 radius gives misaligned grid
 
-    //this.grid_left = -1.0;
-    //this.grid_top = 1.5;
-    //this.grid_right = this.getRight();
-    //this.grid_bot = this.getBot();
     const l = -1;
     const b = 1.5;
     this.grid_rect = new Rect(l, l+this.getGridWidth(), b, b+this.getGridHeight());
@@ -236,9 +245,15 @@ class MainGame{
 
     console.log(this.grid_rect);
   }
+  update(dt: Float){
+    this.cars.forEach((c) => {
+      c.update(dt);
+    })
+  }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);
   }
+
   disableScissors(){
     WebGL.WebGL.disableScissor();
   }
@@ -258,11 +273,6 @@ class MainGame{
         const dx = this.grid_point.x - this.drag_point.x;
         const dy = this.grid_point.y - this.drag_point.y;
         this.grid_rect.move(-dx, -dy);
-        /*
-        this.grid_left -= dx;
-        this.grid_top -= dy;
-        this.grid_right = this.getRight();
-        this.grid_bot = this.getBot();*/
       }
       this.hover_side = this.sideOnGrid(this.grid_point);
     }else{
@@ -423,9 +433,7 @@ class MainGame{
           this.key_nodes.remove(id);
           tile.is_key = false;
           tile.is_preview = false;
-          //const node = this.key_nodes.getNode(id);
         }
-        //this.key_nodes.getNode
       }else{
         //to test
         //add key node
