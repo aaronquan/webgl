@@ -6,6 +6,7 @@ type Int32 = number;
 type Float = number;
 
 import Colour = WebGL.Colour;
+import Shapes = WebGL.Shapes;
 
 interface MultiColourTileShader{
   setLeftColour:(r: Float, g: Float, b: Float) => void;
@@ -174,13 +175,20 @@ export class ResourceSimRenderer extends WebGL.App.SimpleAppRenderer<ResourceSim
   }
   drawCars(e: ResourceSimEngine){
     const gs = e.main_game.grid_size;
+    this.colour_shader.use();
     e.main_game.cars.forEach((car) => {
       const c = car.is_selected ? this.highlight_car_colour : this.car_colour;
       if(e.main_game.isInsideGrid(car.x, car.y)){
+        const cs = car.size*gs;
         const hcs = car.size*0.5*gs;
         const orth_point = this.gridToOrthPoint(e, car.x, car.y);
-        WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
-          orth_point.x-hcs, orth_point.y-hcs, car.size*gs, car.size*gs, c);
+        const model = WebGL.WebGL.rectangleModel(orth_point.x, orth_point.y, cs, cs);
+        //WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
+        //  orth_point.x-hcs, orth_point.y-hcs, car.size*gs, car.size*gs, c);
+        model.rotate(car.rotation+Math.PI);
+        this.colour_shader.setColourFromColourRGB(c);
+        this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
+        Shapes.CenterQuad.draw();
       }
     });
   }
