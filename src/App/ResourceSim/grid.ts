@@ -893,6 +893,11 @@ export class GridAlgorithms{
 
   static pathToTrack(path: GridPosition[]): Track{
     const part = new TrackPart();
+    if(path.length <= 1){
+      //
+      console.log("not enough positions for track");
+      return new Track(part, new GridPosition(0,0));
+    }
     let direction = DirectionUtil.directionsBetween2Points(path[0], path[1])[0];
     let dist = 1;
     for(let i = 2; i < path.length; i++){
