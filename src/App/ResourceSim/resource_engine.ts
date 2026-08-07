@@ -337,6 +337,7 @@ class MainGame{
       return;
     }
     const positions = NodeGraph.RoadNode.unpackGridPositionPath(shortest_path.connections, shortest_path.starting_position);
+    console.log(positions);
     const track = Grid.GridAlgorithms.pathToTrack(positions);
     console.log(track);
 

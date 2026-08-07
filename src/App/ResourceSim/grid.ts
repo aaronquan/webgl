@@ -905,6 +905,7 @@ export class GridAlgorithms{
         dist = 1;
       }
     }
+    part.addMove(dist, direction);
     const track = new Track(part, path[0]);
     return track;
   }
