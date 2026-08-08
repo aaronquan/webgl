@@ -48,37 +48,46 @@ export class Car{
     this.plan_position = {distance_covered: 0, move_index: 0};
     //console.log(this.plan.part.getMoves().at(0)?.direction);
   }
-  update(t:Float){
-    if(this.plan){
+  update(dt:Float){
+    this.moveOnPlan(dt);
+  }
+  moveOnPlan(dt: Float){
+    const move_speed = dt*this.speed;
+    const turn_speed = dt*this.speed;
+    if(this.plan != undefined){
       const moves = this.plan.part.getMoves();
       const dir = moves[this.plan_position.move_index].direction;
       const dir_movement = Grid.DirectionUtil.directions[dir];
       const target_rotation = Grid.DirectionUtil.turnDirectionToRadians(dir);
       const turn = Grid.DirectionUtil.getTurnDirection(dir, this.rotation);
       if(turn === Grid.TurnDirectionEnum.Clockwise){
-        if(this.rotation + this.turn_speed > target_rotation && this.rotation < target_rotation){
+        //rotate clockwise
+        if(this.rotation + turn_speed > target_rotation && this.rotation < target_rotation){
           this.rotation = target_rotation;
           //console.log("stop rot clock");
         }else{
-          this.rotation += this.turn_speed;
+          this.rotation += turn_speed;
           this.rotation %= (Math.PI*2);
         }
       }else if(turn === Grid.TurnDirectionEnum.AntiClockwise){
-        if(this.rotation - this.turn_speed < target_rotation && this.rotation > target_rotation){
+        //rotate anticlockwise
+        if(this.rotation - turn_speed < target_rotation && this.rotation > target_rotation){
           this.rotation = target_rotation;
           //console.log("stop rot anti");
         }else{
-          this.rotation -= this.turn_speed;
+          this.rotation -= turn_speed;
           if(this.rotation < 0){
             this.rotation += Math.PI*2;
           }
         }
       }
-      else if(this.plan_position.distance_covered+this.speed >= moves[this.plan_position.move_index].distance){
+      else if(this.plan_position.distance_covered+move_speed >= moves[this.plan_position.move_index].distance){
+        //finish moving track part
         const remaining = moves[this.plan_position.move_index].distance-this.plan_position.distance_covered;
         this.x += dir_movement.x*remaining;
         this.y -= dir_movement.y*remaining;
         if(this.plan_position.move_index+1 >= moves.length){
+          // finished the plan
           this.plan_position = {distance_covered: 0, move_index: 0};
           this.last_key = this.plan.endPoint();
           this.plan = undefined;
@@ -86,9 +95,9 @@ export class Car{
           this.plan_position = {distance_covered: 0, move_index: this.plan_position.move_index+1};
         }
       }else{
-        this.x += dir_movement.x*this.speed;
-        this.y -= dir_movement.y*this.speed;
-        this.plan_position.distance_covered += this.speed;
+        this.x += dir_movement.x*move_speed;
+        this.y -= dir_movement.y*move_speed;
+        this.plan_position.distance_covered += move_speed;
       }
     }
   }
@@ -136,6 +145,15 @@ export class ResourceCar extends Car{
   //findClosestResourceNode(engine: WallEngine){
   //  
   //}
+  update(dt: Float){
+    const has_plan = this.plan != undefined;
+    this.moveOnPlan(dt);
+    if(has_plan && this.plan == undefined){
+      //todo
+      //end
+      console.log("ended move");
+    }
+  }
 }
 
 
