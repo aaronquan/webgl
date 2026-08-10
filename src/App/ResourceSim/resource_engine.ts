@@ -350,8 +350,9 @@ class MainGame{
     console.log(positions);
     const track = Grid.GridAlgorithms.pathToTrack(positions);
     console.log(track);
-
-    selected_car.setPlan(track);
+    if(track != undefined){
+      selected_car.setPlan(track);
+    }
     //this.gr
     //selected_car.setPlan();
   }

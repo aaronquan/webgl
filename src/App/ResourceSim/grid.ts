@@ -891,12 +891,13 @@ export class GridAlgorithms{
   private static distanceQueue = new PQ.PriorityQueue((a:GridEucildianCompare,b:GridEucildianCompare) => a.distance_squared-b.distance_squared);
   private static distancesSeen: number[] = [];
 
-  static pathToTrack(path: GridPosition[]): Track{
+  static pathToTrack(path: GridPosition[]): Track | undefined{
     const part = new TrackPart();
     if(path.length <= 1){
       //
       console.log("not enough positions for track");
-      return new Track(part, new GridPosition(0,0));
+      return undefined;
+      //return new Track(part, new GridPosition(0,0));
     }
     let direction = DirectionUtil.directionsBetween2Points(path[0], path[1])[0];
     let dist = 1;

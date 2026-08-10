@@ -32,8 +32,8 @@ export class Car{
     this.plan = undefined;
     this.plan_position = {distance_covered: 0, move_index: 0};
     this.plan_index = 0;
-    this.speed = 0.01;
-    this.turn_speed = 0.05;
+    this.speed = 0.001;
+    this.turn_speed = 0.015;
     this.rotation = 0;
     this.last_key = undefined;
   }
@@ -152,6 +152,10 @@ export class ResourceCar extends Car{
       //todo
       //end
       console.log("ended move");
+      console.log(this.starting_node);
+      console.log(this.target_node)
+      this.starting_node = this.target_node!;
+      this.target_node = undefined;
     }
   }
 }
@@ -181,7 +185,7 @@ export class CarCollection{
     return this.cars.get(i);
   }
   getSelected(): ResourceCar | undefined{
-    console.log(this.selected_car);
+    //console.log(this.selected_car);
     if(this.selected_car == undefined){
       return undefined;
     }
