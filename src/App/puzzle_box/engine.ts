@@ -1,6 +1,7 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Shape from "./shape";
 import { TetrisEngine } from "./tetris";
+import { BattleEngine } from "./grid_battle";
 
 type Int32 = number;
 type Float = number;
@@ -55,7 +56,7 @@ export class ShapeGridInterface{
   }
 }
 
-class ShapeIdGrid extends IdGrid{
+export class ShapeIdGrid extends IdGrid{
   isFree(x: Int32, y: Int32): boolean{
     return this.object_id[x+y*this.width] == undefined;
   }
@@ -190,7 +191,7 @@ export class ShapeLabel extends WebGL.Interface.InterfaceElement.InterfaceElemen
 
 type LayoutPosition = WebGL.Matrix.Point2D;
 
-class GridLayout{
+export class GridLayout{
   start_x: Int32;
   start_y: Int32;
   cell_width: Int32;
@@ -239,6 +240,9 @@ export class PuzzleInterface{
   setTetrisFunction(f: VoidFunction){
     this.buttons.buttons[1].onPressed = f;
   }
+  setBattleFunction(f: VoidFunction){
+    this.buttons.buttons[2].onPressed = f;
+  }
 
   private addButtons(){
     const puzzle_button = new Button.BasicButton(5, 600, 100, 15, 10);
@@ -247,6 +251,9 @@ export class PuzzleInterface{
     const tetris_button = new Button.BasicButton(5, 620, 100, 15, 10);
     tetris_button.text = "Tetris";
     this.buttons.addButton(tetris_button);
+    const battle_button = new Button.BasicButton(5, 640, 100, 15, 10);
+    battle_button.text = "Battle";
+    this.buttons.addButton(battle_button);
   }
 
   onMouseMove(point: WebGL.Matrix.Point2D){
@@ -265,7 +272,8 @@ export class PuzzleInterface{
 
 export const PuzzleAppletDisplayEnum = {
   Puzzle: 0,
-  Tetris: 1
+  Tetris: 1,
+  GridBattle: 2
 } as const;
 
 export type PuzzleAppletDisplay = (typeof PuzzleAppletDisplayEnum)[keyof typeof PuzzleAppletDisplayEnum];
@@ -294,6 +302,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
   tetris: TetrisEngine;
   interface: PuzzleInterface;
+  grid_battle: BattleEngine;
 
   applet_display: PuzzleAppletDisplay;
 
@@ -330,6 +339,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
     this.tetris = new TetrisEngine();
     this.interface = new PuzzleInterface();
+    this.grid_battle = new BattleEngine();
+
     this.applet_display = PuzzleAppletDisplayEnum.Tetris;
 
     this.interface.setPuzzleFunction(() => {
@@ -337,7 +348,10 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     })
     this.interface.setTetrisFunction(() => {
       this.applet_display = PuzzleAppletDisplayEnum.Tetris;
-    })
+    });
+    this.interface.setBattleFunction(() => {
+      this.applet_display = PuzzleAppletDisplayEnum.GridBattle;
+    });
   }
   update(t: Float){
     const dt = t-this.time;

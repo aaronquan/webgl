@@ -1,4 +1,8 @@
-import {Point2D, LineSegment2D} from "./base";
+import * as Base from "./base";
+import * as Equation from "./equations";
+
+import Point2D = Base.Point2D;
+import LineSegment2D = Equation.LineSegment2D;
 
 type Float = number;
 
