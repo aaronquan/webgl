@@ -1,7 +1,7 @@
 {
-  "name": "webgl",
-  "private": true,
-  "version": "0.0.0",
+  "name": "webglmusti",
+  "private": false,
+  "version": "0.0.8",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@datastructures-js/priority-queue": "^6.3.5"
+    "@datastructures-js/priority-queue": "^6.3.5",
+    "node": "^24.16.0"
   }
 }

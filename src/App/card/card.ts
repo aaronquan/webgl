@@ -1,13 +1,15 @@
+//webgl imports
+
 import WebGL from "../../WebGL/globals"
-import * as App from "../app"
+import * as App from "./../../WebGL/app"
 import * as Shader from "../../WebGL/Shaders/custom"
-import * as Texture from "../../WebGL/Texture/texture"
 import * as Matrix from "../../WebGL/Matrix/matrix"
 import * as Shapes from "../../WebGL/Shapes/Shapes"
 import * as WebGLGlobals from "../../WebGL/globals"
-import { colour } from "../../WebGL/Shaders/Fragment/Source/fragment_source"
-import { DirectionUtil } from "../grid"
-import * as Grid from "../grid";
+
+//grid imports
+import { DirectionUtil } from "../ResourceSim/grid"
+import * as Grid from "../ResourceSim/grid";
 
 type Int32 = number;
 type Float = number;
@@ -299,6 +301,9 @@ class VisualCard{
   checkMouse(mouse_point: WebGLGlobals.Matrix.Point2D){
     const inverse = this.transformation_matrix.copy();
     inverse.invert();
+
+    
+
     const pt = inverse.transformPoint(mouse_point);
     if(this.card_model.isInside(pt.x, pt.y)){
       this.colour = WebGLGlobals.Colour.ColourUtils.blue();
@@ -450,14 +455,15 @@ export class CardEngine extends App.BaseEngine{
   turn_speed: Float;
   turn_target: Grid.GridDirection;
 
-  constructor(){
+  vp: Matrix.TransformationMatrix3x3;
+
+  constructor(w: Int32, h: Int32){
     super();
     this.cards = [new VirtualCard()];
     this.base_card_model = new SimpleCardModel(50, 80);
     this.vis_card = new VisualCard(this.base_card_model, new VirtualCard());
     this.vis_card.translate(300, 300);
     //this.vis_card.transformation_matrix.rotate(DirectionUtil.turnDirectionToRadians(Grid.DirectionEnum.Right));
-    console.log(this.vis_card)
     this.card_model = Matrix.TransformationMatrix3x3.translate(300, 300);
     this.deck = new Deck();
     this.button1 = new BasicButton(20, 20, 100, 50);
@@ -521,8 +527,15 @@ export class CardEngine extends App.BaseEngine{
     this.rotation = 0;
     this.turn_speed = 0.05;
     this.turn_target = Grid.DirectionEnum.Up;
+
+    this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
     //this.card_model
     //this.card_model = this.card_model.multiplyCopy(Matrix.TransformationMatrix3x3.scale(2, 2));
+  }
+  resize(w: Int32, h:Int32){
+    console.log("resizing engine");
+    //this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+    console.log(this.vp);
   }
   update(t: Float){
     this.updateTurn();
@@ -539,7 +552,7 @@ export class CardEngine extends App.BaseEngine{
       if(this.rotation - this.turn_speed < target_radians && this.rotation > target_radians){
         this.vis_card.transformation_matrix.rotate(target_radians - this.rotation);
         this.rotation = target_radians;
-        console.log("end");
+        console.log("end anti");
       }else{
         this.vis_card.transformation_matrix.rotate(-this.turn_speed);
         this.rotation -= this.turn_speed;
@@ -549,6 +562,7 @@ export class CardEngine extends App.BaseEngine{
       if(this.rotation + this.turn_speed > target_radians  && this.rotation < target_radians){
         this.vis_card.transformation_matrix.rotate(target_radians - this.rotation);
         this.rotation = target_radians;
+        console.log("end clock");
       }else{
         this.vis_card.transformation_matrix.rotate(this.turn_speed);
         this.rotation += this.turn_speed;
@@ -587,6 +601,11 @@ export class CardEngine extends App.BaseEngine{
       this.updateMouse(mouse_point);
     }
     this.mouse_point = mouse_point;
+
+    const inverse = this.vp.copy();
+    //inverse.invert();
+    const pt = inverse.transformPoint(this.mouse_point);
+    console.log(pt);
   }
   createDeckVisuals(){
     this.deck_visuals = [];
@@ -638,6 +657,14 @@ export class CardRenderer implements App.IEngineRenderer<CardEngine>{
     this.text_drawer = new WebGLGlobals.TextDrawer();
     this.rotation = 0;
   }
+  testProj(p: Matrix.Point2D){
+
+  }
+  resize(w: Int32, h: Int32){
+    //console.log("sizing")
+    //console.log(`${w} ${h}`);
+    this.vp = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
+  }
   loadTextures(onLoad: VoidFunction=EmptyFunction){
     console.log("loading textures");
     const font_name = "letters-Sheet.png";
@@ -653,6 +680,7 @@ export class CardRenderer implements App.IEngineRenderer<CardEngine>{
     //this.text_drawer.loadFont();
   }
   loadResources(onLoad:VoidFunction=EmptyFunction){
+    onLoad();
     //this.loader.load(onLoad);
     //this.text_drawer.loadFont();
   }
@@ -676,6 +704,12 @@ export class CardRenderer implements App.IEngineRenderer<CardEngine>{
     
   }
   render(engine: CardEngine){
+    this.solid_shader.use();
+    const model = WebGL.rectangleModel(200, 200, 80, 120);
+    this.solid_shader.setMvp(this.vp.multiplyCopy(model));
+    this.solid_shader.setColour(0.8, 0.5, 0.75);
+    Shapes.Quad.drawRelative();
+
     //engine.step();
     this.rotation += 0.01;
     //console.log("rendering card engine");

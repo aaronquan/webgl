@@ -7,7 +7,8 @@ import * as Shapes from "./Shapes/Shapes"
 import * as Matrix from "./Matrix/matrix";
 import * as Line from "./Shapes/Line";
 import * as Colour from "./colour";
-import * as Texture from "./Texture/texture"
+import * as Texture from "./Texture/texture";
+import * as Interface from "./Interface/interface";
 
 type Float = number;
 type Int32 = number;
@@ -17,21 +18,35 @@ export * as Shapes from "./Shapes/Shapes";
 export * as Matrix from "./Matrix/matrix";
 export * as Texture from "./Texture/texture";
 export * as Line from "./Shapes/Line";
-export * as Shader from "./Shaders/custom"
-
+export * as Shader from "./Shaders/custom";
+export * as App from "./app";
+//export * as FileUtil from "./Util/file";
+export * as Utils from "./Util/utils";
+export * as Interface from "./Interface/interface";
+export * as Grid from "./Grid/grid";
+export * as Geometry from "./Geometry/geometry";
 
 type VoidFunction = () => void;
+
+interface MVPColourShader{
+  use: () => void;
+  setMvp:(mat: Matrix.TransformationMatrix3x3) => void;
+  setColourFromColourRGB: (colour: Colour.ColourRGB) => void;
+}
 
 export class WebGL{
   static gl: WebGL2RenderingContext | null;
   static active_shader_program: ShaderProgram | null;
+  static canvas: HTMLCanvasElement | undefined;
   private static initialised: boolean = false;
   //static buffer: WebGLBuffer | null; for testing
   static defaultError(){
     throw new Error("WebGL not initialised or null");
   }
   static initialise(canvas: HTMLCanvasElement){
+    this.canvas = canvas;
     this.gl = canvas.getContext("webgl2", {alpha: false});
+    this.resetViewport(canvas);
     if(this.gl && !this.initialised){
       loadVertexShaders();
       loadFragmentShaders();
@@ -40,35 +55,75 @@ export class WebGL{
     }
   }
 
+  static resetViewport(canvas: HTMLCanvasElement){
+    this.gl!.viewport(0, 0, canvas.width, canvas.height);
+  }
+
   static rectangleModel(x: Float, y: Float, width: number, height: number): Matrix.TransformationMatrix3x3{
     let model = Matrix.TransformationMatrix3x3.translate(x, y);
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.scale(width, height));
+    model.scale(width, height);
     return model;
   }
   static lineModel(x1: Float, y1: Float, x2: Float, y2: Float, lt: Float){
     const line = new Line.Line(x1, y1, x2, y2);
 
     let model = Matrix.TransformationMatrix3x3.identity();
-    //let model = Matrix.TransformationMatrix3x3.translate(0.5, 0);
-    //model = model.multiplyCopy(Matrix.TransformationMatrix3x3.rotate(line.angleInRadians()-Math.PI/2));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.translate(x1, y1));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.rotate(line.angleInRadians()));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.scale(line.length(), lt));
-    model = model.multiplyCopy(Matrix.TransformationMatrix3x3.translate(0.5, 0));
+    model.translate(x1, y1);
+    model.rotate(-line.angleInRadians());
+    model.scale(line.length(), lt);
+    model.translate(0, -0.5);
     
     return model;
   }
+  static drawColourRect(vp: Matrix.TransformationMatrix3x3, 
+    shader: MVPColourShader, x: Int32, y: Int32, 
+    width: Int32, height: Int32, 
+    colour: Colour.ColourRGB=Colour.ColourUtils.black())
+  {
+    const model = WebGL.rectangleModel(x, y, width, height);
+    shader.use();
+    shader.setColourFromColourRGB(colour);
+    shader.setMvp(vp.multiplyCopy(model));
+    Shapes.Quad.draw();
+  }
+  static enableScissor(x: Int32, y: Int32, width: Int32, height: Int32){
+    this.gl?.enable(this.gl.SCISSOR_TEST);
+    this.gl?.scissor(x, this.canvas!.clientHeight-(y+height), width, height);
+  }
+  static enableScissorRect(rect: Interface.InterfaceElement.Rect){
+    //to test
+    const gl = this.gl!;
+    gl.enable(gl.SCISSOR_TEST);
+    const h = rect.getHeight();
+    const w = rect.getWidth();
+    gl.scissor(rect.left, this.canvas!.clientHeight-(rect.bot+h), w, h);
+  }
+  static disableScissor(){
+    this.gl?.disable(this.gl.SCISSOR_TEST);
+  }
 
-  //static drawBasicModel(tm: Matrix.TransformationMatrix3x3): BasicModelItem[]{
+  static setCursor(cursor: string){
+    if(WebGL.canvas != undefined){
+      WebGL.canvas.style.cursor = cursor;
+    }
+  }
 
-  //}
+  static enableBlend(){
+    const gl = this.gl!;
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  }
+
+  static disableBlend(){
+    const gl = this.gl!;
+    gl.disable(gl.BLEND);
+  }
 }
 
 
 //can only draw rects
 export class BasicModel{
   static colour_shader: Shader.MVPColourProgram;
-
 
   static init(){
     this.colour_shader = new Shader.MVPColourProgram();
@@ -81,6 +136,11 @@ export class BasicModel{
   addPart(part: BasicModelItem2D){
     this.parts.push(part);
   }
+  colourAll(colour: Colour.ColourRGB){
+    for(const part of this.parts){
+      part.colour = colour;
+    }
+  }
   draw(p: Matrix.TransformationMatrix3x3){
     const shader = BasicModel.colour_shader;
     shader.use();
@@ -89,6 +149,16 @@ export class BasicModel{
       shader.setColour(model.colour.red, model.colour.green, model.colour.blue);
       Shapes.Quad.drawRelative();
     }
+  }
+  static drawItem(vp: Matrix.TransformationMatrix3x3, item: BasicModelItem2D){
+    const shader = BasicModel.colour_shader;
+    shader.use();
+    shader.setColour(item.colour.red, item.colour.green, item.colour.blue);
+    shader.setMvp(vp.multiplyCopy(item.transformation));
+    Shapes.Quad.draw();
+  }
+  static defaultItem(): BasicModelItem2D{
+    return {colour: Colour.ColourUtils.white(), transformation: Matrix.TransformationMatrix3x3.identity()};
   }
 }
 
@@ -166,28 +236,35 @@ export class FontLoader{
     this.to_load = [];
     this.finished_loading = 0;
   }
-  addFont(name: string){
+  addFont(name: string): boolean{
+    if(this.loading) return false;
     const font = new Texture.CustomFont(name);
     this.fonts.set(name, font);
+    return true;
   }
   loadFonts(onAllLoaded: () => void) {
     function finishLoading(fl: FontLoader){
-      if(fl.finished_loading == fl.to_load.length){
+      if(fl.finished_loading >= fl.to_load.length){
         console.log("end loading");
         onAllLoaded();
         fl.loading = false;
       }
+      console.log(fl.finished_loading);
     }
     if(!this.loading){
-      console.log("start loading fonts ")
+      console.log("start loading fonts");
       this.loading = true;
       this.to_load = [];
       for(const [name, font] of this.fonts){
         this.to_load.push(font);
       }
       console.log(this.to_load);
+      if(this.to_load.length == 0){
+        finishLoading(this);
+      }
 
       for(const font of this.to_load){
+        console.log(font);
         font.load(() => {
           this.loaded++;
           this.finished_loading++;
@@ -202,7 +279,6 @@ export class FontLoader{
       }
     }
   }
-
   getFont(name: string): Texture.CustomFont | undefined{
     return this.fonts.get(name);
   }
@@ -247,6 +323,7 @@ export class TextDrawer{
   }
   drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float){
     if(this.font){
+      //console.log(this.font);
       const gl = WebGL.gl!;
       this.sprite_sheet_shader.use();
       this.font.active(1);
@@ -265,7 +342,7 @@ export class TextDrawer{
       }
       gl.disable(gl.BLEND);
     }else{
-      throw "TextDrawer: No font set";
+      console.log("TextDrawer: No font set");
     }
   }
   drawTextModel(mat: Matrix.TransformationMatrix3x3, text: string, size: Float){
@@ -310,8 +387,12 @@ export class TextDrawer{
       }
       gl.disable(gl.BLEND);
     }else{
-      throw "TextDrawer: No font set";
+      console.log("TextDrawer: No font set");
     }
+  }
+  //expects that all characters are of same width
+  getTextWidth(text: string, size: Float): Float{
+    return text.length*size;
   }
 }
 

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import * as Card from './card'
-import * as Grid from './../grid'
+import * as Grid from '../ResourceSim/grid'
 
 test('list tests', () => {
   //const list = new Card.

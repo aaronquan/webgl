@@ -1,6 +1,20 @@
-import Transform2d from './../Source/transform2d.vert?raw';
 import * as Matrix from './../../../Matrix/matrix';
 import * as Shader from './../../shader';
+import * as WebGL from './../../../globals';
+
+const Transform2d = `attribute vec2 position;
+
+uniform mat3 u_matrix;
+
+varying vec2 v_position;
+
+void main(){
+  vec2 position = (u_matrix*vec3(position, 1)).xy;
+
+  gl_Position = vec4(position, 1.0, 1.0);
+
+  v_position = position;
+}`;
 
 export class Transform2dVertexShader{
   static shader?: Shader.VertexShader;
@@ -20,11 +34,10 @@ export function Transform2dShaderProgramMix<TBase extends Shader.CustomShaderPro
     private declare matrix_uniform_location: WebGLUniformLocation | null;
     protected override setupVertex(){
       this.vertex_name = 'Transform2dShader';
-      if(Transform2dVertexShader.shader){
-        this.program.addVertex(Transform2dVertexShader.shader)
-      }else{
-        throw new Error(`${this.vertex_name} not loaded`);
+      if(!Transform2dVertexShader.shader){
+        Transform2dVertexShader.load();
       }
+      this.program.addVertex(Transform2dVertexShader.shader!);
     }
     protected override addVertexAttributeLocations(): void{
       this.position_attribute_location = this.program.getAttributeLocation('position');

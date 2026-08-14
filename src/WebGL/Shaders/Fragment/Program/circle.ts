@@ -1,5 +1,25 @@
-import Circle from './../Source/circle.frag?raw';
 import * as Shader from './../../shader';
+import * as WebGL from './../../../globals';
+
+const Circle = `precision mediump float;
+
+varying vec2 v_position;
+varying vec2 v_relative;
+
+uniform vec2 u_centre;
+uniform float u_radius;
+uniform vec3 u_circle_colour; //colour
+uniform vec3 u_background_colour; //colour
+
+void main(){
+  vec2 middle = vec2(u_centre);
+
+  float circle = step(u_radius, distance(middle, v_relative));
+
+  vec3 col = circle*u_background_colour + (1.0-circle)*u_circle_colour;
+  
+  gl_FragColor = vec4(col, 1.0);
+}`;
 
 export class CircleFragmentShader{
   static shader?: Shader.FragmentShader;
@@ -21,11 +41,10 @@ export function CircleShaderProgramMix<TBase extends Shader.CustomShaderPrograma
     private declare background_colour_uniform_location: WebGLUniformLocation | null;
     protected override setupFragment(){
       this.fragment_name = 'CircleShader';
-      if(CircleFragmentShader.shader){
-        this.program.addFragment(CircleFragmentShader.shader)
-      }else{
-        throw new Error(`${this.fragment_name} not loaded`);
+      if(!CircleFragmentShader.shader){
+        CircleFragmentShader.load();
       }
+      this.program.addFragment(CircleFragmentShader.shader!);
     }
     protected override addFragmentUniformLocations(): void{
       this.centre_uniform_location = this.program.getUniformLocation('u_centre');
@@ -39,11 +58,17 @@ export function CircleShaderProgramMix<TBase extends Shader.CustomShaderPrograma
     setRadius(a: GLfloat){
       this.program.setFloat(this.radius_uniform_location!, a);
     }
-    setCircle_colour(a: GLfloat, b: GLfloat, c: GLfloat){
+    setCircleColour(a: GLfloat, b: GLfloat, c: GLfloat){
       this.program.setFloat3(this.circle_colour_uniform_location!, a, b, c);
     }
-    setBackground_colour(a: GLfloat, b: GLfloat, c: GLfloat){
+    setCircleColourFromColourRGB(colour: WebGL.Colour.ColourRGB){
+      this.program.setFloat3(this.circle_colour_uniform_location!, colour.red, colour.green, colour.blue);
+    }
+    setBackgroundColour(a: GLfloat, b: GLfloat, c: GLfloat){
       this.program.setFloat3(this.background_colour_uniform_location!, a, b, c);
+    }
+    setBackgroundColourFromColourRGB(colour: WebGL.Colour.ColourRGB){
+      this.program.setFloat3(this.background_colour_uniform_location!, colour.red, colour.green, colour.blue);
     }
   }
 }

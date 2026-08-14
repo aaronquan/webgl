@@ -5,18 +5,31 @@ import * as CustomShader from './WebGL/Shaders/custom';
 import * as Matrix from "./WebGL/Matrix/matrix";
 
 import * as Mixin from './utils/mixin';
-import * as App from './App/app';
-import * as Grid from './App/grid_app';
+import * as App from './WebGL/app';
+import * as Grid from './App/ResourceSim/grid_app';
 import * as WebGLGlobals from './WebGL/globals';
+
+import { newPuzzleApp } from './App/puzzle_box/app';
 
 import * as Water from './App/water/water'
 import * as Card from "./App/card/card";
+import { newITApp } from './App/interface_testing/it_app';
+import * as ResourceApp from "./App/ResourceSim/resource_app";
 //import * as CustomShaders from './shaders/custom';
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
 
-canvas.width = 900;
-canvas.height = 900;
+const overlay: HTMLDivElement = document.getElementById("overlay") as HTMLDivElement;
+
+overlay.style.position = "absolute";
+overlay.style.left = "50%";
+overlay.style.top = "50%";
+overlay.style.transform = "translate(-50%, -50%)";
+overlay.style.color = "white";
+overlay.textContent = "Loading";
+
+canvas.width = window.innerWidth; // record this! TODO important for consistant resizing
+canvas.height = window.innerHeight;
 
 //console.log(txt.);
 //const gl: WebGL2RenderingContext = canvas.getContext("webgl2")!;
@@ -27,24 +40,34 @@ const gl = WebGL.gl;
 
 //const engine = new App.MyEngine();
 const engine = new Grid.WallEngine();
+engine.addOverlayElement(overlay);
 //const renderer = new App.MyRenderer();
 const renderer = new Grid.WallRenderer(canvas.width, canvas.height);
-
+renderer.addOverlayElement(overlay);
 
 
 const water_engine = new Water.WaterEngine();
 const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
 
-const card_engine = new Card.CardEngine();
+const card_engine = new Card.CardEngine(canvas.width, canvas.height);
 const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
 
 //const app = new App.App(card_engine, card_renderer);
-const app = new App.App(engine, renderer);
+//const app = new App.App(engine, renderer);
+//const app = newPuzzleApp(canvas.width, canvas.height);
+//const app = newITApp(canvas.width, canvas.height);
+const app = ResourceApp.newApp(canvas.width, canvas.height);
 
 app.loadResources(() => {
   console.log("running app");
   app.initApp();
-  
+  engine.onFinishLoading();
+});
+
+window.addEventListener("resize", (e: Event) => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  app.resize(canvas.width, canvas.height, canvas);
 });
 
 

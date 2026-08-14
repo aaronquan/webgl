@@ -1,6 +1,11 @@
-import * as Matrix from "../WebGL/Matrix/matrix";
-import * as ArrayUtils from "../utils/array";
+import * as WebGL from "./../../WebGL/globals"
+//import * as Matrix from "../../WebGL/Matrix/matrix";
+import * as ArrayUtils from "../../utils/array";
+import * as Node from "./nodes";
 import * as PQ from "@datastructures-js/priority-queue"
+
+import Matrix = WebGL.Matrix;
+import Rect = WebGL.Interface.InterfaceElement.Rect;
 
 type Int32 = number;
 type Float = number;
@@ -278,8 +283,6 @@ export class DirectionUtil{
     if(rads === 0){
       return TurnDirectionEnum.Straight;
     }
-    //const diff = Math.abs()
-    
     return rads < Math.PI ? TurnDirectionEnum.AntiClockwise : TurnDirectionEnum.Clockwise;
   }
   
@@ -288,22 +291,6 @@ export class DirectionUtil{
       return dir2 == DirectionEnum.Left || dir2 == DirectionEnum.Right;
     }
     return dir2 == DirectionEnum.Up || dir2 == DirectionEnum.Down;
-  }
-  static setActiveDirection(active_directions: ActiveDirections, value: boolean, direction: GridDirection){
-    switch(direction){
-      case DirectionEnum.Left:
-        active_directions.left = value;
-        break;
-      case DirectionEnum.Down:
-        active_directions.down = value;
-        break;
-      case DirectionEnum.Right:
-        active_directions.right = value;
-        break;
-      case DirectionEnum.Up:
-        active_directions.up = value;
-        break;
-    }
   }
   static opposite(direction: GridDirection): GridDirection{
     switch(direction){
@@ -359,6 +346,15 @@ export class DirectionUtil{
     }
     return dirs;
   }
+  static fromFloatsInGridDecimal(x: Float, y: Float): GridDirection {
+    if(x < 0) x = 1 + x;
+    if(y < 0) y = 1 + y;
+    const diag = 1 - x < y;
+    if(x > y){
+      return diag ? DirectionEnum.Right : DirectionEnum.Up;
+    }
+    return diag ? DirectionEnum.Down : DirectionEnum.Left;
+  }
   static toString(dir: GridDirection): string{
     switch(dir){
       case DirectionEnum.Down:
@@ -371,6 +367,37 @@ export class DirectionUtil{
         return "Right";
     }
     return "";
+  }
+  static blankActiveDirections(): ActiveDirections{
+    return {left: false, up: false, right: false, down: false};
+  }
+  static setActiveDirection(active_directions: ActiveDirections, value: boolean, direction: GridDirection){
+    switch(direction){
+      case DirectionEnum.Left:
+        active_directions.left = value;
+        break;
+      case DirectionEnum.Down:
+        active_directions.down = value;
+        break;
+      case DirectionEnum.Right:
+        active_directions.right = value;
+        break;
+      case DirectionEnum.Up:
+        active_directions.up = value;
+        break;
+    }
+  }
+  static isActiveDirection(active_directions: ActiveDirections, direction:GridDirection): boolean{
+    switch(direction){
+      case DirectionEnum.Left:
+        return active_directions.left;
+      case DirectionEnum.Down:
+        return active_directions.down;
+      case DirectionEnum.Right:
+        return active_directions.right;
+      case DirectionEnum.Up:
+        return active_directions.up;
+    }
   }
   //static isSameDirection(dir)
 }
@@ -436,13 +463,13 @@ export class TrackPart{
 
 
 export class RectGrid{
-  width: Int32;
-  height: Int32;
+  width: Int32; // cells across
+  height: Int32; // cells down
   size: number;
 
   half_size: number;
 
-  pixel_width: number;
+  pixel_width: number; // 
   pixel_height: number;
 
   x: number;
@@ -484,10 +511,15 @@ export class RectGrid{
     model.multiply(Matrix.TransformationMatrix3x3.scale(this.size, this.size));
     return model;
   }
+  drawLines(){ //todo
+    for(let y = 0; y < this.height; y++){
+
+    }
+  }
 }
 
 export const TileStateEnum = {
-  Nothing: 0, Path: 1, Highlight: 2
+  Nothing: 0, Path: 1, Highlight: 2, Preview: 3
 } as const;
 
 export type TileState = (typeof TileStateEnum)[keyof typeof TileStateEnum];
@@ -503,14 +535,25 @@ export class WallTile{
   right: TileState;
   bottom: TileState;
   is_key: boolean;
+  node_id: Int32 | undefined;
   is_selected: boolean;
-  constructor(){
+  is_preview: boolean;
+  x: Int32;
+  y: Int32;
+  key_node: Node.KeyNode | undefined;
+  constructor(x: Int32=0, y: Int32=0){
     this.left = TileStateEnum.Nothing;
     this.bottom = TileStateEnum.Nothing;
     this.right = TileStateEnum.Nothing;
     this.top = TileStateEnum.Nothing;
     this.is_key = false;
     this.is_selected = false;
+    this.is_preview = false;
+    this.x = x;
+    this.y = y;
+  }
+  static emptyTile(ts: TileState): boolean{
+    return ts == TileStateEnum.Nothing || ts == TileStateEnum.Preview;
   }
   /* no longer a thing
   setDirection(direction: GridDirection, value: boolean){
@@ -529,6 +572,99 @@ export class WallTile{
         break;
     }
   }*/
+
+  isClear(): boolean{
+    return WallTile.emptyTile(this.left) && 
+    WallTile.emptyTile(this.bottom) &&
+    WallTile.emptyTile(this.right) &&
+    WallTile.emptyTile(this.top) && !this.is_key;
+  }
+  clear(){
+    this.left = TileStateEnum.Nothing;
+    this.bottom = TileStateEnum.Nothing;
+    this.right = TileStateEnum.Nothing;
+    this.top = TileStateEnum.Nothing;
+    this.is_key = false;
+    this.is_selected = false;
+    this.key_node = undefined;
+  }
+  getDirections(): GridDirection[]{
+    const dirs: GridDirection[] = [];
+    if(this.left !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Left);
+    }
+    if(this.top !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Up);
+    }
+    if(this.right !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Right);
+    }
+    if(this.bottom !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Down);
+    }
+    return dirs;
+  }
+  getDirectionsOtherThan(not_dir: GridDirection): GridDirection[]{
+    const dirs: GridDirection[] = [];
+    if(not_dir !== DirectionEnum.Left && this.left !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Left);
+    }
+    if(not_dir !== DirectionEnum.Up && this.top !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Up);
+    }
+    if(not_dir !== DirectionEnum.Right && this.right !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Right);
+    }
+    if(not_dir !== DirectionEnum.Down && this.bottom !== TileStateEnum.Nothing){
+      dirs.push(DirectionEnum.Down);
+    }
+    return dirs;
+  }
+  getSideState(side: GridDirection): TileState{
+    switch(side){
+      case DirectionEnum.Left:
+        return this.left;
+      case DirectionEnum.Down:
+        return this.bottom;
+      case DirectionEnum.Right:
+        return this.right;
+      case DirectionEnum.Up:
+        return this.top;
+    }
+    return TileStateEnum.Nothing;
+  }
+  setNodeId(id: Int32){
+    this.is_key = true;
+    this.node_id = id;
+  }
+  clearKey(){
+    this.is_key = false;
+    this.node_id = undefined;
+  }
+  clearNode(){
+    this.is_key = false;
+    this.node_id = undefined;
+    this.is_selected = false;
+    this.left = TileStateEnum.Nothing;
+    this.top = TileStateEnum.Nothing;
+    this.bottom = TileStateEnum.Nothing;
+    this.right = TileStateEnum.Nothing;
+  }
+  clearHighlights(){
+    if(this.left == TileStateEnum.Highlight){
+      this.left = TileStateEnum.Path;
+    }
+    if(this.top == TileStateEnum.Highlight){
+      this.top = TileStateEnum.Path;
+    }
+    if(this.right == TileStateEnum.Highlight){
+      this.right = TileStateEnum.Path;
+    }
+    if(this.bottom == TileStateEnum.Highlight){
+      this.bottom = TileStateEnum.Path;
+    }
+    this.is_selected = false;
+  }
   setTileActiveDirection(active: ActiveDirections, value: TileState){
     if(active.left){
       this.left = value;
@@ -559,22 +695,87 @@ export class WallTile{
         break;
     }
   }
+  static tileStateIsPath(state: TileState): boolean{
+    return state == TileStateEnum.Highlight || state == TileStateEnum.Path;
+  }
+  directionHasPath(dir: GridDirection): boolean{
+    switch(dir){
+      case DirectionEnum.Left:
+        return WallTile.tileStateIsPath(this.left);
+      case DirectionEnum.Up:
+        return WallTile.tileStateIsPath(this.top);
+      case DirectionEnum.Right:
+        return WallTile.tileStateIsPath(this.right);
+      case DirectionEnum.Down:
+        return WallTile.tileStateIsPath(this.bottom);
+    }
+  }
   randomise(){
     this.left = randomTileState();
     this.right = randomTileState();
     this.bottom = randomTileState();
     this.top = randomTileState();
   }
+  isKeyNode(): boolean{
+    return this.node_id != undefined || this.key_node != undefined;
+  }
+  isSerialisable(): boolean{
+    return (this.left != TileStateEnum.Nothing ||
+    this.bottom != TileStateEnum.Nothing ||
+    this.right != TileStateEnum.Nothing ||
+    this.top != TileStateEnum.Nothing)
+  }
+  serialise(): string{
+    return `${this.x},${this.y},${this.left.toString()},${this.top.toString()},${this.right.toString()},${this.bottom.toString()}`;
+  }
+  deserialise(data: string){
+    const sp = data.split(",");
+    this.x = parseInt(sp[0]);
+    this.y = parseInt(sp[1]);
+    this.left = parseInt(sp[2]) as TileState;
+    this.top = parseInt(sp[3]) as TileState;
+    this.right = parseInt(sp[4]) as TileState;
+    this.bottom = parseInt(sp[5]) as TileState;
+  }
 }
 
 export class WallGrid{
-  width: number;
-  height: number;
+  width: Int32; //num squares across
+  height: Int32; // num squares down
   grid: WallTile[][];
-  constructor(w: number, h: number){
+  constructor(w: Int32, h: Int32){
     this.width = w;
     this.height = h;
     this.grid = Array.from({length: h}, () => Array.from({length: w}, () => new WallTile()));
+  }
+  clear(){
+    for(let x = 0; x < this.width; x++){
+      for(let y = 0; y < this.height; y++){
+        this.grid[y][x].clear();
+      }
+    }
+  }
+  setSelected(x: Int32, y: Int32, select: boolean){
+    this.grid[y][x].is_selected = select;
+  }
+  setNodeId(x: Int32, y: Int32, id: Int32){
+    this.grid[y][x].setNodeId(id);
+  }
+  getNodeId(x: Int32, y: Int32): Int32 | undefined{
+    return this.grid[y][x].node_id;
+  }
+  clearNode(x: Int32, y: Int32){
+    this.grid[y][x].clearNode();
+  }
+  setCellKeyNode(x: Int32, y: Int32, val: boolean){
+    this.grid[y][x].is_key = val;
+  }
+  getTile(x: Int32, y: Int32): WallTile | undefined{
+    if(!this.isInside(x, y)) return undefined;
+    return this.grid[y][x];
+  }
+  getTileFromPosition(pos: GridPosition): WallTile | undefined{
+    return this.getTile(pos.x, pos.y);
   }
   randomise(){
     for(let y = 0; y < this.height; y++){
@@ -583,7 +784,7 @@ export class WallGrid{
       }
     }
   }
-  isInside(x: number, y: number): boolean{
+  isInside(x: Int32, y: Int32): boolean{
     return x >= 0 && x < this.width && y >= 0 && y < this.height;
   }
   setCellState(x: Int32, y: Int32, direction: GridDirection, state: TileState){
@@ -671,6 +872,8 @@ export class WallGrid{
     }
     return undefined;
   }
+
+
 }
 
 type PositionsAtDistance = {
@@ -688,8 +891,14 @@ export class GridAlgorithms{
   private static distanceQueue = new PQ.PriorityQueue((a:GridEucildianCompare,b:GridEucildianCompare) => a.distance_squared-b.distance_squared);
   private static distancesSeen: number[] = [];
 
-  static pathToTrack(path: GridPosition[]): Track{
+  static pathToTrack(path: GridPosition[]): Track | undefined{
     const part = new TrackPart();
+    if(path.length <= 1){
+      //
+      console.log("not enough positions for track");
+      return undefined;
+      //return new Track(part, new GridPosition(0,0));
+    }
     let direction = DirectionUtil.directionsBetween2Points(path[0], path[1])[0];
     let dist = 1;
     for(let i = 2; i < path.length; i++){
@@ -702,6 +911,7 @@ export class GridAlgorithms{
         dist = 1;
       }
     }
+    part.addMove(dist, direction);
     const track = new Track(part, path[0]);
     return track;
   }
@@ -850,4 +1060,142 @@ export class GridAlgorithms{
     }
     return positions;
   }
+}
+
+export class ChunkHolder{
+  chunks: Map<Int32, Map<Int32, Chunk>>;
+  constructor(){
+    this.chunks = new Map();
+  }
+  clearChunks(){
+    for(const [_, chunk_map] of this.chunks){
+      for(const [_, chunk] of chunk_map){
+        chunk.clear();
+        //for(const tile of chunk.tiles){
+        //  tile.clear();
+        //}
+      }
+    }
+  }
+  clearHighlights(){
+    for(const [_, chunk_map] of this.chunks){
+      for(const [_, chunk] of chunk_map){
+        chunk.clearHighlights();
+      }
+    }
+  }
+  getTileFromPosition(position: GridPosition): WallTile | undefined{
+    return this.getTile(position.x, position.y);
+  }
+  getTile(x: Int32, y: Int32): WallTile | undefined{
+    const y_chunks = this.chunks.get(Math.floor(y/Chunk.height));
+    if(y_chunks != undefined){
+      const chunk = y_chunks.get(Math.floor(x/Chunk.width));
+      if(chunk != undefined){
+        const cx = x < 0 ? -(x % Chunk.width) : x % Chunk.width;
+        const cy = y < 0 ? -(y % Chunk.height) : y % Chunk.height;
+        return chunk.getTile(cx, cy);
+      }
+    }
+    return undefined;
+  }
+
+  requestChunkRange(min_x: Float, max_x: Float, min_y: Float, max_y: Float){
+    //create new chunks for now
+    const sy = Math.floor(min_y/Chunk.height);
+    const ey = Math.floor(max_y/Chunk.height);
+
+    const sx = Math.floor(min_x/Chunk.width);
+    const ex = Math.floor(max_x/Chunk.width);
+
+    for(let y = sy; y <= ey; y++){
+      if(!this.chunks.has(y)){
+        this.chunks.set(y, new Map());
+      }
+      const y_chunks = this.chunks.get(y)!;
+      for(let x = sx; x <= ex; x++){
+        if(!y_chunks.has(x)){
+          y_chunks.set(x, new Chunk(x, y));
+        }
+      }
+    }
+  }
+
+  requestChunkRangeRect(rect: Rect){
+    this.requestChunkRange(rect.left, rect.right, rect.bot, rect.top);
+  }
+
+
+  //tile is x, y, left, top, right, bottom
+  serialise(): TileSerialise{
+    let ser_string = "";
+    let number_of_tiles = 0;
+    for(const [_, chunk_map] of this.chunks){
+      for(const [_, chunk] of chunk_map){
+        for(const tile of chunk.tiles){
+          if(tile.isSerialisable()){
+            ser_string += `${tile.serialise()}\n`;
+            number_of_tiles++;
+          }
+        }
+      }
+    }
+    return {serialised_string: ser_string, number_of_tiles};
+  }
+  deserialise(tile_string: string){
+    const sp = tile_string.split(",");
+    const x = parseInt(sp[0]);
+    const y = parseInt(sp[1]);
+    const tile = this.getTile(x, y);
+    if(tile != undefined){
+      tile.deserialise(tile_string);
+    }
+  }
+}
+
+type TileSerialise = {
+  number_of_tiles: Int32,
+  serialised_string: string
+}
+
+export class Chunk{
+  static width = 10;
+  static height = 10;
+  static key_limit = Chunk.width*Chunk.height;
+  x: Int32;
+  y: Int32;
+  tiles: WallTile[];
+  constructor(x: Int32, y: Int32){
+    this.x = x;
+    this.y = y;
+    this.tiles = Array.from({length: Chunk.key_limit}, (_, i) => {
+      const tx = x*Chunk.width + (i%Chunk.width);
+      const ty = y*Chunk.height + Math.floor(i/Chunk.width);
+      return new WallTile(tx, ty);
+    });
+  }
+  clear(){
+    for(const tile of this.tiles){
+      tile.clear();
+    }
+  }
+  getTileFromPosition(position: GridPosition): WallTile | undefined{
+    return this.getTile(position.x, position.y);
+  }
+  getTile(x: Int32, y: Int32): WallTile | undefined{
+    const key = this.getKey(x, y);
+    if(key >= 0 && key < Chunk.key_limit){
+      return this.tiles[key];
+    }
+    return undefined;
+  }
+  getKey(x: Int32, y: Int32): Int32{
+    return x + y*Chunk.width;
+  }
+  clearHighlights(){
+    for(const tile of this.tiles){
+      tile.clearHighlights();
+    }
+  }
+
 }
