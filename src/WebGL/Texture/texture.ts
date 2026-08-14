@@ -3,7 +3,21 @@ import * as File from "./../Util/file"
 import * as Shader from "./../Shaders/custom"
 
 type Int32 = number;
-export class Texture{
+
+interface GenericTexture{
+  load: () => void;
+  active: (id: Int32) => void;
+}
+
+//canvas texture
+export class CanvasTexture implements GenericTexture{
+  
+}
+
+}
+
+//URL texture
+export class Texture implements GenericTexture{
     static setup(){
       //not needed? should be set after each texture load?
       /*
