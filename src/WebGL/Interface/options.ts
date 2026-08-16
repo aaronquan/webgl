@@ -209,6 +209,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   }
   removeOption(op: string): boolean{
     //todo: returns if option was removed;
+    return false;
   }
   setTheme(theme: Theme.InterfaceTheme){
     this.background_colour = theme.secondary_background;
@@ -221,7 +222,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   openHeight(): Int32{
     return this.height*this.options.length;
   }
-  isInside(point: WebGL.Matrix.Point2D){
+  isInside(point: WebGL.Geometry.Base.Point2D){
     if(this.isOpen()){
       return this.isInsideOpened(point);
     }
@@ -242,7 +243,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   optionIndexFromSelectedIndex(position: Int32): Int32{
     return position == 0 ? this.selected : (position <= this.selected ? position-1 : position);
   }
-  onMouseDown(point: WebGL.Matrix.Point2D): boolean{
+  onMouseDown(point: WebGL.Geometry.Base.Point2D): boolean{
     if(this.isOpen()){
       if(this.isHovered()){
         this.selected = this.getOptionIndexFromY(point.y);
@@ -272,7 +273,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
   isClosed(){
     return this.state == DropdownStateEnum.Closed || this.state == DropdownStateEnum.ClosedHover;
   }
-  private setStateFromMousePoint(point: WebGL.Matrix.Point2D){
+  private setStateFromMousePoint(point: WebGL.Geometry.Base.Point2D){
     if(this.isInside(point)){
       if(this.isOpen()){
         this.state = DropdownStateEnum.OpenHover;
@@ -292,7 +293,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
       this.position_hovered = -1;
     }
   }
-  onMouseOver(point: WebGL.Matrix.Point2D){
+  onMouseOver(point: WebGL.Geometry.Base.Point2D){
     this.setStateFromMousePoint(point);
 
   }

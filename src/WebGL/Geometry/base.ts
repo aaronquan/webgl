@@ -12,7 +12,7 @@ interface Equation{
 export class Point2D{
   x: Float;
   y: Float;
-  constructor(x: Float, y: Float){
+  constructor(x: Float=0, y: Float=0){
     this.x = x;
     this.y = y;
   }

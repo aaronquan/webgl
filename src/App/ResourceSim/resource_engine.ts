@@ -15,7 +15,7 @@ import Button = WebGL.Interface.Button;
 import Options = WebGL.Interface.Options;
 import Theme = WebGL.Interface.Theme;
 
-import Point = WebGL.Matrix.Point2D;
+import Point = WebGL.Geometry.Base.Point2D;
 import Mat3 = WebGL.Matrix.TransformationMatrix3x3;
 import Colour = WebGL.Colour;
 import Rect = WebGL.Interface.InterfaceElement.Rect;
@@ -44,7 +44,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
   screen_width: Int32;
   screen_height: Int32;
 
-  global_mouse_point: WebGL.Matrix.Point2D;
+  global_mouse_point: WebGL.Geometry.Base.Point2D;
 
   grid: Grid.WallGrid;
   rect_grid: Grid.RectGrid;
@@ -132,7 +132,7 @@ export class ResourceSimEngine extends WebGL.App.BaseEngine{
   }
   
   protected handleMouseMove(ev: MouseEvent){
-    const mouse_point = new WebGL.Matrix.Point2D(ev.clientX, ev.clientY);
+    const mouse_point = new WebGL.Geometry.Base.Point2D(ev.clientX, ev.clientY);
     this.global_mouse_point = mouse_point;
     this.side_interface.onMouseMove(mouse_point);
     const gp = this.main_game.getGridPoint(mouse_point);
@@ -718,13 +718,13 @@ class SimSideInterface{
     this.toggle_buttons.setTheme(theme);
     this.buttons.setTheme(theme);
   }
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: WebGL.Geometry.Base.Point2D){
     this.edit_options.onMouseOver(point);
     this.toggle_buttons.updateMouse(point);
     this.buttons.updateMouse(point);
     this.car_options.dropdown.onMouseOver(point);
   }
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: WebGL.Geometry.Base.Point2D){
     const selected_option = this.edit_options.onMouseDown(point);
     if(selected_option) return;
     const selected_car = this.car_options.dropdown.onMouseDown(point);

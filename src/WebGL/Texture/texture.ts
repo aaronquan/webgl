@@ -12,7 +12,7 @@ const EmptyFunction = () => {};
 
 
 interface GenericTexture{
-  load: () => void;
+  load: (onLoad: VoidFunction, onError: ErrorFunction) => void;
   active: (id: Int32) => boolean;
   isLoaded: () => boolean;
 }
@@ -28,7 +28,7 @@ export class CanvasTexture implements GenericTexture{
   setImageData(data: ImageData){
     this.img_data = data;
   }
-  load(){
+  load(onLoad: VoidFunction){
     const gl = WebGL.gl;
     if(gl != undefined && this.img_data != undefined && !this.is_loaded){
       this.texture = gl.createTexture();
@@ -37,6 +37,7 @@ export class CanvasTexture implements GenericTexture{
 
       this.img_data = undefined; // if bugged, comment out this line, texture might need data pointer
       this.is_loaded = true;
+      console.log("loaded");
     }
   }
   active(id: Int32): boolean{
@@ -147,10 +148,10 @@ export class Texture implements GenericTexture{
 }
 
 export class TextureCollection{
-  textures: Map<string, Texture>;
+  textures: Map<string, GenericTexture>;
   loaded: Int32;
   loading: boolean;
-  to_load: Texture[]; // active to loading for 
+  to_load: GenericTexture[]; // active to loading for 
   finished_loading: Int32;
   constructor(){
     this.textures = new Map();
@@ -162,16 +163,16 @@ export class TextureCollection{
   active(key: string, id: Int32): boolean{
     if(this.textures.has(key)){
       const tex = this.textures.get(key)!;
-      if(!tex.is_loaded) return false;
+      if(!tex.isLoaded()) return false;
       tex.active(id);
       return true;
     }
     return false;
   }
-  getTexture(key: string): Texture | undefined{
+  getTexture(key: string): GenericTexture | undefined{
     return this.textures.get(key);
   }
-  addTexture(key: string, texture: Texture){
+  addTexture(key: string, texture: GenericTexture){
     this.textures.set(key, texture);
   }
   load(onAllLoaded: VoidFunction=EmptyFunction){
@@ -187,18 +188,18 @@ export class TextureCollection{
       this.loading = true;
       this.to_load = [];
       for(const [name, tex] of this.textures){
-        if(!tex.is_loaded) this.to_load.push(tex);
+        if(!tex.isLoaded()) this.to_load.push(tex);
       }
 
       for(const tex of this.to_load){
         tex.load(() => {
           this.loaded++;
           this.finished_loading++;
-          console.log(`finished ${tex.url}`);
+          console.log(`finished ${name}`);
           finishLoading(this);
         },
         () => {
-          console.log(`error loading ${tex.url}`);
+          console.log(`error loading ${tex}`);
           this.finished_loading++;
           finishLoading(this);
         });

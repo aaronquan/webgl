@@ -29,7 +29,7 @@ import * as Consts from "./consts";
 //import * as TextInput from "../../Interface/text_input";
 
 
-interface Point extends WebGL.Interface.Button.Point{};
+//interface Point extends WebGL.Interface.Button.Point{};
 
 type Int32 = number;
 type Float = number;
@@ -733,7 +733,7 @@ export class WallEngine extends App.BaseEngine{
     this.test_text_box.onKeyDown(ev);
   }
   protected override handleMouseMove(ev: MouseEvent): void {
-    const true_mouse = new Matrix.Point2D(ev.offsetX, ev.offsetY);
+    const true_mouse = new WebGL.Geometry.Base.Point2D(ev.offsetX, ev.offsetY);
     this.true_mouse = true_mouse;
     const inv = this.view.copy();
     inv.invert();
