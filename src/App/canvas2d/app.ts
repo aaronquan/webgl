@@ -20,10 +20,22 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
     this.texture_renderer = new WebGL.Shader.MVPTextureProgram();
   }
   render(e: TestEngine){
+    const gl = WebGL.WebGL.gl!;
     //console.log(this.colour_shader);
-    WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 500, 10, 100, 100, WebGL.Colour.ColourUtils.blue());
+    //WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 10, -10, 100, 100, WebGL.Colour.ColourUtils.blue());
     //console.log("render");
     //console.log(e);
+    //this.colour_shader.use();
+    //this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
+    const model = WebGL.WebGL.rectangleModel(100, 100, 50, 50);
+    //this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
+    //WebGL.Shapes.Quad.draw();
+
+    this.saved_textures.active("test", 1);
+    this.texture_renderer.use();
+    this.texture_renderer.setTextureId(1);
+    this.texture_renderer.setMvp(this.orthographic.multiplyCopy(model));
+    WebGL.Shapes.Quad.draw();
   }
 
 }
@@ -38,23 +50,32 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
   console.log(body);
   const gl_canvas = document.createElement("canvas");
   body.appendChild(gl_canvas);
-  WebGL.WebGL.initialise(gl_canvas);
   gl_canvas.width = width*0.5;
   gl_canvas.height = height;
   gl_canvas.style.position = "absolute";
   gl_canvas.style.left = "50%";
   gl_canvas.style.top = "0";
+  WebGL.WebGL.initialise(gl_canvas);
 
+  
   const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, 50, 50);
   ctx.fillStyle = 'red';
-  ctx.fillRect(10, 10, 10, 10);
-  const id = ctx.getImageData(0, 0, 20, 20);
-
+  ctx.fillRect(10, 10, 20, 20);
+  ctx.fillStyle = "blue";
+  ctx.fillRect(0, 0, 5, 5);
+  const id = ctx.getImageData(0, 0, 50, 50);
+  console.log(id);
+  
   const tex = new WebGL.Texture.CanvasTexture();
   tex.setImageData(id);
   tex.load(() => {
-    console.log("loaded");
-  });
+    console.log("texture loaded");
+  },
+
+  );
+  
   const engine = new TestEngine();
   const renderer = new TestRenderer(gl_canvas.width, gl_canvas.height);
   renderer.saved_textures.addTexture("test", tex);
