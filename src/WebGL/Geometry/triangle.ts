@@ -42,6 +42,16 @@ export class Triangle{
       l3: new LineSegment2D(this.p3, this.p1)
     };
   }
-}
+  point1Angle(): Float{
+    //todo
+  }
+  point2Angle(): Float{
+    //todo
+  }
 
+  toDrawPointArray(): Point2D[]{
+    return [this.p1, this.p2, this.p3, this.p1];
+  }
+  
+}
 
