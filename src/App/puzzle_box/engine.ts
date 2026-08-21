@@ -1,6 +1,7 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Shape from "./shape";
 import { TetrisEngine } from "./tetris";
+import { BattleEngine } from "./grid_battle";
 
 type Int32 = number;
 type Float = number;
@@ -33,7 +34,7 @@ export class ShapeGridInterface{
     this.cell_size = size;
     this.grid = grid;
   }
-  isInside(point: WebGL.Matrix.Point2D): boolean{
+  isInside(point: WebGL.Geometry.Base.Point2D): boolean{
     const in_x = this.x < point.x && point.x < this.x+this.interfaceWidth();
     const in_y = this.y < point.y && point.y < this.y+this.interfaceHeight();
     return in_x && in_y;
@@ -44,18 +45,18 @@ export class ShapeGridInterface{
   interfaceHeight(): Int32{
     return this.cell_size*this.grid.height;
   }
-  getCoord(point: WebGL.Matrix.Point2D): Coord | undefined{
+  getCoord(point: WebGL.Geometry.Base.Point2D): Coord | undefined{
     if(!this.isInside(point)) return undefined;
     const x = Math.floor((point.x-this.x)/this.cell_size);
     const y = Math.floor((point.y-this.y)/this.cell_size);
     return {x, y};
   }
-  trueCoord(point: WebGL.Matrix.Point2D): WebGL.Matrix.Point2D | undefined{
-    return new WebGL.Matrix.Point2D((point.x-this.x)/this.cell_size, (point.y-this.y)/this.cell_size);
+  trueCoord(point: WebGL.Geometry.Base.Point2D): WebGL.Geometry.Base.Point2D | undefined{
+    return new WebGL.Geometry.Base.Point2D((point.x-this.x)/this.cell_size, (point.y-this.y)/this.cell_size);
   }
 }
 
-class ShapeIdGrid extends IdGrid{
+export class ShapeIdGrid extends IdGrid{
   isFree(x: Int32, y: Int32): boolean{
     return this.object_id[x+y*this.width] == undefined;
   }
@@ -155,7 +156,7 @@ export class ShapeLabel extends WebGL.Interface.InterfaceElement.InterfaceElemen
       if(this.onSelect) this.onSelect(this.shape);
     }
   }
-  onMouseOver(point: WebGL.Matrix.Point2D){
+  onMouseOver(point: WebGL.Geometry.Base.Point2D){
     this.is_hovered = this.isInside(point);
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram){
@@ -188,9 +189,9 @@ export class ShapeLabel extends WebGL.Interface.InterfaceElement.InterfaceElemen
   }
 }
 
-type LayoutPosition = WebGL.Matrix.Point2D;
+type LayoutPosition = WebGL.Geometry.Base.Point2D;
 
-class GridLayout{
+export class GridLayout{
   start_x: Int32;
   start_y: Int32;
   cell_width: Int32;
@@ -208,7 +209,7 @@ class GridLayout{
     this.layout_height = layout_height;
   }
   firstPosition(): LayoutPosition{
-    return new WebGL.Matrix.Point2D(this.start_x, this.start_y);
+    return new WebGL.Geometry.Base.Point2D(this.start_x, this.start_y);
   }
   next(position: LayoutPosition): LayoutPosition | undefined{
     let next_x = position.x + this.cell_width;
@@ -219,7 +220,7 @@ class GridLayout{
         return undefined;
       }
     }
-    return new WebGL.Matrix.Point2D(next_x, next_y);
+    return new WebGL.Geometry.Base.Point2D(next_x, next_y);
   }
 }
 type Coord = {
@@ -239,6 +240,9 @@ export class PuzzleInterface{
   setTetrisFunction(f: VoidFunction){
     this.buttons.buttons[1].onPressed = f;
   }
+  setBattleFunction(f: VoidFunction){
+    this.buttons.buttons[2].onPressed = f;
+  }
 
   private addButtons(){
     const puzzle_button = new Button.BasicButton(5, 600, 100, 15, 10);
@@ -247,12 +251,15 @@ export class PuzzleInterface{
     const tetris_button = new Button.BasicButton(5, 620, 100, 15, 10);
     tetris_button.text = "Tetris";
     this.buttons.addButton(tetris_button);
+    const battle_button = new Button.BasicButton(5, 640, 100, 15, 10);
+    battle_button.text = "Battle";
+    this.buttons.addButton(battle_button);
   }
 
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: WebGL.Geometry.Base.Point2D){
       this.buttons.updateMouse(point);
     }
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: WebGL.Geometry.Base.Point2D){
     this.buttons.mouseDown();
   }
   onMouseUp(){
@@ -265,14 +272,15 @@ export class PuzzleInterface{
 
 export const PuzzleAppletDisplayEnum = {
   Puzzle: 0,
-  Tetris: 1
+  Tetris: 1,
+  GridBattle: 2
 } as const;
 
 export type PuzzleAppletDisplay = (typeof PuzzleAppletDisplayEnum)[keyof typeof PuzzleAppletDisplayEnum];
 
 export class PuzzleEngine extends WebGL.App.BaseEngine{
   option_select: WebGL.Interface.Options.DropdownOptions;
-  mouse_point: WebGL.Matrix.Point2D | undefined;
+  mouse_point: WebGL.Geometry.Base.Point2D | undefined;
 
   my_shapes: Shape.GridShape[]; 
 
@@ -285,7 +293,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   interface_grid: ShapeGridInterface;
 
   hovered_grid_coord: Coord | undefined;
-  mouse_grid_point: WebGL.Matrix.Point2D | undefined;
+  mouse_grid_point: WebGL.Geometry.Base.Point2D | undefined;
 
   pieces_on_grid: Map<Int32, Shape.GridShapeInstance>;
 
@@ -294,10 +302,14 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
   tetris: TetrisEngine;
   interface: PuzzleInterface;
+  grid_battle: BattleEngine;
 
   applet_display: PuzzleAppletDisplay;
 
   time: Float;
+
+  latest_snapshot: ImageData | undefined;
+  canvas: HTMLCanvasElement | undefined;
 
   constructor(){
     super();
@@ -330,6 +342,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
     this.tetris = new TetrisEngine();
     this.interface = new PuzzleInterface();
+    this.grid_battle = new BattleEngine();
+
     this.applet_display = PuzzleAppletDisplayEnum.Tetris;
 
     this.interface.setPuzzleFunction(() => {
@@ -337,7 +351,13 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     })
     this.interface.setTetrisFunction(() => {
       this.applet_display = PuzzleAppletDisplayEnum.Tetris;
-    })
+    });
+    this.interface.setBattleFunction(() => {
+      this.applet_display = PuzzleAppletDisplayEnum.GridBattle;
+    });
+  }
+  addCanvas(c: HTMLCanvasElement){
+    this.canvas = c;
   }
   update(t: Float){
     const dt = t-this.time;
@@ -354,7 +374,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     return [one, two, l, t];
   }
 
-  getInstanceCoord(point: WebGL.Matrix.Point2D, instance: Shape.GridShapeInstance): Coord{
+  getInstanceCoord(point: WebGL.Geometry.Base.Point2D, instance: Shape.GridShapeInstance): Coord{
     const px = point.x - (instance.width*0.5 - 0.5);
     const py = point.y - (instance.height*0.5 - 0.5);
     const x = Math.floor(px);
@@ -393,14 +413,27 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     return this.grid.getId(this.hovered_grid_coord.x, this.hovered_grid_coord.y);
   }
 
+  snapshotCanvas(){
+    if(this.canvas == undefined){
+      console.log("Canvas is undefined");
+    }
+    
+  }
+
   override handleKeyDown(ev: KeyboardEvent){
     this.tetris.onKeyDown(ev);
+    switch(ev.key){
+      case "`":
+        //snapshot of screen to texture
+        //
+        break;
+    }
   };
   //to override
   override handleKeyUp(ev: KeyboardEvent){};
   //to override
   override handleMouseMove(ev: MouseEvent){
-    const point = new WebGL.Matrix.Point2D(ev.clientX, ev.clientY);
+    const point = new WebGL.Geometry.Base.Point2D(ev.clientX, ev.clientY);
     if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
       this.tetris.onMouseMove(point);
     }

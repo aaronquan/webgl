@@ -3,6 +3,7 @@ import * as PEngine from "./engine";
 import * as Shape from "./shape";
 import { PuzzleEngine } from "./engine";
 import type { TetrisEngine } from "./tetris";
+import {BattleEngine} from "./grid_battle";
 import * as Tetris from "./tetris";
 
 
@@ -43,6 +44,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
         break;
       case PEngine.PuzzleAppletDisplayEnum.Tetris:
         this.drawTetrisApp(engine.tetris);
+        break;
+      case PEngine.PuzzleAppletDisplayEnum.GridBattle:
+        this.drawBattle(engine.grid_battle);
         break;
     }
 
@@ -158,5 +162,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
         te.grid_interface.drawColourCoord(this.orthographic, this.colour_shader, coord, WebGL.Colour.ColourUtils.green());
       }
     }
+  }
+
+  drawBattle(be: BattleEngine){
+
   }
 }

@@ -1,16 +1,18 @@
 import * as WebGL from "./../globals";
 import * as Theme from "./theme";
 
+import Point = WebGL.Geometry.Base.Point2D;
+
 type Int32 = number;
 type Float = number;
 type VoidFunction = () => void;
 const EmptyFunction = () => {};
 
-export interface Point{
+/*export interface Point{
   x: Int32;
   y: Int32;
   equals:(p:Point) => boolean;
-}
+}*/
 
 export const ButtonStateEnum = {
   Off: 0,

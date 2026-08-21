@@ -207,13 +207,13 @@ export class TetrisEngine{
       this.rotateActivePiece()
     }
   }
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: WebGL.Geometry.Base.Point2D){
     this.play_button.onMouseMove(point);
   }
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: WebGL.Geometry.Base.Point2D){
     this.play_button.onMouseDown();
   }
-  onMouseUp(point: WebGL.Matrix.Point2D){
+  onMouseUp(point: WebGL.Geometry.Base.Point2D){
     this.play_button.onMouseUp();
   }
 

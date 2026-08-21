@@ -55,6 +55,12 @@ export class WebGL{
     }
   }
 
+  static noCanvasInitialise(w: Int32=200, h: Int32=200){
+    const offscreen = new OffscreenCanvas(w, h);
+    this.gl = offscreen.getContext("webgl2", {alpha: false});
+    
+  }
+
   static resetViewport(canvas: HTMLCanvasElement){
     this.gl!.viewport(0, 0, canvas.width, canvas.height);
   }

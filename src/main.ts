@@ -15,7 +15,11 @@ import * as Water from './App/water/water'
 import * as Card from "./App/card/card";
 import { newITApp } from './App/interface_testing/it_app';
 import * as ResourceApp from "./App/ResourceSim/resource_app";
+
+import * as Canvas2DApp from "./App/canvas2d/app";
 //import * as CustomShaders from './shaders/custom';
+
+const test_canvas2d = true;
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
 
@@ -31,111 +35,37 @@ overlay.textContent = "Loading";
 canvas.width = window.innerWidth; // record this! TODO important for consistant resizing
 canvas.height = window.innerHeight;
 
-//console.log(txt.);
-//const gl: WebGL2RenderingContext = canvas.getContext("webgl2")!;
-WebGL.initialise(canvas);
-
-const gl = WebGL.gl;
-
-
-//const engine = new App.MyEngine();
-const engine = new Grid.WallEngine();
-engine.addOverlayElement(overlay);
-//const renderer = new App.MyRenderer();
-const renderer = new Grid.WallRenderer(canvas.width, canvas.height);
-renderer.addOverlayElement(overlay);
-
-
-const water_engine = new Water.WaterEngine();
-const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
-
-const card_engine = new Card.CardEngine(canvas.width, canvas.height);
-const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
-
-//const app = new App.App(card_engine, card_renderer);
-//const app = new App.App(engine, renderer);
-//const app = newPuzzleApp(canvas.width, canvas.height);
-const app = newITApp(canvas.width, canvas.height);
-//const app = ResourceApp.newApp(canvas.width, canvas.height);
-
-app.loadResources(() => {
-  console.log("running app");
-  app.initApp();
-  engine.onFinishLoading();
-});
-
-window.addEventListener("resize", (e: Event) => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  app.resize(canvas.width, canvas.height, canvas);
-});
-
-
-if(gl){
-  //WebGLGlobals.loadTexture();
-  //app.addEvents();
-  //app.update();
-  //app.draw();
-
-  //water_engine.addEvents();
-  //water_renderer.render(water_engine);
-
+if(test_canvas2d){
+  Canvas2DApp.runCanvas2DApp(canvas);
 }else{
+  WebGL.initialise(canvas);
+  const gl = WebGL.gl;
 
+  //const engine = new App.MyEngine();
+  const engine = new Grid.WallEngine();
+  engine.addOverlayElement(overlay);
+  //const renderer = new App.MyRenderer();
+  const renderer = new Grid.WallRenderer(canvas.width, canvas.height);
+  renderer.addOverlayElement(overlay);
+
+
+  const water_engine = new Water.WaterEngine();
+  const water_renderer = new Water.WaterRenderer(canvas.width, canvas.height);
+
+  const card_engine = new Card.CardEngine(canvas.width, canvas.height);
+  const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
+  const app = ResourceApp.newApp(canvas.width, canvas.height);
+
+  app.loadResources(() => {
+    console.log("running app");
+    app.initApp();
+    engine.onFinishLoading();
+  });
+
+  window.addEventListener("resize", (e: Event) => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    app.resize(canvas.width, canvas.height, canvas);
+  });
 }
 
-/*
-function draw2(){
-  //const transformColour = new CustomShader.TransformColourProgram();
-  //const translateColour = new CustomShader.TranslateColourMixin();
-
-  const t = Date.now();
-
-  const matrix = Matrix.TransformationMatrix3x3.identity();
-  //matrix.rotate(0.5);
-  //const rot = Matrix.TransformationMatrix3x3.rotate(t/360);
-  //matrix.multiply(rot);
-  //const sc = Matrix.TransformationMatrix3x3.scale(1.0, 1.0);
-  //matrix.multiply(sc);
-
-  transformColour.use();
-  transformColour.setTransform(matrix);
-  transformColour.setColour(0.5, 0.8, 0.5);
-
-  Shapes.RightTriangle.draw();
-  requestAnimationFrame(draw2);
-}
-
-function drawScene(){
-
-  gl?.clear(gl.COLOR_BUFFER_BIT);
-
-  const transformColour = new CustomShader.TransformColourProgram();
-  const translateColour = new CustomShader.TranslateColourProgram();
-
-  const t = Date.now();
-
-  const matrix = Matrix.TransformationMatrix3x3.translate(Math.sin(t/400)/1.5, Math.cos(t/600)/3);
-  //matrix.rotate(0.5);
-  const rot = Matrix.TransformationMatrix3x3.rotate(t/360);
-  matrix.multiply(rot);
-  const sc = Matrix.TransformationMatrix3x3.scale(1.0, 1.0);
-  matrix.multiply(sc);
-
-  transformColour.use();
-  transformColour.setTransform(matrix);
-  transformColour.setColour(0.5, 0.8, 0.5);
-
-  //Shapes.RightTriangle.draw();
-  Shapes.RightTriangle.draw();
-  //Shapes.Quad.draw();
-
-  //program.use();
-  //program.setTranslate(-0.8, -0.8);
-  translateColour.use();
-  translateColour.setColour(0.4, 0.2, 0.5);
-  translateColour.setTranslate(-0.4, -0.9);
-
-  requestAnimationFrame(drawScene);
-}
-*/
