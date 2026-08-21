@@ -27,7 +27,7 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
     //console.log(e);
     //this.colour_shader.use();
     //this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
-    const model = WebGL.WebGL.rectangleModel(100, 100, 50, 50);
+    const model = WebGL.WebGL.rectangleModel(50, 50, 50, 50);
     //this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
     //WebGL.Shapes.Quad.draw();
 
@@ -35,7 +35,7 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
     this.texture_renderer.use();
     this.texture_renderer.setTextureId(1);
     this.texture_renderer.setMvp(this.orthographic.multiplyCopy(model));
-    WebGL.Shapes.Quad.draw();
+    WebGL.Shapes.Quad.drawRelative();
   }
 
 }
@@ -59,13 +59,17 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
 
   
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "white";
+  ctx.fillStyle = "grey";
   ctx.fillRect(0, 0, 50, 50);
   ctx.fillStyle = 'red';
-  ctx.fillRect(10, 10, 20, 20);
+  ctx.fillRect(10, 10, 50, 50);
   ctx.fillStyle = "blue";
-  ctx.fillRect(0, 0, 5, 5);
+  ctx.fillRect(40, 40, 5, 5);
   const id = ctx.getImageData(0, 0, 50, 50);
+
+  ctx.font = "20px serif";
+  ctx.fillText("a", 0, 15);
+
   console.log(id);
   
   const tex = new WebGL.Texture.CanvasTexture();

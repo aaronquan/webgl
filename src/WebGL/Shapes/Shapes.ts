@@ -55,6 +55,8 @@ export class Quad{
 
 
   //private static p = new 
+
+  //note: just draw cannot draw textures properly
   static draw(){
     if(!Quad.positionBuffer) Quad.setup();
     if(WebGL.gl){
