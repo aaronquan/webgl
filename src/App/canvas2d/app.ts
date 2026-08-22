@@ -13,11 +13,15 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
   saved_textures: WebGL.Texture.TextureCollection;
   texture_renderer: WebGL.Shader.MVPTextureProgram;
 
+  test_font: WebGL.Texture.Canvas2DFont;
+
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.saved_textures = new WebGL.Texture.TextureCollection();
     this.texture_renderer = new WebGL.Shader.MVPTextureProgram();
+    this.test_font = new WebGL.Texture.Canvas2DFont("serif", 20);
+    this.test_font.loadTextures();
   }
   render(e: TestEngine){
     const gl = WebGL.WebGL.gl!;
@@ -36,7 +40,22 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
     this.texture_renderer.setTextureId(1);
     this.texture_renderer.setMvp(this.orthographic.multiplyCopy(model));
     WebGL.Shapes.Quad.drawRelative();
+    WebGL.WebGL.enableBlend();
+    let x = 100;
+    for(const c of "abcdef"){
+      const dims = this.saved_textures.getDimensions(c)!;
+      const a_model = WebGL.WebGL.rectangleModel(x, 100, dims.width, dims.height);
+      this.saved_textures.active(c, 0);
+      this.texture_renderer.setTextureId(0);
+      this.texture_renderer.setMvp(this.orthographic.multiplyCopy(a_model));
+      WebGL.Shapes.Quad.drawRelative();
+      x += dims.width;
+    }
+    WebGL.WebGL.disableBlend();
+
+    this.test_font.drawExample(this.orthographic, this.texture_renderer);
   }
+
 
 }
 
@@ -57,19 +76,24 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
   gl_canvas.style.top = "0";
   WebGL.WebGL.initialise(gl_canvas);
 
+  const engine = new TestEngine();
+  const renderer = new TestRenderer(gl_canvas.width, gl_canvas.height);
+
   
   const ctx = canvas.getContext("2d")!;
+
+
+  /*
+
+  //texture examples
   ctx.fillStyle = "grey";
-  ctx.fillRect(0, 0, 50, 50);
+  //ctx.fillRect(0, 0, 50, 50);
   ctx.fillStyle = 'red';
   ctx.fillRect(10, 10, 50, 50);
   ctx.fillStyle = "blue";
   ctx.fillRect(40, 40, 5, 5);
   const id = ctx.getImageData(0, 0, 50, 50);
-
-  ctx.font = "20px serif";
-  ctx.fillText("a", 0, 15);
-
+  
   console.log(id);
   
   const tex = new WebGL.Texture.CanvasTexture();
@@ -80,9 +104,37 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
 
   );
   
-  const engine = new TestEngine();
-  const renderer = new TestRenderer(gl_canvas.width, gl_canvas.height);
   renderer.saved_textures.addTexture("test", tex);
+  */
+  ctx.fillStyle = "blue";
+  const font_size = 30;
+  ctx.font = `${font_size.toString()}px serif`;
+
+
+  for(const c of "abcdef"){
+    const metrics = ctx.measureText(c);
+    console.log(metrics);
+
+    ctx.fillText(c, 0, font_size);
+
+    const a_width = Math.ceil(metrics.width);
+    const a_height = font_size;
+
+    const a = ctx.getImageData(metrics.actualBoundingBoxLeft, metrics.fontBoundingBoxDescent, 
+      a_width, a_height);
+    
+    const a_tex = new WebGL.Texture.CanvasTexture();
+    a_tex.setImageData(a);
+    a_tex.load(() => {
+
+    });
+    renderer.saved_textures.addTexture(c, a_tex);
+    
+    ctx.clearRect(0, 0, 50, 50);
+  }
+
+  ctx.fillText("b", 0, font_size);
+
 
   const app = new WebGL.App.App(engine, renderer);
   app.loadResources(() => {
@@ -92,4 +144,9 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
 
   //console.log(tex);
   
+}
+
+
+function addLetterTexture(letter: string){
+
 }

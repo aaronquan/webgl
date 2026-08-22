@@ -1,4 +1,4 @@
-import WebGL from "./../globals";
+import * as WebGL from "./../globals";
 import * as File from "./../Util/file"
 import * as Shader from "./../Shaders/custom"
 
@@ -15,21 +15,30 @@ interface GenericTexture{
   load: (onLoad: VoidFunction, onError: ErrorFunction) => void;
   active: (id: Int32) => boolean;
   isLoaded: () => boolean;
+  getDimensions: () => TextureDimensions;
+}
+
+type TextureDimensions = {
+  width: Int32,
+  height: Int32
 }
 
 //canvas texture
 export class CanvasTexture implements GenericTexture{
   texture: WebGLTexture | undefined;
   img_data: ImageData | undefined;
+  private dimensions: TextureDimensions;
   private is_loaded: boolean;
   constructor(){
     this.is_loaded = false;
+    this.dimensions = {width: 0, height: 0};
   }
   setImageData(data: ImageData){
     this.img_data = data;
+    this.dimensions = {width: data.width, height: data.height};
   }
   load(onLoad: VoidFunction){
-    const gl = WebGL.gl;
+    const gl = WebGL.WebGL.gl;
     if(gl != undefined && this.img_data != undefined && !this.is_loaded){
       this.texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -46,7 +55,7 @@ export class CanvasTexture implements GenericTexture{
     }
   }
   active(id: Int32): boolean{
-    const gl = WebGL.gl;
+    const gl = WebGL.WebGL.gl;
     if(this.texture && this.is_loaded && gl != undefined){
       gl.activeTexture(gl.TEXTURE0+id);
       gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -57,7 +66,9 @@ export class CanvasTexture implements GenericTexture{
   isLoaded(){
     return this.is_loaded;
   }
-  
+  getDimensions(): TextureDimensions{
+    return this.dimensions;
+  }
 }
 
 //URL texture
@@ -77,19 +88,20 @@ export class Texture implements GenericTexture{
     const img = new Image();
     img.src = url;
     this.textures_requested++;
-    const gl = WebGL.gl;
-    if(gl){
+    const gl = WebGL.WebGL.gl;
+    if(gl != undefined){
       img.onload = () => {
-        if(WebGL.gl){
-          const gl = WebGL.gl;
-          const texture = gl.createTexture();
-          gl.bindTexture(gl.TEXTURE_2D, texture);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
-          this.textures_loaded++;
-        }
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        this.textures_loaded++;
       }
     }
-    return new Texture(url);
+    const dims = {
+      width: img.width,
+      height: img.height
+    }
+    return new Texture(url, dims);
   }
 
   static textures_loaded: Int32 = 0;
@@ -100,17 +112,18 @@ export class Texture implements GenericTexture{
 
   texture: WebGLTexture | undefined;
   is_loaded: boolean;
-  url: string
-  constructor(fn: string){
+  url: string;
+  dimensions: TextureDimensions;
+  constructor(fn: string, dims: TextureDimensions={width:0, height:0}){
     //const gl = WebGL.gl;
     this.url = Texture.path+fn;
     this.is_loaded = false;
+    this.dimensions = dims;
   }
   load(onLoad:VoidFunction=EmptyFunction, onError:ErrorFunction=EmptyErrorFunction){
-    console.log(this.url);
     if(!this.is_loaded){
       Texture.textures_requested++;
-      const gl = WebGL.gl;
+      const gl = WebGL.WebGL.gl;
       if(gl != undefined){
         const img = new Image();
         img.src = this.url;
@@ -126,6 +139,7 @@ export class Texture implements GenericTexture{
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
           Texture.textures_loaded++;
           this.is_loaded = true;
+          this.dimensions = {width: img.width, height: img.height};
           onLoad();
         }
         img.onerror = (e) => {
@@ -138,7 +152,7 @@ export class Texture implements GenericTexture{
   }
   //static loadList
   active(id: Int32): boolean{
-    const gl = WebGL.gl;
+    const gl = WebGL.WebGL.gl;
     if(this.texture && this.is_loaded && gl != undefined){
       gl.activeTexture(gl.TEXTURE0+id);
       gl.bindTexture(gl.TEXTURE_2D, this.texture);
@@ -150,6 +164,9 @@ export class Texture implements GenericTexture{
   isLoaded(): boolean{
     return this.is_loaded;
   }
+  getDimensions(): TextureDimensions{
+    return this.dimensions;
+  };
 }
 
 export class TextureCollection{
@@ -214,6 +231,12 @@ export class TextureCollection{
   addFromUrl(key: string, file: string){
     const texture = new Texture(file);
     this.textures.set(key, texture);
+  }
+  getDimensions(key: string): TextureDimensions | undefined{
+    if(!this.textures.has(key)){
+      return undefined;
+    }
+    return this.textures.get(key)!.getDimensions();
   }
 }
 
@@ -296,5 +319,78 @@ export class CustomFont{
   }
 }
 
+
+export class Canvas2DFont{
+  font_style: string;
+  font_size: Int32;
+  collection: TextureCollection;
+  private loaded: boolean;
+  static canvas = new OffscreenCanvas(500, 500);
+  static canvas_loaded = false;
+  constructor(style: string, size: Int32){
+    this.font_style = style;
+    this.font_size = size;
+    this.collection = new TextureCollection();
+    this.loaded = false;
+    Canvas2DFont.load();
+  }
+  static load(){
+    //maybe not needed
+    if(!Canvas2DFont.canvas_loaded){
+      
+      Canvas2DFont.canvas_loaded = true;
+    }
+  }
+  loadTextures(){
+    if(this.loaded){
+      return;
+    }
+    const canvas = Canvas2DFont.canvas;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "white";
+    ctx.font = `${this.font_size.toString()} ${this.font_style}`;
+    ctx.fillText("a", 0, this.font_size);
+    //add a as texture
+    const metrics = ctx.measureText("a");
+    const w = Math.ceil(metrics.width);
+    const h = this.font_size;
+    const x = 0;
+    const y = 0;
+    const img = ctx.getImageData(0, 0, w, h);
+    const a_tex = new CanvasTexture();
+    a_tex.setImageData(img);
+    a_tex.load(() => {});
+    this.collection.addTexture("a", a_tex);
+    ctx.clearRect(0, 0, w, h);
+
+    //todo
+    //try adding all the alphabet
+
+
+    this.loaded = true;
+  }
+
+  drawExample(
+    vp: WebGL.Matrix.TransformationMatrix3x3, 
+    texture_shader: WebGL.Shader.MVPTextureProgram
+  ){
+    this.loadTextures();
+    this.collection.active("a", 1);
+    const dims = this.collection.getDimensions("a")!;
+    const model = WebGL.WebGL.rectangleModel(10, 10, dims.width, dims.height);
+    WebGL.WebGL.enableBlend();
+    texture_shader.use();
+    texture_shader.setTextureId(1);
+    texture_shader.setMvp(vp.multiplyCopy(model));
+    WebGL.Shapes.Quad.drawRelative();
+    WebGL.WebGL.disableBlend();
+  }
+
+  drawText(){
+
+  }
+
+
+}
 
 //export class Texture
