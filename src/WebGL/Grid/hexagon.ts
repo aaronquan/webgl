@@ -76,6 +76,15 @@ export class Hexagon{
 
 }
 
+//creates a x*y hex grid
+//todo
 export class HexagonGrid{
-
+	width: Int32;
+	height: Int32;
+	hexes: Hexagon[];
+	constructor(w: Int32, h: Int32){
+		this.width = w;
+		this.height = h;
+		this.hexes = []; // to create
+	}
 }

@@ -47,11 +47,13 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     });
 
 
-    const hex1 = new WebGL.Grid.Hexagon.Hexagon(0, 0, 0);
+    const hex1 = new WebGL.Grid.Hexagon.Hexagon(1, 1, 0);
     const hex_pts = hex1.toPoints(0, 50);
-    this.drawLinesFromPoints
+    hex_pts.push(hex_pts[0]);
+    
+    this.drawLinesFromPoints(hex_pts);
 
-    this.drawLinesFromPoints(scaled_points);
+    //this.drawLinesFromPoints(scaled_points);
   }
 
   drawLinesFromPoints(points: Point2D[]){

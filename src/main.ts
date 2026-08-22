@@ -19,7 +19,7 @@ import * as ResourceApp from "./App/ResourceSim/resource_app";
 import * as Canvas2DApp from "./App/canvas2d/app";
 //import * as CustomShaders from './shaders/custom';
 
-const test_canvas2d = true;
+const test_canvas2d = false; //change to move to canvas2d test
 
 const canvas: HTMLCanvasElement = document.getElementById("app") as HTMLCanvasElement;
 
@@ -54,7 +54,9 @@ if(test_canvas2d){
 
   const card_engine = new Card.CardEngine(canvas.width, canvas.height);
   const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
-  const app = ResourceApp.newApp(canvas.width, canvas.height);
+  //const app = ResourceApp.newApp(canvas.width, canvas.height);
+
+  const app = newITApp(canvas.width, canvas.height);
 
   app.loadResources(() => {
     console.log("running app");
