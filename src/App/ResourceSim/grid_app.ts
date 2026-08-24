@@ -996,7 +996,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
   draw_width: Int32;
   draw_height: Int32;
 
-  textures: Texture.TextureCollection;
+  textures: Texture.GenericTextureCollection;
 
   white: Colour.ColourRGB;
 
@@ -1019,7 +1019,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     this.perspective = Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
     this.vp = Matrix.TransformationMatrix3x3.identity();
 
-    this.textures = new Texture.TextureCollection();
+    this.textures = new Texture.GenericTextureCollection();
 
     this.tile_state_colours = new Map();
     this.tile_state_colours.set(Grid.TileStateEnum.Nothing, Colour.ColourUtils.yellow());

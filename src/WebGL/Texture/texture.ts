@@ -1,6 +1,7 @@
 import * as WebGL from "./../globals";
 import * as File from "./../Util/file"
 import * as Shader from "./../Shaders/custom"
+import { Generic } from "../Grid/grid";
 
 type Int32 = number;
 
@@ -169,7 +170,13 @@ export class Texture implements GenericTexture{
   };
 }
 
-export class TextureCollection{
+interface TextureCollection{
+  //addTexture: (key: string, texture: GenericTexture) => void;
+  active: (key: string, id: Int32) => boolean;
+  getDimensions: (key: string) => TextureDimensions | undefined;
+}
+
+export class GenericTextureCollection implements TextureCollection{
   textures: Map<string, GenericTexture>;
   loaded: Int32;
   loading: boolean;
@@ -198,7 +205,7 @@ export class TextureCollection{
     this.textures.set(key, texture);
   }
   load(onAllLoaded: VoidFunction=EmptyFunction){
-    function finishLoading(fl: TextureCollection){
+    function finishLoading(fl: GenericTextureCollection){
       if(fl.finished_loading == fl.to_load.length){
         console.log("end loading texture collection");
         onAllLoaded();
@@ -260,6 +267,8 @@ export class CustomFont{
   loaded: boolean;
   width: Int32;
   height: Int32;
+
+  static alphabet = "abcdefghijklmnopqrstuvwxyz";
   
   //fn requires extension e.g. .png
   constructor(font_sheet_fn: string){
@@ -319,18 +328,59 @@ export class CustomFont{
   }
 }
 
+class FontGlyph extends CanvasTexture{
+  font_width: Int32;
+  char: string;
+  constructor(w: Int32, c: string, img: ImageData){
+    super();
+    this.font_width = w;
+    this.char = c;
+    this.img_data = img;
+  }
+}
+
+class GlyphCollection implements TextureCollection{
+  texture_map: Map<string, FontGlyph>;
+  constructor(){
+    this.texture_map = new Map();
+  }
+  has(ch: string):boolean{
+    return this.texture_map.has(ch);
+  }
+  addTexture(key: string, glyph: FontGlyph){
+    this.texture_map.set(key, glyph);
+  }
+  active(key: string, id: Int32): boolean{
+    if(this.texture_map.has(key)){
+      const tex = this.texture_map.get(key)!;
+      if(!tex.isLoaded()) return false;
+      tex.active(id);
+      return true;
+    }
+    return false;
+  }
+  getDimensions(key: string): TextureDimensions | undefined{
+    if(!this.texture_map.has(key)) return undefined;
+    return this.texture_map.get(key)!.getDimensions();
+  }
+  getCharWidth(ch: string): Int32 | undefined{
+    return this.texture_map.get(ch)!.font_width;
+  }
+}
 
 export class Canvas2DFont{
   font_style: string;
   font_size: Int32;
-  collection: TextureCollection;
+  collection: GlyphCollection;
+  
   private loaded: boolean;
   static canvas = new OffscreenCanvas(500, 500);
   static canvas_loaded = false;
+  static alphabet = "abcdefghijklmnopqrstuvwxyz";
   constructor(style: string, size: Int32){
     this.font_style = style;
     this.font_size = size;
-    this.collection = new TextureCollection();
+    this.collection = new GlyphCollection();
     this.loaded = false;
     Canvas2DFont.load();
   }
@@ -348,23 +398,24 @@ export class Canvas2DFont{
     const canvas = Canvas2DFont.canvas;
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "white";
-    ctx.font = `${this.font_size.toString()} ${this.font_style}`;
-    ctx.fillText("a", 0, this.font_size);
-    //add a as texture
-    const metrics = ctx.measureText("a");
-    const w = Math.ceil(metrics.width);
-    const h = this.font_size;
-    const x = 0;
-    const y = 0;
-    const img = ctx.getImageData(0, 0, w, h);
-    const a_tex = new CanvasTexture();
-    a_tex.setImageData(img);
-    a_tex.load(() => {});
-    this.collection.addTexture("a", a_tex);
-    ctx.clearRect(0, 0, w, h);
+    ctx.font = `${this.font_size.toString()}px ${this.font_style}`;
+    ctx.textBaseline = "top"; // to draw from y at top
 
-    //todo
     //try adding all the alphabet
+    for(const ch of Canvas2DFont.alphabet){
+      ctx.fillText(ch, 0, 0);
+      const metrics = ctx.measureText(ch);
+      //console.log(metrics);
+      const char_width = Math.ceil(metrics.width);
+      const w = Math.max(metrics.actualBoundingBoxRight - metrics.actualBoundingBoxLeft, char_width);
+      const h = this.font_size;
+      const img = ctx.getImageData(0, 0, w, h);
+      const tex = new FontGlyph(char_width, ch, img);
+      tex.setImageData(img);
+      tex.load(() => {});
+      this.collection.addTexture(ch, tex);
+      ctx.clearRect(0, 0, w+1, h+1);
+    }
 
 
     this.loaded = true;
@@ -375,19 +426,47 @@ export class Canvas2DFont{
     texture_shader: WebGL.Shader.MVPTextureProgram
   ){
     this.loadTextures();
-    this.collection.active("a", 1);
-    const dims = this.collection.getDimensions("a")!;
-    const model = WebGL.WebGL.rectangleModel(10, 10, dims.width, dims.height);
     WebGL.WebGL.enableBlend();
-    texture_shader.use();
-    texture_shader.setTextureId(1);
-    texture_shader.setMvp(vp.multiplyCopy(model));
-    WebGL.Shapes.Quad.drawRelative();
+    let x = 0;
+    for(const ch of Canvas2DFont.alphabet){
+      this.collection.active(ch, 1);
+      const dims = this.collection.getDimensions(ch)!;
+
+      const model = WebGL.WebGL.rectangleModel(x, 0, dims.width, dims.height);
+
+      texture_shader.use();
+      texture_shader.setTextureId(1);
+      texture_shader.setMvp(vp.multiplyCopy(model));
+      x += this.collection.getCharWidth(ch)!;
+      WebGL.Shapes.Quad.drawRelative();
+    }
+
     WebGL.WebGL.disableBlend();
   }
 
-  drawText(){
-
+  drawText(vp: WebGL.Matrix.TransformationMatrix3x3,
+    texture_shader: WebGL.Shader.MVPTextureColourProgram,
+    x: Int32, y: Int32,
+    text: string,
+    colour: WebGL.Colour.ColourRGB=WebGL.Colour.ColourUtils.white()
+  ){
+    texture_shader.use();
+    texture_shader.setTextureId(0);
+    texture_shader.setColourFromColourRGB(colour);
+    WebGL.WebGL.enableBlend();
+    let dx = x;
+    for(const ch of text){
+      if(!this.collection.has(ch)){
+        continue;
+      }
+      this.collection.active(ch, 0);
+      const dims = this.collection.getDimensions(ch)!;
+      const model = WebGL.WebGL.rectangleModel(dx, y, dims.width, dims.height);
+      texture_shader.setMvp(vp.multiplyCopy(model));
+      WebGL.Shapes.Quad.drawRelative();
+      dx += this.collection.getCharWidth(ch)!;
+    }
+    WebGL.WebGL.disableBlend();
   }
 
 

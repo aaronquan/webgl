@@ -10,18 +10,24 @@ class TestEngine extends WebGL.App.BaseEngine{
 
 class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
   colour_shader: WebGL.Shader.MVPColourProgram;
-  saved_textures: WebGL.Texture.TextureCollection;
-  texture_renderer: WebGL.Shader.MVPTextureProgram;
+  saved_textures: WebGL.Texture.GenericTextureCollection;
+  texture_shader: WebGL.Shader.MVPTextureProgram;
+  colour_texture_shader: WebGL.Shader.MVPTextureColourProgram;
 
   test_font: WebGL.Texture.Canvas2DFont;
+  font2: WebGL.Texture.Canvas2DFont;
 
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
-    this.saved_textures = new WebGL.Texture.TextureCollection();
-    this.texture_renderer = new WebGL.Shader.MVPTextureProgram();
+    this.saved_textures = new WebGL.Texture.GenericTextureCollection();
+    this.texture_shader = new WebGL.Shader.MVPTextureProgram();
+    this.colour_texture_shader = new WebGL.Shader.MVPTextureColourProgram();
     this.test_font = new WebGL.Texture.Canvas2DFont("serif", 20);
     this.test_font.loadTextures();
+
+    this.font2 = new WebGL.Texture.Canvas2DFont("Arial", 20);
+    this.font2.loadTextures();
   }
   render(e: TestEngine){
     const gl = WebGL.WebGL.gl!;
@@ -31,15 +37,16 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
     //console.log(e);
     //this.colour_shader.use();
     //this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
-    const model = WebGL.WebGL.rectangleModel(50, 50, 50, 50);
+    //const model = WebGL.WebGL.rectangleModel(50, 50, 50, 50);
     //this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
     //WebGL.Shapes.Quad.draw();
 
-    this.saved_textures.active("test", 1);
-    this.texture_renderer.use();
-    this.texture_renderer.setTextureId(1);
-    this.texture_renderer.setMvp(this.orthographic.multiplyCopy(model));
-    WebGL.Shapes.Quad.drawRelative();
+    //this.saved_textures.active("test", 1);
+    //this.texture_renderer.use();
+    //this.texture_renderer.setTextureId(1);
+    //this.texture_renderer.setMvp(this.orthographic.multiplyCopy(model));
+    //WebGL.Shapes.Quad.drawRelative();
+    /*
     WebGL.WebGL.enableBlend();
     let x = 100;
     for(const c of "abcdef"){
@@ -51,9 +58,12 @@ class TestRenderer extends WebGL.App.SimpleAppRenderer<TestEngine>{
       WebGL.Shapes.Quad.drawRelative();
       x += dims.width;
     }
-    WebGL.WebGL.disableBlend();
+    WebGL.WebGL.disableBlend();*/
 
-    this.test_font.drawExample(this.orthographic, this.texture_renderer);
+    this.test_font.drawExample(this.orthographic, this.texture_shader);
+    this.test_font.drawText(this.orthographic, this.colour_texture_shader, 100, 100, "hello");
+
+    this.font2.drawText(this.orthographic, this.colour_texture_shader, 100, 140, "hello");
   }
 
 
@@ -111,7 +121,7 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
   ctx.font = `${font_size.toString()}px serif`;
 
 
-  for(const c of "abcdef"){
+  for(const c of "j"){
     const metrics = ctx.measureText(c);
     console.log(metrics);
 
@@ -133,7 +143,7 @@ export function runCanvas2DApp(canvas: HTMLCanvasElement){
     ctx.clearRect(0, 0, 50, 50);
   }
 
-  ctx.fillText("b", 0, font_size);
+  ctx.fillText("abcdefghijklmnopqrstuvwxyz", 0, font_size);
 
 
   const app = new WebGL.App.App(engine, renderer);

@@ -4,7 +4,7 @@ import * as Geometry from "./../Geometry/base";
 type Int32 = number;
 type Float = number;
 
-import Point2D = Geometry.Point2D;
+import Point2D = WebGL.Geometry.Base.Point2D;
 
 export class InterfaceElement{
   x: Int32;
@@ -31,8 +31,8 @@ export class InterfaceElement{
     colour_shader.setMvp(vp.multiplyCopy(bg_model));
     WebGL.Shapes.Quad.draw();
   }
-  relativePoint(global_point: Point2D): Point2D{
-    return new Point2D(global_point.x-this.x, global_point.y-this.y);
+  relativePoint(global_point: WebGL.Geometry.Base.Point2D): WebGL.Geometry.Base.Point2D{
+    return new WebGL.Geometry.Base.Point2D(global_point.x-this.x, global_point.y-this.y);
   }
   enableScissors(){
     WebGL.WebGL.enableScissor(this.x, this.y, this.width, this.height);

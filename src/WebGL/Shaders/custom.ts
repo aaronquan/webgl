@@ -23,6 +23,7 @@ export class MVPSolidLineProgram extends Fragment.LineMixin(Vertex.Mvp2dMixin){}
 export class MVPSpriteSheetProgram extends Fragment.SpriteSheetMixin(Vertex.Mvp2dMixin){};
 export class MVPPathCenterCircleProgram extends Fragment.PathCentreCircleMixin(Vertex.Mvp2dMixin){};
 export class MVPTextureProgram extends Fragment.TextureMixin(Vertex.Mvp2dMixin){};
+export class MVPTextureColourProgram extends Fragment.TextureColourMixin(Vertex.Mvp2dMixin){};
 
 export class MVPMultiColourPathProgram extends Fragment.MultiColourPathMixin(Vertex.Mvp2dMixin){};
 export class MVPMultiColourCentreCirclePathProgram extends Fragment.MultiColourCentreCirclePathMixin(Vertex.Mvp2dMixin){};

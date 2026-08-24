@@ -1,33 +1,92 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Engine from "./engine";
+import * as Shape from "./shape";
 
 type Float = number;
 type Int32 = number;
 
+import Point2D = WebGL.Geometry.Base.Point2D;
+
+class BattleObject extends Shape.GridShapeInstance{
+	constructor(){
+
+	}
+}
+
+class BattleObjectInstance{
+
+}
+
 class BattleGrid{
 	shape_grid: Engine.ShapeIdGrid;
 	interface: Engine.ShapeGridInterface;
+	//objects: 
 	//layout: Engine.GridLayout;
-	constructor(w: Int32, h: Int32){
+	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
 		this.shape_grid = new Engine.ShapeIdGrid(w, h);
-		this.interface = new Engine.ShapeGridInterface(w, h, 30, this.shape_grid);
+		this.interface = new Engine.ShapeGridInterface(x, y, 30, this.shape_grid);
+	}
+
+	drawInterfaceGridOutline(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, lt: Int32){
+		const hlt = lt*0.5;
+		//vertical lines
+		colour_shader.use();
+		colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.blue());
+		let y_shift = 0;
+		for(let y = 0; y <= this.shape_grid.height; y++){
+			const model = WebGL.WebGL.rectangleModel(this.interface.x-hlt, this.interface.y+y_shift-hlt, this.interface.interfaceWidth()+lt, lt);
+			colour_shader.setMvp(vp.multiplyCopy(model));
+			WebGL.Shapes.Quad.draw();
+			y_shift += this.interface.cell_size;
+		}
+		let x_shift = 0;
+		for(let x = 0; x <= this.shape_grid.width; x++){
+			const model = WebGL.WebGL.rectangleModel(this.interface.x+x_shift-hlt, this.interface.y, lt, this.interface.interfaceHeight()+hlt);
+			colour_shader.setMvp(vp.multiplyCopy(model));
+			WebGL.Shapes.Quad.draw();	
+			x_shift += this.interface.cell_size;
+		}
+	}
+
+	update(){
+
 	}
 }
 
 export class BattleEngine{
 	battle_grid: BattleGrid;
+	battle_grid_coord: WebGL.Grid.Generic.Coordinate | undefined;
 
+	shapes: Shape.GridShape[];
+
+	global_mouse: Point2D;
 	constructor(){
-		this.battle_grid = new BattleGrid(14, 14);
+		this.battle_grid = new BattleGrid(50, 50, 14, 14);
+		this.global_mouse = new Point2D(0, 0);
+
+		this.shapes = this.generateObjectShapes();
 	}
 
-	onMouseMove(point: WebGL.Matrix.Point2D){
-			//this.play_button.onMouseMove(point);
+	private generateObjectShapes(): Shape.GridShape[]{
+		const shapes = [];
+		const single = new Shape.GridShape(1, 1, [true]);
+		shapes.push(single);
+
+		const duo = new Shape.GridShape(2, 1, [true, true]);
+		shapes.push(duo);
+
+		return shapes;
 	}
-	onMouseDown(point: WebGL.Matrix.Point2D){
+
+	onMouseMove(point: Point2D){
+		this.global_mouse = point;
+		this.battle_grid_coord = this.battle_grid.interface.getCoord(this.global_mouse);
+	}
+	onMouseDown(point: Point2D){
+		console.log(this.battle_grid_coord);
 		//this.play_button.onMouseDown();
 	}
-	onMouseUp(point: WebGL.Matrix.Point2D){
+	onMouseUp(point: Point2D){
 		//this.play_button.onMouseUp();
 	}
 	

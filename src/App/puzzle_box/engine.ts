@@ -8,6 +8,7 @@ type Float = number;
 
 import Button = WebGL.Interface.Button;
 import Rotation = WebGL.Geometry.Rotation;
+import Grid = WebGL.Grid.Generic;
 
 class IdGrid{
   width: Int32;
@@ -45,13 +46,16 @@ export class ShapeGridInterface{
   interfaceHeight(): Int32{
     return this.cell_size*this.grid.height;
   }
-  getCoord(point: WebGL.Geometry.Base.Point2D): Coord | undefined{
+  getCoord(point: WebGL.Geometry.Base.Point2D): Grid.Coordinate | undefined{
     if(!this.isInside(point)) return undefined;
     const x = Math.floor((point.x-this.x)/this.cell_size);
     const y = Math.floor((point.y-this.y)/this.cell_size);
     return {x, y};
   }
   trueCoord(point: WebGL.Geometry.Base.Point2D): WebGL.Geometry.Base.Point2D | undefined{
+    if(this.isInside(point)){
+      return undefined;
+    }
     return new WebGL.Geometry.Base.Point2D((point.x-this.x)/this.cell_size, (point.y-this.y)/this.cell_size);
   }
 }
@@ -344,7 +348,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     this.interface = new PuzzleInterface();
     this.grid_battle = new BattleEngine();
 
-    this.applet_display = PuzzleAppletDisplayEnum.Tetris;
+    this.applet_display = PuzzleAppletDisplayEnum.GridBattle;
 
     this.interface.setPuzzleFunction(() => {
       this.applet_display = PuzzleAppletDisplayEnum.Puzzle;
@@ -434,18 +438,25 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   //to override
   override handleMouseMove(ev: MouseEvent){
     const point = new WebGL.Geometry.Base.Point2D(ev.clientX, ev.clientY);
-    if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+    if(this.applet_display == PuzzleAppletDisplayEnum.Puzzle){
+      for(const label of this.shape_labels){
+        label.onMouseOver(point);
+      }
+      this.hovered_grid_coord = this.interface_grid.getCoord(point);
+      this.mouse_grid_point = this.interface_grid.trueCoord(point);
+      this.option_select.onMouseDown(point); // select applet display
+      this.refreshPreviewPositions();
+    }
+    else if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
       this.tetris.onMouseMove(point);
+    }else if(this.applet_display == PuzzleAppletDisplayEnum.GridBattle){
+      this.grid_battle.onMouseMove(point);
     }
+
+
     this.mouse_point = point;
-    this.option_select.onMouseOver(point);
-    for(const label of this.shape_labels){
-      label.onMouseOver(point);
-    }
-    this.hovered_grid_coord = this.interface_grid.getCoord(point);
-    this.mouse_grid_point = this.interface_grid.trueCoord(this.mouse_point);
-    this.refreshPreviewPositions();
-    this.interface.onMouseMove(this.mouse_point);
+    this.interface.onMouseMove(point);// select applet display
+
     /*
     if(this.dragged_shape != undefined && this.mouse_grid_point != undefined){
       const coord = this.getInstanceCoord(this.mouse_grid_point, this.dragged_shape);
@@ -464,44 +475,50 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   //to override
   override handleMouseDown(ev: MouseEvent){
     if(this.mouse_point != undefined){  
-      this.option_select.onMouseDown(this.mouse_point);
-      this.interface.onMouseDown(this.mouse_point);
-      if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
-        this.tetris.onMouseDown(this.mouse_point);
+      this.interface.onMouseDown(this.mouse_point);// select applet display
+
+      if(this.applet_display == PuzzleAppletDisplayEnum.Puzzle){
+        this.option_select.onMouseDown(this.mouse_point); // select applet display
+        const hov_id = this.getHoveredShapeId();
+        if(hov_id != undefined){
+          this.grid.removeShape(this.pieces_on_grid.get(hov_id)!);
+          this.dragged_shape = this.pieces_on_grid.get(hov_id);
+        }
+        for(let i = 0; i < this.shape_labels.length; i++){
+          const label = this.shape_labels[i];
+          label.onMouseDown();
+          if(label.is_hovered){
+            this.dragged_shape = new Shape.GridShapeInstance(label.shape);
+          }
+        }
       }
-    }
-    const hov_id = this.getHoveredShapeId();
-    if(hov_id != undefined){
-      this.grid.removeShape(this.pieces_on_grid.get(hov_id)!);
-      this.dragged_shape = this.pieces_on_grid.get(hov_id);
-    }
-    for(let i = 0; i < this.shape_labels.length; i++){
-      const label = this.shape_labels[i];
-      label.onMouseDown();
-      if(label.is_hovered){
-        this.dragged_shape = new Shape.GridShapeInstance(label.shape);
+      else if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+        this.tetris.onMouseDown(this.mouse_point);
+      }else if(this.applet_display == PuzzleAppletDisplayEnum.GridBattle){
+        this.grid_battle.onMouseDown(this.mouse_point);
       }
     }
   };
   //to override
   override handleMouseUp(ev: MouseEvent){
     if(this.mouse_point != undefined){ 
-      if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
-        this.tetris.onMouseUp(this.mouse_point);
-      }
-      //const true_coord = this.interface_grid.trueCoord(this.mouse_point);
-      if(this.dragged_shape != undefined && this.mouse_grid_point != undefined){
-        const coord = this.getInstanceCoord(this.mouse_grid_point, this.dragged_shape);
-        if(this.grid.canFitShape(this.dragged_shape, coord.x, coord.y)){
-          this.grid.addShape(this.dragged_shape, coord.x, coord.y);
-          this.pieces_on_grid.set(this.dragged_shape.id, this.dragged_shape);
-        }else{
-          console.log("no room for shape");
+      if(this.applet_display == PuzzleAppletDisplayEnum.Puzzle){
+        if(this.dragged_shape != undefined && this.mouse_grid_point != undefined){
+          const coord = this.getInstanceCoord(this.mouse_grid_point, this.dragged_shape);
+          if(this.grid.canFitShape(this.dragged_shape, coord.x, coord.y)){
+            this.grid.addShape(this.dragged_shape, coord.x, coord.y);
+            this.pieces_on_grid.set(this.dragged_shape.id, this.dragged_shape);
+          }else{
+            console.log("no room for shape");
+          }
+          this.dragged_shape = undefined;
         }
+      }
+      else if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+        this.tetris.onMouseUp(this.mouse_point);
       }
     }
 
-    this.dragged_shape = undefined;
     this.interface.onMouseUp();
   };
   // to override
