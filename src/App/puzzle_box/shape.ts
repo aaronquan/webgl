@@ -67,7 +67,7 @@ export class GridShapeInstance{
   private rotation: Rotation.Rotation;
   width: Int32;
   height: Int32;
-  placement: Grid.Coordinate | undefined;
+  grid_placement: Grid.Coordinate | undefined; // placement on grid
   constructor(shape: GridShape){
     this.id = GridShapeInstance.current_id;
     GridShapeInstance.current_id++;
@@ -78,8 +78,8 @@ export class GridShapeInstance{
   }
   copy(): GridShapeInstance{
     const newSI = new GridShapeInstance(this.shape);
-    if(this.placement != undefined){
-      newSI.setPlacement(this.placement.x, this.placement.y);
+    if(this.grid_placement != undefined){
+      newSI.setPlacement(this.grid_placement.x, this.grid_placement.y);
     }
     newSI.setRotation(this.rotation);
 
@@ -137,29 +137,32 @@ export class GridShapeInstance{
   }
   getCoordinates(): Grid.Coordinate[]{
     const coordinates: Grid.Coordinate[] = [];
-    if(this.placement == undefined){
+    if(this.grid_placement == undefined){
       return coordinates;
     }
     for(let y = 0; y < this.height; y++){
       for(let x = 0; x < this.width; x++){
         const part = this.getPart(x, y);
         if(part != undefined && part){
-          coordinates.push({x: x+this.placement.x, y: y+this.placement.y})
+          coordinates.push({x: x+this.grid_placement.x, y: y+this.grid_placement.y})
         }
       }
     }
     return coordinates;
   }
   isPlaced(): boolean{
-    return this.placement != undefined;
+    return this.grid_placement != undefined;
   }
   setPlacement(x: Int32, y: Int32){
-    this.placement = {x, y};
+    this.grid_placement = {x, y};
+  }
+  displace(){
+    this.grid_placement = undefined;
   }
   move(x: Int32, y: Int32){
-    if(this.placement != undefined){
-      this.placement.x += x;
-      this.placement.y += y;
+    if(this.grid_placement != undefined){
+      this.grid_placement.x += x;
+      this.grid_placement.y += y;
     }
   }
 }

@@ -53,6 +53,11 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     
     this.drawLinesFromPoints(hex_pts);
 
+    //draw the hex grid
+    const x = 100;
+    const y = 100;
+    
+
     //this.drawLinesFromPoints(scaled_points);
   }
 

@@ -110,13 +110,13 @@ class TetrisInstance extends GShape.GridShapeInstance{
   }
   getBottomCoordinates(): Grid.Coordinate[]{
     const coords: Grid.Coordinate[] = [];
-    if(this.placement == undefined){
+    if(this.grid_placement == undefined){
       return coords;
     }
     for(let x = 0; x < this.width; x++){
       for(let y = this.height-1; y >= 0; y--){
         if(this.getPart(x, y)){
-          coords.push({x: x+this.placement.x, y: y+this.placement.y});
+          coords.push({x: x+this.grid_placement.x, y: y+this.grid_placement.y});
           break;
         }
       }
@@ -125,13 +125,13 @@ class TetrisInstance extends GShape.GridShapeInstance{
   }
   getLeftCoordinates(): Grid.Coordinate[]{
     const coords: Grid.Coordinate[] = [];
-    if(this.placement == undefined){
+    if(this.grid_placement == undefined){
       return coords;
     }
     for(let y = 0; y < this.height; y++){
       for(let x = 0; x < this.width; x++){
         if(this.getPart(x, y)){
-          coords.push({x: x+this.placement.x, y: y+this.placement.y});
+          coords.push({x: x+this.grid_placement.x, y: y+this.grid_placement.y});
           break;
         }
       }
@@ -140,13 +140,13 @@ class TetrisInstance extends GShape.GridShapeInstance{
   }
   getRightCoordinates(): Grid.Coordinate[]{
     const coords: Grid.Coordinate[] = [];
-    if(this.placement == undefined){
+    if(this.grid_placement == undefined){
       return coords;
     }
     for(let y = 0; y < this.height; y++){
       for(let x = this.width-1; x >=0; x--){
         if(this.getPart(x, y)){
-          coords.push({x: x+this.placement.x, y: y+this.placement.y});
+          coords.push({x: x+this.grid_placement.x, y: y+this.grid_placement.y});
           break;
         }
       }
@@ -296,7 +296,7 @@ export class TetrisEngine{
   activeDrop(){
     if(this.active_piece != undefined){
       const bottom_coords = this.active_piece.getBottomCoordinates();
-      if(this.grid.checkBottomCoordinates(bottom_coords) && this.active_piece.placement != undefined){
+      if(this.grid.checkBottomCoordinates(bottom_coords) && this.active_piece.grid_placement != undefined){
         this.placePiece(this.active_piece);
       }else{
         this.active_piece.move(0, 1);

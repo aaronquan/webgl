@@ -3,7 +3,7 @@ import * as WebGL from "./../../WebGL/globals";
 import Button = WebGL.Interface.Button;
 import Point2D = WebGL.Geometry.Base.Point2D;
 import Window = WebGL.Interface.InternalWindow;
-import { WindowCollection } from "../../WebGL/Interface/internal_window";
+
 
 type Int32 = number;
 type Float = number;
@@ -106,6 +106,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
   triangle: InteractableTriangle;
 
+  hex_grid: WebGL.Grid.Hexagon.HexagonGrid;
+
   constructor(){
     super();
     this.global_mouse = new Point2D(0, 0);
@@ -131,6 +133,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
     this.triangle = new InteractableTriangle(new Point2D(10, 10), new Point2D(10, 100), new Point2D(100, 100));
     //console.log(this.windows);
+    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(5,5);
+
   }
   protected handleMouseMove(ev: MouseEvent): void {
     this.global_mouse = new Point2D(ev.clientX, ev.clientY);

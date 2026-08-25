@@ -73,7 +73,7 @@ export class Hexagon{
 			new Base.Point2D(0.5, -hsq3), new Base.Point2D(-0.5, -hsq3), new Base.Point2D(-1, 0)
 		];
 	}
-
+	
 }
 
 //creates a x*y hex grid
@@ -86,5 +86,11 @@ export class HexagonGrid{
 		this.width = w;
 		this.height = h;
 		this.hexes = []; // to create
+	}
+	// x, y is the center of hex 0,0
+	drawOutline(vp: WebGL.Matrix.TransformationMatrix3x3, 
+		colour_shader: WebGL.Shader.MVPColourProgram, 
+		hex_size: Int32, x: Int32, y: Int32){
+      
 	}
 }

@@ -88,15 +88,15 @@ export class ShapeIdGrid extends IdGrid{
         }
       }
     }
-    shape.placement = {x, y};
+    shape.grid_placement = {x, y};
   }
   removeShape(shape: Shape.GridShapeInstance){
     console.log(shape);
-    if(shape.placement == undefined){
+    if(shape.grid_placement == undefined){
       return;
     }
-    const x = shape.placement.x;
-    const y = shape.placement.y;
+    const x = shape.grid_placement.x;
+    const y = shape.grid_placement.y;
     for(let py = 0; py < shape.height; py++){
       for(let px = 0; px < shape.width; px++){
         if(shape.getPart(px, py)){
