@@ -8,23 +8,51 @@ type Int32 = number;
 import Point2D = WebGL.Geometry.Base.Point2D;
 
 class BattleObject extends Shape.GridShapeInstance{
-	constructor(){
-
+  name: string;
+  cooldown: Float;
+	constructor(shape: Shape.GridShape, name: string, cd: Float){
+    super(shape);
+    this.name = name;
+    this.cooldown = cd;
 	}
+
+  //to override
+  trigger(){
+
+  }
 }
 
 class BattleObjectInstance{
-
+  battle_object: BattleObject;
+  freeform_placement: WebGL.Geometry.Base.Point2D | undefined;
+  cooldown_timer: Float;
+  num_triggers: Int32;
+  constructor(bo: BattleObject){
+    this.battle_object = bo;
+    this.cooldown_timer = 0;
+    this.num_triggers = 0;
+  }
+  update(dt: Float){
+    this.cooldown_timer += dt;
+    if(this.cooldown_timer >= this.battle_object.cooldown){
+      this.battle_object.trigger();
+      this.num_triggers++;
+      this.cooldown_timer -= this.battle_object.cooldown;
+    }
+  }
 }
 
 class BattleGrid{
 	shape_grid: Engine.ShapeIdGrid;
 	interface: Engine.ShapeGridInterface;
+
+  objects: BattleObjectInstance[];
 	//objects: 
 	//layout: Engine.GridLayout;
 	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
 		this.shape_grid = new Engine.ShapeIdGrid(w, h);
 		this.interface = new Engine.ShapeGridInterface(x, y, 30, this.shape_grid);
+    this.objects = [];
 	}
 
 	drawInterfaceGridOutline(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, lt: Int32){
@@ -48,6 +76,10 @@ class BattleGrid{
 		}
 	}
 
+  addObjectToGrid(x: Int32, y: Int32, object: BattleObjectInstance){
+    
+  }
+
 	update(){
 
 	}
@@ -58,6 +90,9 @@ export class BattleEngine{
 	battle_grid_coord: WebGL.Grid.Generic.Coordinate | undefined;
 
 	shapes: Shape.GridShape[];
+  battle_objects: BattleObject[];
+
+  object_instances: Map<Int32, BattleObjectInstance>;
 
 	global_mouse: Point2D;
 	constructor(){
@@ -65,6 +100,11 @@ export class BattleEngine{
 		this.global_mouse = new Point2D(0, 0);
 
 		this.shapes = this.generateObjectShapes();
+    this.battle_objects  = this.generateBattleObjects();
+
+    this.object_instances = new Map();
+    const test_instance = new BattleObjectInstance(this.battle_objects[0]);
+    this.object_instances.set(0, test_instance);
 	}
 
 	private generateObjectShapes(): Shape.GridShape[]{
@@ -77,6 +117,17 @@ export class BattleEngine{
 
 		return shapes;
 	}
+
+  private generateBattleObjects(): BattleObject[]{
+    const objects = [];
+
+    const example = new BattleObject(this.shapes[0], "example", 1000);
+
+    objects.push(example);
+
+
+    return objects;
+  }
 
 	onMouseMove(point: Point2D){
 		this.global_mouse = point;
