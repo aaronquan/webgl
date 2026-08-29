@@ -90,6 +90,16 @@ export class ShapeIdGrid extends IdGrid{
     }
     shape.grid_placement = {x, y};
   }
+  addShapeWithId(shape: Shape.GridShapeInstance, x: Int32, y: Int32, id: Int32){
+    for(let py = 0; py < shape.height; py++){
+      for(let px = 0; px < shape.width; px++){
+        if(shape.getPart(px, py)){
+          this.object_id[(x+px)+(y+py)*this.width] = id;
+        }
+      }
+    }
+    shape.grid_placement = {x, y};
+  }
   removeShape(shape: Shape.GridShapeInstance){
     console.log(shape);
     if(shape.grid_placement == undefined){

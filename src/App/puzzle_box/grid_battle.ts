@@ -23,11 +23,15 @@ class BattleObject extends Shape.GridShapeInstance{
 }
 
 class BattleObjectInstance{
+  static current_id = 0;
+  id: Int32;
   battle_object: BattleObject;
   freeform_placement: WebGL.Geometry.Base.Point2D | undefined;
   cooldown_timer: Float;
   num_triggers: Int32;
   constructor(bo: BattleObject){
+    this.id = BattleObjectInstance.current_id;
+    BattleObjectInstance.current_id++;
     this.battle_object = bo;
     this.cooldown_timer = 0;
     this.num_triggers = 0;
@@ -39,6 +43,9 @@ class BattleObjectInstance{
       this.num_triggers++;
       this.cooldown_timer -= this.battle_object.cooldown;
     }
+  }
+  getId(): Int32{
+    return this.id;
   }
 }
 
@@ -76,9 +83,17 @@ class BattleGrid{
 		}
 	}
 
-  addObjectToGrid(x: Int32, y: Int32, object: BattleObjectInstance){
+	addObjectToGrid(x: Int32, y: Int32, object: BattleObjectInstance){
+		const id = object.getId();
+    this.shape_grid.addShapeWithId(object.battle_object, x, y, id);
+	}
+
+  onMouseDown(coord: WebGL.Grid.Generic.Coordinate){
+    //
     
   }
+
+  
 
 	update(){
 
@@ -100,11 +115,12 @@ export class BattleEngine{
 		this.global_mouse = new Point2D(0, 0);
 
 		this.shapes = this.generateObjectShapes();
-    this.battle_objects  = this.generateBattleObjects();
+		this.battle_objects  = this.generateBattleObjects();
 
-    this.object_instances = new Map();
-    const test_instance = new BattleObjectInstance(this.battle_objects[0]);
-    this.object_instances.set(0, test_instance);
+		this.object_instances = new Map();
+		const test_instance = new BattleObjectInstance(this.battle_objects[0]);
+		this.object_instances.set(0, test_instance);
+    this.battle_grid.addObjectToGrid(2,2, test_instance);
 	}
 
 	private generateObjectShapes(): Shape.GridShape[]{
@@ -114,6 +130,9 @@ export class BattleEngine{
 
 		const duo = new Shape.GridShape(2, 1, [true, true]);
 		shapes.push(duo);
+
+		const trio = new Shape.GridShape(3, 1, [true, true, true]);
+		shapes.push(trio);
 
 		return shapes;
 	}
@@ -125,6 +144,9 @@ export class BattleEngine{
 
     objects.push(example);
 
+    const e2 = new BattleObject(this.shapes[0], "ex2", 1200);
+    objects.push(e2);
+
 
     return objects;
   }
@@ -135,6 +157,9 @@ export class BattleEngine{
 	}
 	onMouseDown(point: Point2D){
 		console.log(this.battle_grid_coord);
+    if(this.battle_grid_coord != undefined){
+      this.battle_grid.onMouseDown(this.battle_grid_coord);
+    }
 		//this.play_button.onMouseDown();
 	}
 	onMouseUp(point: Point2D){
