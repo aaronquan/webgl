@@ -1,5 +1,6 @@
 import * as WebGL from "./../globals";
 import * as Base from "./../Geometry/base";
+import * as Grid from "./generic";
 
 type Int32 = number;
 type Float = number;
@@ -14,6 +15,7 @@ type HexOrientation = (typeof HexOrientationEnum)[keyof typeof HexOrientationEnu
 //tan 60 = 0.5/x or x/0.5
 
 // x = 0.5/tan(60)
+
 
 export class Hexagon{
   q: Int32;
@@ -77,14 +79,49 @@ export class Hexagon{
 }
 
 //creates a x*y hex grid
+
+//https://www.redblobgames.com/grids/hexagons/
 //todo
 export class HexagonGrid{
-	width: Int32;
-	height: Int32;
-	hexes: Hexagon[];
-	constructor(w: Int32, h: Int32){
+	private width: Int32;
+	private height: Int32;
+	private hexes: Hexagon[];
+	private orientation: HexOrientation;
+	//for now assume odd layout
+	constructor(w: Int32, h: Int32, ori: HexOrientation=HexOrientationEnum.Pointy){
 		this.width = w;
 		this.height = h;
 		this.hexes = []; // to create
+		this.orientation = ori;
+	}
+
+	private generateHexes(): Hexagon[] {
+		const hexes = [];
+		for(let y = 0; y < this.width; y++){
+			for(let x = 0; x < this.height; x++){
+				hexes.push(Hexagon.fromAxial(x-Math.floor(y*0.5), y));
+			}
+		}
+		return hexes;
+	}
+
+	gridToHexagonCoords(coord: Grid.Coordinate): Grid.Coordinate {
+		if(this.orientation == HexOrientationEnum.Pointy){
+			return {x: coord.x-Math.floor(coord.y*0.5), y: coord.y};
+		}else if(this.orientation == HexOrientationEnum.Flat){
+			return {};
+		}
+	}
+
+	hexToGridCoords(){
+		if(this.orientation == HexOrientationEnum.Pointy){
+			
+		}else if(this.orientation == HexOrientationEnum.Flat){
+
+		}
+	}
+
+	getHex(){
+
 	}
 }
