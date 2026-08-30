@@ -105,12 +105,14 @@ export class HexagonGrid{
 		return hexes;
 	}
 
+	//returns axial coordinates
 	gridToHexagonCoords(coord: Grid.Coordinate): Grid.Coordinate {
 		if(this.orientation == HexOrientationEnum.Pointy){
 			return {x: coord.x-Math.floor(coord.y*0.5), y: coord.y};
 		}else if(this.orientation == HexOrientationEnum.Flat){
-			return {};
+			return {x: coord.x, y: coord.y-Math.floor(coord.x*0.5)};
 		}
+		return {x: 0, y: 0};
 	}
 
 	hexToGridCoords(){
@@ -128,6 +130,10 @@ export class HexagonGrid{
 	drawOutline(vp: WebGL.Matrix.TransformationMatrix3x3, 
 		colour_shader: WebGL.Shader.MVPColourProgram, 
 		hex_size: Int32, x: Int32, y: Int32){
-      
+    
+		colour_shader.use();
+		for(let y = 0; y < this.height; y++){
+			//todo
+		}	
 	}
 }
