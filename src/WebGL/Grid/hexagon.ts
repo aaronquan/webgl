@@ -55,6 +55,12 @@ export class Hexagon{
 
 		return shifted_points;
 	}
+	toDrawPoints(orientation: HexOrientation, scale: Float=1, x: Int32, y: Int32){
+		// todo - shift with x and y
+		const points = this.toPoints(orientation, scale);
+		points.push(points[0]);
+		return points;
+	}
 
 	asTriangles(){
 
@@ -129,11 +135,14 @@ export class HexagonGrid{
 	// x, y is the center of hex 0,0
 	drawOutline(vp: WebGL.Matrix.TransformationMatrix3x3, 
 		colour_shader: WebGL.Shader.MVPColourProgram, 
-		hex_size: Int32, x: Int32, y: Int32){
+		hex_size: Int32, x: Int32, y: Int32, colour: WebGL.Colour.ColourRGB, lt: Float){
     
 		colour_shader.use();
-		for(let y = 0; y < this.height; y++){
-			//todo
-		}	
+		colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.green());
+		for(const hex of this.hexes){
+			const pts = hex.toDrawPoints(this.orientation, hex_size, x, y);
+
+			WebGL.WebGL.drawLinesFromPoints(vp, colour_shader, pts, lt, colour);
+		}
 	}
 }

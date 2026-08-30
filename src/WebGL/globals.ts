@@ -9,6 +9,7 @@ import * as Line from "./Shapes/Line";
 import * as Colour from "./colour";
 import * as Texture from "./Texture/texture";
 import * as Interface from "./Interface/interface";
+import * as Geometry from "./Geometry/geometry";
 
 type Float = number;
 type Int32 = number;
@@ -123,6 +124,28 @@ export class WebGL{
   static disableBlend(){
     const gl = this.gl!;
     gl.disable(gl.BLEND);
+  }
+
+  static drawLineFrom2Points(vp: Matrix.TransformationMatrix3x3, 
+    colour_shader: Shader.MVPColourProgram, 
+    p1: Geometry.Base.Point2D, p2: Geometry.Base.Point2D, lt: Float,
+    colour: Colour.ColourRGB){
+      colour_shader.use();
+      colour_shader.setColourFromColourRGB(colour);
+      const model = WebGL.lineModel(p1.x, p1.y, p2.x, p2.y, lt);
+      colour_shader.setMvp(vp.multiplyCopy(model));
+      Shapes.Quad.draw();
+  }
+
+  static drawLinesFromPoints(vp: Matrix.TransformationMatrix3x3, 
+    colour_shader: Shader.MVPColourProgram, points: Geometry.Base.Point2D[], lt: Float,
+    colour: Colour.ColourRGB){
+    //const hlt = lt*0.5;
+    for(let i = 1; i < points.length; i++){
+      this.drawLineFrom2Points(vp, colour_shader, points[i], points[i-1], lt, colour);
+    }
+    this.drawLineFrom2Points(vp, colour_shader, points.at(-1)!, points[0], lt, colour);
+
   }
 }
 
