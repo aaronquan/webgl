@@ -133,7 +133,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
     this.triangle = new InteractableTriangle(new Point2D(10, 10), new Point2D(10, 100), new Point2D(100, 100));
     //console.log(this.windows);
-    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(5,5);
+    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(3,3, WebGL.Grid.Hexagon.HexOrientationEnum.Flat);
 
   }
   protected handleMouseMove(ev: MouseEvent): void {

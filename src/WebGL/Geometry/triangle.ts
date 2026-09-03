@@ -48,9 +48,11 @@ export class Triangle{
   }
   point1Angle(): Float{
     //todo
+    return 0;
   }
   point2Angle(): Float{
     //todo
+    return 0;
   }
 
   toDrawPointArray(): Point2D[]{

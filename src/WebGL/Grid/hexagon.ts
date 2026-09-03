@@ -5,12 +5,12 @@ import * as Grid from "./generic";
 type Int32 = number;
 type Float = number;
 
-const HexOrientationEnum = {
+export const HexOrientationEnum = {
 	Flat: 0,
 	Pointy: 1
 } as const;
 
-type HexOrientation = (typeof HexOrientationEnum)[keyof typeof HexOrientationEnum];
+export type HexOrientation = (typeof HexOrientationEnum)[keyof typeof HexOrientationEnum];
 
 //tan 60 = 0.5/x or x/0.5
 
@@ -33,14 +33,16 @@ export class Hexagon{
 	//horizontal distance is sqrt(3)
 	//
 	toCoordinates(orientation: HexOrientation): Base.Point2D{
-		//todo;
+		//todo - test
 		const sq3 = Math.sqrt(3);
+		const c1 = -this.s*sq3-this.r*sq3*0.5; // negatived value based on visual placement
+		const c2 = this.r*1.5;
 		if(orientation == HexOrientationEnum.Pointy){
-			return new Base.Point2D(this.s*sq3+this.r*sq3*0.5, this.r*1.5);
+			return new Base.Point2D(c1, c2);
 		}
 
 		//orientation is flat
-		return new Base.Point2D(this.r*1.5, this.s*sq3+this.r*sq3*0.5);
+		return new Base.Point2D(c2, c1);
 	}
 	toPoints(orientation: HexOrientation, scale: Float=1){
 		const base_points = Hexagon.getBasePoints(orientation);
@@ -56,9 +58,12 @@ export class Hexagon{
 		return shifted_points;
 	}
 	toDrawPoints(orientation: HexOrientation, scale: Float=1, x: Int32, y: Int32){
-		// todo - shift with x and y
 		const points = this.toPoints(orientation, scale);
-		points.push(points[0]);
+		points.push(points[0].copy());
+		points.map((p) => {
+			p.x += x;
+			p.y += y;
+		});
 		return points;
 	}
 
@@ -84,6 +89,12 @@ export class Hexagon{
 	
 }
 
+type HexGridDrawLayout = {
+	x: Int32;
+	y: Int32;
+	side: Float; //hex side length
+}
+
 //creates a x*y hex grid
 
 //https://www.redblobgames.com/grids/hexagons/
@@ -93,21 +104,31 @@ export class HexagonGrid{
 	private height: Int32;
 	private hexes: Hexagon[];
 	private orientation: HexOrientation;
+
+	private draw_layout: HexGridDrawLayout | undefined;
 	//for now assume odd layout
+
 	constructor(w: Int32, h: Int32, ori: HexOrientation=HexOrientationEnum.Pointy){
 		this.width = w;
 		this.height = h;
-		this.hexes = []; // to create
+		this.hexes = this.generateHexes(); // to create
 		this.orientation = ori;
+
+		this.draw_layout = undefined;
+	}
+
+	setLayout(layout: HexGridDrawLayout){
+		this.draw_layout = layout;
 	}
 
 	private generateHexes(): Hexagon[] {
 		const hexes = [];
-		for(let y = 0; y < this.width; y++){
-			for(let x = 0; x < this.height; x++){
+		for(let y = 0; y < this.height; y++){
+			for(let x = 0; x < this.width; x++){
 				hexes.push(Hexagon.fromAxial(x-Math.floor(y*0.5), y));
 			}
 		}
+		console.log(hexes);
 		return hexes;
 	}
 
@@ -132,6 +153,23 @@ export class HexagonGrid{
 	getHex(){
 
 	}
+	drawWithLayout(vp: WebGL.Matrix.TransformationMatrix3x3,
+		colour_shader: WebGL.Shader.MVPColourProgram,
+		colour: WebGL.Colour.ColourRGB,
+		lt: Int32,
+		override_layout: HexGridDrawLayout | undefined=undefined
+	){
+		let used_layout = this.draw_layout;
+		if(override_layout != undefined){
+			used_layout = override_layout;
+		}
+		if(used_layout != undefined){
+			this.drawOutline(vp, colour_shader, 
+				used_layout.x, used_layout.y, used_layout.side, colour, lt
+			)
+		}
+	}
+
 	// x, y is the center of hex 0,0
 	drawOutline(vp: WebGL.Matrix.TransformationMatrix3x3, 
 		colour_shader: WebGL.Shader.MVPColourProgram, 
@@ -143,6 +181,7 @@ export class HexagonGrid{
 			const pts = hex.toDrawPoints(this.orientation, hex_size, x, y);
 
 			WebGL.WebGL.drawLinesFromPoints(vp, colour_shader, pts, lt, colour);
+			//console.log(pts);
 		}
 	}
 }
