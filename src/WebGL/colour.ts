@@ -11,6 +11,27 @@ export type ColourRGBA = ColourRGB & {
   alpha: Float;
 }
 
+export class ColourRGBCollection{
+  colour_map: Map<string, ColourRGB>;
+  constructor(){
+    this.colour_map = new Map();
+  }
+  getColour(cs: string): ColourRGB | undefined{
+    return this.colour_map.get(cs);
+  }
+  addBaseColours(){
+    this.colour_map.set("black", ColourUtils.black());
+    this.colour_map.set("white", ColourUtils.white());
+    this.colour_map.set("red", ColourUtils.red());
+    this.colour_map.set("green", ColourUtils.green());
+    this.colour_map.set("blue", ColourUtils.blue());
+    this.colour_map.set("yellow", ColourUtils.yellow());
+    this.colour_map.set("pink", ColourUtils.pink());
+    this.colour_map.set("cyan", ColourUtils.cyan());
+
+  }
+}
+
 
 export class ColourUtils{
   static mix(c1: ColourRGB, c2: ColourRGB): ColourRGB{

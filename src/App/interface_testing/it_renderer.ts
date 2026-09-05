@@ -8,11 +8,23 @@ import Point2D = WebGL.Geometry.Base.Point2D;
 export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   colour_shader: WebGL.Shader.MVPColourProgram;
   circle_shader: WebGL.Shader.MVPCircleOnlyProgram;
+  diamond_shader: WebGL.Shader.MVPDiamondProgram;
+  hexagon_shader: WebGL.Shader.MVPHexagonProgram;
+  hexagonp_shader: WebGL.Shader.MVPHexagonPointyProgram;
+
+  colours: WebGL.Colour.ColourRGBCollection;
+
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.font_names.push("font16-Sheet.png");
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.circle_shader = new WebGL.Shader.MVPCircleOnlyProgram();
+    this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
+    this.hexagon_shader = new WebGL.Shader.MVPHexagonProgram();
+    this.hexagonp_shader = new WebGL.Shader.MVPHexagonPointyProgram();
+
+    this.colours = new WebGL.Colour.ColourRGBCollection();
+    this.colours.addBaseColours();
   }
 
   render(engine: ITEngine){
@@ -54,13 +66,39 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     //this.drawLinesFromPoints(hex_pts);
 
     //draw the hex grid
-    const x = 0;
-    const y = 0;
+    engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
 
-    engine.hex_grid.drawOutline(this.orthographic, this.colour_shader, 20, x, y, WebGL.Colour.ColourUtils.green(), 4);
+    //engine.hex_grid.drawOutline(this.orthographic, this.colour_shader, 20, 30, 30, WebGL.Colour.ColourUtils.green(), 4);
     
 
     //this.drawLinesFromPoints(scaled_points);
+
+    //test diamond drawing
+    this.diamond_shader.use();
+    const model = WebGL.WebGL.rectangleModel(150, 150, 100, 100);
+
+    this.diamond_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.pink());
+    this.diamond_shader.setMvp(this.orthographic.multiplyCopy(model));
+    WebGL.Shapes.Quad.drawRelative();
+
+    
+    this.hexagon_shader.use();
+    this.hexagon_shader.setOrientation(WebGL.Grid.Hexagon.HexOrientationEnum.Pointy);
+    let hm = WebGL.WebGL.rectangleModel(250, 250, 100, 100);
+    this.hexagon_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.pink());
+    this.hexagon_shader.setMvp(this.orthographic.multiplyCopy(hm));
+    WebGL.Shapes.Quad.drawRelative();
+
+    engine.hex_grid.drawSolidWithLayout(this.orthographic, this.hexagon_shader, this.colours.getColour("blue")!);
+    engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
+
+    /*
+    this.hexagonp_shader.use();
+    hm = WebGL.WebGL.rectangleModel(450, 250, 20, 20);
+    this.hexagonp_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.pink());
+    this.hexagonp_shader.setMvp(this.orthographic.multiplyCopy(hm));
+    WebGL.Shapes.Quad.drawRelative();
+    */
   }
 
   drawLinesFromPoints(points: Point2D[]){

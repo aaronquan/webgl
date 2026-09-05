@@ -11,8 +11,10 @@ import * as RectOutline from './Program/rect_outline';
 import * as SolidPath from './Program/solid_path';
 import * as SpriteSheet from './Program/sprite_sheet';
 import * as Texture from './Program/texture';
-import * as MultiColourCentreCirclePath from './Program/multi_colour_centre_circle_path'
-import * as SpriteSheetColour from './Program/sprite_sheet_colour'
+import * as MultiColourCentreCirclePath from './Program/multi_colour_centre_circle_path';
+import * as SpriteSheetColour from './Program/sprite_sheet_colour';
+import * as Diamond from "./Program/diamond";
+import * as Hexagon from "./Program/hexagon";
 
 export function loadFragmentShaders(){
   console.log("loading fragment shaders");
@@ -28,6 +30,11 @@ export function loadFragmentShaders(){
   Texture.TextureFragmentShader.load();
   Texture.TextureColourFragmentShader.load()
   MultiColourCentreCirclePath.MultiColourCentreCirclePathFragmentShader.load();
+  Diamond.DiamondFragmentShader.load();
+  Hexagon.HexagonFlatFragmentShader.load();
+  Hexagon.HexagonPointyFragmentShader.load();
+  Hexagon.HexagonFragmentShader.load();
+
 }
 export const CircleMixin = Circle.CircleShaderProgramMix;
 export const CircleOnlyMixin = CircleOnly.CircleOnlyShaderProgramMix;
@@ -44,3 +51,7 @@ export const TextureMixin = Texture.TextureShaderProgramMix;
 export const TextureColourMixin = Texture.TextureColourShaderProgramMix;
 export const MultiColourCentreCirclePathMixin = MultiColourCentreCirclePath.MultiColourCentreCirclePathShaderProgramMix;
 export const SpriteSheetColourMixin = SpriteSheetColour.SpriteSheetColourShaderProgramMix;
+export const DiamondColourMixin = Diamond.DiamondShaderProgramMix;
+export const HexagonFlatColourMixin = Hexagon.HexagonFlatShaderProgramMix;
+export const HexagonPointyColourMixin = Hexagon.HexagonPointyShaderProgramMix;
+export const HexagonColourMixin = Hexagon.HexagonShaderProgramMix;
