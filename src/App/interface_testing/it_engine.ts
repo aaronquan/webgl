@@ -107,6 +107,9 @@ export class ITEngine extends WebGL.App.BaseEngine{
   triangle: InteractableTriangle;
 
   hex_grid: WebGL.Grid.Hexagon.HexagonGrid;
+  tri_grid: WebGL.Grid.Triangle.TriangleGrid;
+
+  vector: WebGL.Geometry.Base.Vector;
 
   constructor(){
     super();
@@ -133,7 +136,23 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
     this.triangle = new InteractableTriangle(new Point2D(10, 10), new Point2D(10, 100), new Point2D(100, 100));
     //console.log(this.windows);
-    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(5,5);
+    
+    
+    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(3,3, WebGL.Grid.Hexagon.HexOrientationEnum.Flat);
+    /*this.hex_grid.setLayout({
+      side: 100,
+      x: 100,
+      y: 100
+    });*/
+
+    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(3,4, WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
+    this.tri_grid.setLayout({
+      side: 100,
+      x: 100,
+      y: 100
+    });
+
+    this.vector = new WebGL.Geometry.Base.Vector(1, Math.sqrt(3));
 
   }
   protected handleMouseMove(ev: MouseEvent): void {
@@ -157,6 +176,12 @@ export class ITEngine extends WebGL.App.BaseEngine{
     }
     WebGL.WebGL.setCursor(cursor);
     this.triangle.onMouseMove(this.global_mouse);
+
+    const d = this.vector.dot(new WebGL.Geometry.Base.Vector(ev.clientY-100, ev.clientX-100));
+    //console.log((d*0.01)/Math.sqrt(3));
+
+    this.hex_grid.pointToHexCoord(this.global_mouse);
+
   }
   protected handleMouseDown(ev: MouseEvent): void {
     this.button.onMouseDown();

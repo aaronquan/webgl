@@ -3,7 +3,7 @@ import * as Base from "./base";
 import * as Waves from "./waves";
 
 import Point2D = Base.Point2D;
-import Vector = Base.Vector;
+import Vector = Base.PointVector;
 
 type Int32 = number;
 type Float = number;

@@ -22,6 +22,12 @@ export class Point2D{
   equals(point: Point2D): boolean{
     return point.x == this.x && point.y == this.y;
   }
+  shift(x: Float=0, y: Float=0){
+    this.x += x; this.y += y;
+  }
+  scale(m: Float=1){
+    this.x *= m; this.y *= m;
+  }
   distanceSq(p: Point2D): Float{
     const dx = this.x - p.x;
     const dy = this.y - p.y;
@@ -36,6 +42,24 @@ export class Point2D{
 }
 
 export class Vector{
+  x: Float;
+  y: Float;
+  constructor(x: Float, y: Float){
+    this.x = x;
+    this.y = y;
+  }
+  angle(){
+    return Math.atan2(this.y, this.x);
+  }
+  dot(v:Vector): Float{
+    return this.x*v.x + this.y*v.y;
+  }
+  closestDistance(point: Point2D){
+    //point.
+  }
+}
+
+export class PointVector{
   point: Point2D;
   dx: Float;
   dy: Float;
@@ -44,8 +68,8 @@ export class Vector{
     this.dx = dx;
     this.dy = dy;
   }
-  static from2Points(main_point: Point2D, point_to: Point2D): Vector{
-    return new Vector(main_point.copy(), point_to.x-main_point.x,
+  static from2Points(main_point: Point2D, point_to: Point2D): PointVector{
+    return new PointVector(main_point.copy(), point_to.x-main_point.x,
     point_to.y-main_point.y);
   }
   magnitudeSq(): Float{

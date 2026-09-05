@@ -28,6 +28,11 @@ export class MVPTextureColourProgram extends Fragment.TextureColourMixin(Vertex.
 export class MVPMultiColourPathProgram extends Fragment.MultiColourPathMixin(Vertex.Mvp2dMixin){};
 export class MVPMultiColourCentreCirclePathProgram extends Fragment.MultiColourCentreCirclePathMixin(Vertex.Mvp2dMixin){};
 export class MVPSpriteSheetColourProgram extends Fragment.SpriteSheetColourMixin(Vertex.Mvp2dMixin){};
+export class MVPDiamondProgram extends Fragment.DiamondColourMixin(Vertex.Mvp2dMixin){};
+export class MVPHexagonFlatProgram extends Fragment.HexagonFlatColourMixin(Vertex.Mvp2dMixin){};
+export class MVPHexagonPointyProgram extends Fragment.HexagonPointyColourMixin(Vertex.Mvp2dMixin){};
+export class MVPHexagonProgram extends Fragment.HexagonColourMixin(Vertex.Mvp2dMixin){};
+
 /*
 interface Colour{
   setColour(r: GLfloat, g: GLfloat, b: GLfloat): void;
