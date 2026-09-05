@@ -164,9 +164,31 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     }
   }
 
+
+  getBattleGridGlobalPoint(be: BattleEngine, x: Int32, y: Int32): WebGL.Geometry.Base.Point2D{
+    const ix = be.battle_grid.interface.x;
+    const iy = be.battle_grid.interface.y;
+    const cs = be.battle_grid.interface.cell_size;
+    return new WebGL.Geometry.Base.Point2D(ix+cs*x, iy+cs*y);
+  }
+
   drawBattle(be: BattleEngine){
     //draw battle grid
     be.battle_grid.drawInterfaceGridOutline(this.orthographic, this.colour_shader, 4);
 
+    //todo draw instance
+    const gs = be.battle_grid.interface.cell_size;
+
+    this.colour_shader.use();
+    this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.blue());
+    for(const [id, obj] of be.object_instances){
+      const coords = obj.battle_object.getCoordinates();
+      for(const c of coords){
+        const gpt = this.getBattleGridGlobalPoint(be, c.x, c.y);
+        const model = WebGL.WebGL.rectangleModel(gpt.x, gpt.y, gs, gs);
+        this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
+        WebGL.Shapes.Quad.draw();
+      }
+    }
   }
 }
