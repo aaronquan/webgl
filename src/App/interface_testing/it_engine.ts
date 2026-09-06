@@ -145,9 +145,11 @@ export class ITEngine extends WebGL.App.BaseEngine{
       y: 100
     });*/
 
-    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(3,4, WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
+    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(6,8, WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
+
+    this.tri_grid.orientation = 1;
     this.tri_grid.setLayout({
-      side: 100,
+      side: 45,
       x: 100,
       y: 100
     });

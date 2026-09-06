@@ -1,5 +1,6 @@
 import * as WebGL from "./../globals";
 import * as Base from "./../Geometry/base";
+import * as Grid from "./generic";
 
 type Int32 = number;
 type Float = number;
@@ -38,33 +39,82 @@ export class TriangleGrid{
 
 	}
 
+	pointToTriCoord(pt: Base.Point2D): Grid.Coordinate | undefined{
+		//todo
+
+		return undefined;
+	}
+
 	drawOutline(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, colour: WebGL.Colour.ColourRGB, lt: Int32){
 		if(this.layout == undefined){
 			return;
 		}
 		colour_shader.use();
 		colour_shader.setColourFromColourRGB(colour);
-		//draw horizontal / vertical lines
 		const width_line_length = this.layout.side * this.width;
+		const odd_width = this.width % 2 == 1;
+		//const starting_width = (odd_width ? this.width-1 : this.width)*0.5;
+		const low_width = (odd_width ? this.width-1 : this.width)*0.5;
+		const hi_width = (odd_width ? this.width+1 : this.width)*0.5; // 
 		if(this.orientation == TriangleGridOrientationEnum.HorizontalFlats || this.orientation == TriangleGridOrientationEnum.HorizontalPoints){
+			const is_flat = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
+			
 			let y = this.layout.y;
-			for(let i = 0; i < this.height; i++){
-				const x = (i % 2 == 0) ? this.layout.x : this.layout.x - 0.5*this.layout.side;
-				const line_model = WebGL.WebGL.lineModel(x, y, x+width_line_length, y, lt);
+			let hi_wid = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
+			//horizontal lines
+			for(let i = 0; i <= this.height; i++){
+				const x = (i % 2 == 0) ? this.layout.x : this.layout.x + (is_flat ? 1 : -1)*0.5*this.layout.side;
+				const width = (hi_wid ? hi_width : low_width)*this.layout.side;
+				const line_model = WebGL.WebGL.lineModel(x, y, x+width, y, lt);
 				colour_shader.setMvp(vp.multiplyCopy(line_model));
 				WebGL.Shapes.Quad.draw();
-
+				hi_wid = !hi_wid;
 				y += this.layout.side*0.5*Math.sqrt(3);
 			}
+
+			hi_wid = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
 
 			//top left to right lines
 			//y = this.layout.y;
 			let x = this.layout.x;
-			for(let i = 0; i < this.width; i++){
-				const steps = Math.min(this.height, this.width-i);
+			const wlr = Math.round(hi_wid ? hi_width : low_width+(odd_width ? 1 : 0));
+			for(let i = 0; i < wlr; i++){
+				const steps = Math.min(this.height, (wlr-i)*2);
 				const xs = steps*0.5*this.layout.side;
 				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
 				const line_model = WebGL.WebGL.lineModel(x, this.layout.y, x+xs, this.layout.y+ys, lt);
+				colour_shader.setMvp(vp.multiplyCopy(line_model));
+				WebGL.Shapes.Quad.draw();
+				x += this.layout.side;
+			}
+			x = hi_wid ? this.layout.x : this.layout.x - this.layout.side*0.5;
+			//left side lines
+			let i = this.orientation == TriangleGridOrientationEnum.HorizontalFlats ? 2 : 1;
+			for(; i < this.height; i+=2){
+				const steps = (this.height-i);
+				const xs = steps*0.5*this.layout.side;
+				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
+				const y = this.layout.y + i*this.layout.side*0.5*Math.sqrt(3);
+				const line_model = WebGL.WebGL.lineModel(x, 
+					y,
+					x + xs, y + ys, lt
+				);
+				colour_shader.setMvp(vp.multiplyCopy(line_model));
+				WebGL.Shapes.Quad.draw();
+				
+			}
+
+
+			x = this.layout.x;
+			const wrl = hi_wid ? hi_width : low_width;
+			//top right to left lines
+			for(let i = 0; i <= wrl; i++){
+				const steps = Math.min(this.height, (i+1)*2-1);
+				const xs = -steps*0.5*this.layout.side;
+				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
+				const line_model = WebGL.WebGL.lineModel(x, this.layout.y,
+					x + xs, this.layout.y + ys, lt
+				);
 				colour_shader.setMvp(vp.multiplyCopy(line_model));
 				WebGL.Shapes.Quad.draw();
 				x += this.layout.side;

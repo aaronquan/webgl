@@ -66,8 +66,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     //this.drawLinesFromPoints(hex_pts);
 
     //draw the hex grid
-    engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
-
+    //engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
+    
     //engine.hex_grid.drawOutline(this.orthographic, this.colour_shader, 20, 30, 30, WebGL.Colour.ColourUtils.green(), 4);
     
 
@@ -91,6 +91,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
 
     engine.hex_grid.drawSolidWithLayout(this.orthographic, this.hexagon_shader, this.colours.getColour("blue")!);
     engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
+
+    engine.tri_grid.drawOutline(this.orthographic, this.colour_shader, this.colours.getColour("blue")!, 2);
 
     /*
     this.hexagonp_shader.use();
