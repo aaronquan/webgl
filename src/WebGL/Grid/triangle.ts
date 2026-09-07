@@ -56,6 +56,9 @@ export class TriangleGrid{
 		//const starting_width = (odd_width ? this.width-1 : this.width)*0.5;
 		const low_width = (odd_width ? this.width-1 : this.width)*0.5;
 		const hi_width = (odd_width ? this.width+1 : this.width)*0.5; // 
+
+		const hs = 0.5*this.layout.side;
+		const sq3 = Math.sqrt(3);
 		if(this.orientation == TriangleGridOrientationEnum.HorizontalFlats || this.orientation == TriangleGridOrientationEnum.HorizontalPoints){
 			const is_flat = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
 			
@@ -77,7 +80,7 @@ export class TriangleGrid{
 			//top left to right lines
 			//y = this.layout.y;
 			let x = this.layout.x;
-			const wlr = Math.round(hi_wid ? hi_width : low_width+(odd_width ? 1 : 0));
+			const wlr = hi_wid ? hi_width : low_width+(odd_width ? 0.5 : 0);
 			for(let i = 0; i < wlr; i++){
 				const steps = Math.min(this.height, (wlr-i)*2);
 				const xs = steps*0.5*this.layout.side;
@@ -88,10 +91,11 @@ export class TriangleGrid{
 				x += this.layout.side;
 			}
 			x = hi_wid ? this.layout.x : this.layout.x - this.layout.side*0.5;
+			const side_width_length = hi_width*2 + (odd_width ? 0 : 1);
 			//left side lines
-			let i = this.orientation == TriangleGridOrientationEnum.HorizontalFlats ? 2 : 1;
+			let i = is_flat ? 2 : 1;
 			for(; i < this.height; i+=2){
-				const steps = (this.height-i);
+				const steps = Math.min(this.height-i, side_width_length);
 				const xs = steps*0.5*this.layout.side;
 				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
 				const y = this.layout.y + i*this.layout.side*0.5*Math.sqrt(3);
@@ -118,6 +122,22 @@ export class TriangleGrid{
 				colour_shader.setMvp(vp.multiplyCopy(line_model));
 				WebGL.Shapes.Quad.draw();
 				x += this.layout.side;
+			}
+			const width = (hi_wid ? hi_width : low_width)*this.layout.side;
+			x = hi_wid ? this.layout.x + width : this.layout.x + width;
+			//right side lines
+			i = is_flat ? 1 : 2;
+			for(; i < this.height; i+=2){
+				const steps = Math.min(this.height-i, side_width_length);
+				const xs = -steps*hs;
+				const ys = steps*hs*sq3;
+				const y = this.layout.y + hs*sq3*i;
+				const line_model = WebGL.WebGL.lineModel(
+					x, y, xs+x, ys+y, lt
+				);
+				colour_shader.setMvp(vp.multiplyCopy(line_model));
+				WebGL.Shapes.Quad.draw();
+
 			}
 		}
 	}
