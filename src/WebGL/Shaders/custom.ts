@@ -10,6 +10,8 @@ import * as Shader from './shader'
 //const MVPMixin = Vertex.MvpShaderProgramMix(Shader.ShaderProgramMixin);
 //const TransformMixin = Vertex.Transform2dShaderProgramMix(Shader.ShaderProgramMixin);
 
+export class SimpleColourProgram extends Fragment.ColourMixin(Vertex.SimpleMixin){};
+
 export class MVPColourProgram extends Fragment.ColourMixin(Vertex.Mvp2dMixin){};
 export class MVPColourAlphaProgram extends Fragment.ColourAlphaMixin(Vertex.Mvp2dMixin){};
 export class TransformColourProgram extends Fragment.ColourMixin(Vertex.Transform2dMixin){};

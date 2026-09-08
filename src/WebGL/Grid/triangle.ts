@@ -40,7 +40,45 @@ export class TriangleGrid{
 	}
 
 	pointToTriCoord(pt: Base.Point2D): Grid.Coordinate | undefined{
-		//todo
+		if(this.layout == undefined) return;
+		if(this.orientation == TriangleGridOrientationEnum.HorizontalFlats || this.orientation == TriangleGridOrientationEnum.HorizontalPoints){
+			const y = (pt.y - this.layout.y)/(this.layout.side*0.5*Math.sqrt(3));
+			if(y < 0 || y >= this.height) return undefined;
+			//console.log(y);
+			const yc = Math.floor(y);
+			const is_flat = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
+			const flat_first = (is_flat ? (yc % 2 == 0 ? true : false) : (yc % 2 == 0 ? false : true));
+			//console.log(flat_first);
+			const yd = y - yc;
+			const x = 2*(pt.x - this.layout.y)/this.layout.side;
+			//console.log(`${x.toFixed(2)} ${yd.toFixed(2)}`);
+			let fl_x = Math.floor(x);
+			const xd = x - fl_x;
+
+			//console.log(fl_x + (!flat_first ? 1 : 0));
+			//console.log(`${xd.toFixed(2)} ${yd.toFixed(2)}`);
+			const is_left = ((fl_x + (!flat_first ? 1 : 0)) % 2 == 0 ? yd > xd : 1-yd > xd);
+			const xc = fl_x - (is_left ? 1 : 0);
+			if(xc < 0 || xc >= this.width) return undefined;
+			const gc = {x: xc, y: yc};
+			//console.log(gc);
+			/*
+			if((fl_x + (!flat_first ? 1 : 0)) % 2 == 0 ){
+				if(yd > xd){
+					console.log("left");
+				}else{
+					console.log("right");
+				}
+			}else{
+				if(1-yd > xd){
+					console.log("left");
+				}else{
+					console.log("right");
+				}
+			}*/
+
+			return gc;
+		}
 
 		return undefined;
 	}
@@ -51,54 +89,50 @@ export class TriangleGrid{
 		}
 		colour_shader.use();
 		colour_shader.setColourFromColourRGB(colour);
-		const width_line_length = this.layout.side * this.width;
 		const odd_width = this.width % 2 == 1;
-		//const starting_width = (odd_width ? this.width-1 : this.width)*0.5;
 		const low_width = (odd_width ? this.width-1 : this.width)*0.5;
 		const hi_width = (odd_width ? this.width+1 : this.width)*0.5; // 
 
 		const hs = 0.5*this.layout.side;
 		const sq3 = Math.sqrt(3);
+		const sq3s = hs*sq3;
 		if(this.orientation == TriangleGridOrientationEnum.HorizontalFlats || this.orientation == TriangleGridOrientationEnum.HorizontalPoints){
 			const is_flat = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
 			
 			let y = this.layout.y;
-			let hi_wid = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
+			let hi_wid = is_flat;
 			//horizontal lines
 			for(let i = 0; i <= this.height; i++){
-				const x = (i % 2 == 0) ? this.layout.x : this.layout.x + (is_flat ? 1 : -1)*0.5*this.layout.side;
+				const x = (i % 2 == 0) ? this.layout.x : this.layout.x + (is_flat ? 1 : -1)*hs;
 				const width = (hi_wid ? hi_width : low_width)*this.layout.side;
 				const line_model = WebGL.WebGL.lineModel(x, y, x+width, y, lt);
 				colour_shader.setMvp(vp.multiplyCopy(line_model));
 				WebGL.Shapes.Quad.draw();
 				hi_wid = !hi_wid;
-				y += this.layout.side*0.5*Math.sqrt(3);
+				y += sq3s;
 			}
 
-			hi_wid = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
-
 			//top left to right lines
-			//y = this.layout.y;
 			let x = this.layout.x;
-			const wlr = hi_wid ? hi_width : low_width+(odd_width ? 0.5 : 0);
+			const wlr = is_flat ? hi_width+(odd_width ? 0 : 0.5) : low_width+(odd_width ? 0.5 : 0);
 			for(let i = 0; i < wlr; i++){
 				const steps = Math.min(this.height, (wlr-i)*2);
-				const xs = steps*0.5*this.layout.side;
-				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
+				const xs = steps*hs;
+				const ys = steps*sq3s;
 				const line_model = WebGL.WebGL.lineModel(x, this.layout.y, x+xs, this.layout.y+ys, lt);
 				colour_shader.setMvp(vp.multiplyCopy(line_model));
 				WebGL.Shapes.Quad.draw();
 				x += this.layout.side;
 			}
-			x = hi_wid ? this.layout.x : this.layout.x - this.layout.side*0.5;
+			x = is_flat ? this.layout.x : this.layout.x - hs;
 			const side_width_length = hi_width*2 + (odd_width ? 0 : 1);
 			//left side lines
 			let i = is_flat ? 2 : 1;
 			for(; i < this.height; i+=2){
 				const steps = Math.min(this.height-i, side_width_length);
-				const xs = steps*0.5*this.layout.side;
-				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
-				const y = this.layout.y + i*this.layout.side*0.5*Math.sqrt(3);
+				const xs = steps*hs;
+				const ys = steps*sq3s;
+				const y = this.layout.y + i*sq3s;
 				const line_model = WebGL.WebGL.lineModel(x, 
 					y,
 					x + xs, y + ys, lt
@@ -110,12 +144,12 @@ export class TriangleGrid{
 
 
 			x = this.layout.x;
-			const wrl = hi_wid ? hi_width : low_width;
+			const wrl = is_flat ? hi_width + (odd_width ? 0.5 : 0) : low_width;
 			//top right to left lines
 			for(let i = 0; i <= wrl; i++){
-				const steps = Math.min(this.height, (i+1)*2-1);
-				const xs = -steps*0.5*this.layout.side;
-				const ys = steps*0.5*Math.sqrt(3)*this.layout.side;
+				const steps = Math.min(this.height, (i+0.5)*2-(is_flat ? 1 : 0));
+				const xs = -steps*hs;
+				const ys = steps*sq3s;
 				const line_model = WebGL.WebGL.lineModel(x, this.layout.y,
 					x + xs, this.layout.y + ys, lt
 				);
@@ -123,15 +157,16 @@ export class TriangleGrid{
 				WebGL.Shapes.Quad.draw();
 				x += this.layout.side;
 			}
-			const width = (hi_wid ? hi_width : low_width)*this.layout.side;
-			x = hi_wid ? this.layout.x + width : this.layout.x + width;
+
+			const width = (is_flat ? hi_width + (odd_width ? 0 : 0.5) : low_width + (odd_width ? 0.5 : 0))*this.layout.side;
+			x = this.layout.x + width;
 			//right side lines
-			i = is_flat ? 1 : 2;
+			i = is_flat ? (odd_width ? 2 : 1) : (odd_width ? 1 : 2);
 			for(; i < this.height; i+=2){
 				const steps = Math.min(this.height-i, side_width_length);
 				const xs = -steps*hs;
-				const ys = steps*hs*sq3;
-				const y = this.layout.y + hs*sq3*i;
+				const ys = steps*sq3s;
+				const y = this.layout.y + sq3s*i;
 				const line_model = WebGL.WebGL.lineModel(
 					x, y, xs+x, ys+y, lt
 				);
@@ -139,6 +174,9 @@ export class TriangleGrid{
 				WebGL.Shapes.Quad.draw();
 
 			}
+		}else{
+			//todo do other orientations with vertical lines
+			const is_flat = this.orientation == TriangleGridOrientationEnum.VerticalFlats;
 		}
 	}
 }

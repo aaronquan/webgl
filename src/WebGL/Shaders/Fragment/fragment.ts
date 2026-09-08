@@ -20,7 +20,7 @@ export function loadFragmentShaders(){
   console.log("loading fragment shaders");
   Circle.CircleFragmentShader.load();
   CircleOutline.CircleOutlineFragmentShader.load();
-  //Colour.ColourFragmentShader.load();
+  //Colour.ColourFragmentShader.load(); // loaded in class
   Line.LineFragmentShader.load();
   MultiColourPath.MultiColourPathFragmentShader.load();
   PathCentreCircle.PathCentreCircleFragmentShader.load();
@@ -30,10 +30,13 @@ export function loadFragmentShaders(){
   Texture.TextureFragmentShader.load();
   Texture.TextureColourFragmentShader.load()
   MultiColourCentreCirclePath.MultiColourCentreCirclePathFragmentShader.load();
+
+  //loaded in class
+  /*
   Diamond.DiamondFragmentShader.load();
   Hexagon.HexagonFlatFragmentShader.load();
   Hexagon.HexagonPointyFragmentShader.load();
-  Hexagon.HexagonFragmentShader.load();
+  Hexagon.HexagonFragmentShader.load();*/
 
 }
 export const CircleMixin = Circle.CircleShaderProgramMix;

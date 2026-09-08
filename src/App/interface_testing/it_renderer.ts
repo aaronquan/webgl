@@ -4,6 +4,7 @@ import { ITEngine } from "./it_engine";
 type Int32 = number;
 
 import Point2D = WebGL.Geometry.Base.Point2D;
+import { simple } from "../../WebGL/Shaders/Fragment/Source/fragment_source";
 
 export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   colour_shader: WebGL.Shader.MVPColourProgram;
@@ -12,16 +13,25 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   hexagon_shader: WebGL.Shader.MVPHexagonProgram;
   hexagonp_shader: WebGL.Shader.MVPHexagonPointyProgram;
 
+  simple_shader: WebGL.Shader.SimpleColourProgram;
+
   colours: WebGL.Colour.ColourRGBCollection;
+
+  canvas_width: Int32;
+  canvas_height: Int32;
 
   constructor(w: Int32, h: Int32){
     super(w, h);
+    this.canvas_width = w;
+    this.canvas_height = h;
     this.font_names.push("font16-Sheet.png");
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.circle_shader = new WebGL.Shader.MVPCircleOnlyProgram();
     this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
     this.hexagon_shader = new WebGL.Shader.MVPHexagonProgram();
     this.hexagonp_shader = new WebGL.Shader.MVPHexagonPointyProgram();
+
+    this.simple_shader = new WebGL.Shader.SimpleColourProgram();
 
     this.colours = new WebGL.Colour.ColourRGBCollection();
     this.colours.addBaseColours();
@@ -93,6 +103,15 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
 
     engine.tri_grid.drawOutline(this.orthographic, this.colour_shader, this.colours.getColour("blue")!, 2);
+
+    this.simple_shader.use();
+    this.simple_shader.setColourFromColourRGB(this.colours.getColour("blue")!);
+    WebGL.Shapes.Triangle.drawGlobal(
+      new WebGL.Geometry.Base.Point2D(100, 100),
+      new WebGL.Geometry.Base.Point2D(200, 200),
+      new WebGL.Geometry.Base.Point2D(200, 150),
+      this.canvas_width, this.canvas_height
+    );
 
     /*
     this.hexagonp_shader.use();

@@ -1,4 +1,36 @@
 import WebGL from '../globals';
+import * as WGL from "../globals";
+
+type Int32 = number;
+
+export class Triangle{
+  static drawGlobal(p1: WGL.Geometry.Base.Point2D, 
+    p2: WGL.Geometry.Base.Point2D, 
+    p3: WGL.Geometry.Base.Point2D,
+    width: Int32,
+    height: Int32
+  ){
+    const x1 = ((p1.x * 2) / width) - 1;
+    const y1 = 1 - ((p1.y * 2) / height);
+    const x2 = ((p2.x * 2) / width) - 1;
+    const y2 = 1 - ((p2.y * 2) / height);
+    const x3 = ((p3.x * 2) / width) - 1;
+    const y3 = 1 - ((p3.y * 2) / height);
+    const positions = new Float32Array([
+      x1, y1, x2, y2, x3, y3
+    ]);
+    const gl = WebGL.gl;
+    if(gl){
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); // changes the bind buffers
+
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+  }
+}
 
 export class RightTriangle{
   private static positions = new Float32Array([

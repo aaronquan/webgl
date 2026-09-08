@@ -145,9 +145,10 @@ export class ITEngine extends WebGL.App.BaseEngine{
       y: 100
     });*/
 
-    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(5,8, WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
+    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(10,6, 
+      WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
 
-    this.tri_grid.orientation = 1;
+    this.tri_grid.orientation = 0;
     this.tri_grid.setLayout({
       side: 45,
       x: 100,
@@ -182,7 +183,9 @@ export class ITEngine extends WebGL.App.BaseEngine{
     const d = this.vector.dot(new WebGL.Geometry.Base.Vector(ev.clientY-100, ev.clientX-100));
     //console.log((d*0.01)/Math.sqrt(3));
 
-    this.hex_grid.pointToHexCoord(this.global_mouse);
+    //this.hex_grid.pointToHexCoord(this.global_mouse);
+
+    this.tri_grid.pointToTriCoord(this.global_mouse);
 
   }
   protected handleMouseDown(ev: MouseEvent): void {

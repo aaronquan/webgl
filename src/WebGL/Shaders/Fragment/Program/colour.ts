@@ -3,12 +3,10 @@ import * as WebGL from './../../../globals';
 
 const Colour = `precision mediump float;
 
-
-
-uniform vec3 colour; //colour
+uniform vec3 u_colour; //colour
 
 void main(){
-  gl_FragColor = vec4(colour, 1.0);
+  gl_FragColor = vec4(u_colour, 1.0);
 }`;
 
 export class ColourFragmentShader{
@@ -34,7 +32,7 @@ export function ColourShaderProgramMix<TBase extends Shader.CustomShaderPrograma
       this.program.addFragment(ColourFragmentShader.shader!);
     }
     protected override addFragmentUniformLocations(): void{
-      this.colour_uniform_location = this.program.getUniformLocation('colour');
+      this.colour_uniform_location = this.program.getUniformLocation('u_colour');
     }
     setColour(a: GLfloat, b: GLfloat, c: GLfloat){
       this.program.setFloat3(this.colour_uniform_location!, a, b, c);
