@@ -4,6 +4,7 @@ import { ITEngine } from "./it_engine";
 type Int32 = number;
 
 import Point2D = WebGL.Geometry.Base.Point2D;
+import { simple } from "../../WebGL/Shaders/Fragment/Source/fragment_source";
 
 export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   colour_shader: WebGL.Shader.MVPColourProgram;
@@ -12,16 +13,25 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   hexagon_shader: WebGL.Shader.MVPHexagonProgram;
   hexagonp_shader: WebGL.Shader.MVPHexagonPointyProgram;
 
+  simple_shader: WebGL.Shader.SimpleColourProgram;
+
   colours: WebGL.Colour.ColourRGBCollection;
+
+  canvas_width: Int32;
+  canvas_height: Int32;
 
   constructor(w: Int32, h: Int32){
     super(w, h);
+    this.canvas_width = w;
+    this.canvas_height = h;
     this.font_names.push("font16-Sheet.png");
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.circle_shader = new WebGL.Shader.MVPCircleOnlyProgram();
     this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
     this.hexagon_shader = new WebGL.Shader.MVPHexagonProgram();
     this.hexagonp_shader = new WebGL.Shader.MVPHexagonPointyProgram();
+
+    this.simple_shader = new WebGL.Shader.SimpleColourProgram();
 
     this.colours = new WebGL.Colour.ColourRGBCollection();
     this.colours.addBaseColours();
@@ -66,8 +76,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     //this.drawLinesFromPoints(hex_pts);
 
     //draw the hex grid
-    engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
-
+    //engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
+    
     //engine.hex_grid.drawOutline(this.orthographic, this.colour_shader, 20, 30, 30, WebGL.Colour.ColourUtils.green(), 4);
     
 
@@ -89,8 +99,30 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.hexagon_shader.setMvp(this.orthographic.multiplyCopy(hm));
     WebGL.Shapes.Quad.drawRelative();
 
-    engine.hex_grid.drawSolidWithLayout(this.orthographic, this.hexagon_shader, this.colours.getColour("blue")!);
+    //engine.hex_grid.drawSolidWithLayout(this.orthographic, this.hexagon_shader, this.colours.getColour("blue")!);
     engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
+    if(engine.hover_hex != undefined){
+      engine.hex_grid.drawSolidHexWithLayout(this.orthographic, this.hexagon_shader, engine.hover_hex.x,
+        engine.hover_hex.y, this.colours.getColour("pink")!
+      );
+    }
+    /*
+    engine.tri_grid.drawOutline(this.orthographic, this.colour_shader, this.colours.getColour("blue")!, 2);
+
+    if(engine.test_triangle.length >= 3){
+      this.simple_shader.use();
+      this.simple_shader.setColourFromColourRGB(this.colours.getColour("blue")!);
+      //WebGL.Shapes.Triangle
+      
+      WebGL.Shapes.Triangle.drawGlobal(
+        engine.test_triangle[0],
+        engine.test_triangle[1],
+        engine.test_triangle[2],
+        this.canvas_width, this.canvas_height
+      );
+    }*/
+
+
 
     /*
     this.hexagonp_shader.use();

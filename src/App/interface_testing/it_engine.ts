@@ -111,6 +111,9 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
   vector: WebGL.Geometry.Base.Vector;
 
+  test_triangle: WebGL.Geometry.Base.Point2D[];
+  hover_hex: WebGL.Grid.Generic.Coordinate | undefined;
+
   constructor(){
     super();
     this.global_mouse = new Point2D(0, 0);
@@ -138,22 +141,25 @@ export class ITEngine extends WebGL.App.BaseEngine{
     //console.log(this.windows);
     
     
-    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(3,3, WebGL.Grid.Hexagon.HexOrientationEnum.Flat);
-    /*this.hex_grid.setLayout({
-      side: 100,
+    this.hex_grid = new WebGL.Grid.Hexagon.HexagonGrid(4,4, WebGL.Grid.Hexagon.HexOrientationEnum.Flat);
+    this.hex_grid.setLayout({
+      side: 50,
       x: 100,
       y: 100
-    });*/
+    });
 
-    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(3,4, WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
+    this.tri_grid = new WebGL.Grid.Triangle.TriangleGrid(10,6, 
+      WebGL.Grid.Triangle.TriangleGridOrientationEnum.HorizontalFlats);
+
+    this.tri_grid.orientation = 0;
     this.tri_grid.setLayout({
-      side: 100,
+      side: 45,
       x: 100,
       y: 100
     });
 
     this.vector = new WebGL.Geometry.Base.Vector(1, Math.sqrt(3));
-
+    this.test_triangle = [];
   }
   protected handleMouseMove(ev: MouseEvent): void {
     this.global_mouse = new Point2D(ev.clientX, ev.clientY);
@@ -180,8 +186,14 @@ export class ITEngine extends WebGL.App.BaseEngine{
     const d = this.vector.dot(new WebGL.Geometry.Base.Vector(ev.clientY-100, ev.clientX-100));
     //console.log((d*0.01)/Math.sqrt(3));
 
-    this.hex_grid.pointToHexCoord(this.global_mouse);
+    //this.hex_grid.pointToHexCoord(this.global_mouse);
 
+    const coord = this.tri_grid.pointToTriCoord(this.global_mouse);
+    if(coord != undefined){
+      this.test_triangle = this.tri_grid.getTrianglePoints(coord.x, coord.y);
+    }
+
+    this.hover_hex = this.hex_grid.pointToHexCoord(this.global_mouse);
   }
   protected handleMouseDown(ev: MouseEvent): void {
     this.button.onMouseDown();
