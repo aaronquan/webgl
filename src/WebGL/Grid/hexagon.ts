@@ -1,6 +1,7 @@
 import * as WebGL from "./../globals";
 import * as Base from "./../Geometry/base";
 import * as Grid from "./generic";
+import * as Triangle from "./triangle";
 
 type Int32 = number;
 type Float = number;
@@ -34,8 +35,8 @@ export class Hexagon{
 	//
 	toCoordinates(orientation: HexOrientation): Base.Point2D{
 		const sq3 = Math.sqrt(3);
-		const c1 = -this.s*sq3-this.r*sq3*0.5; // negatived value based on visual placement
-		const c2 = this.r*1.5;
+		const c1 = this.r*sq3+this.q*sq3*0.5; // negatived value based on visual placement
+		const c2 = this.q*1.5;
 		if(orientation == HexOrientationEnum.Pointy){
 			return new Base.Point2D(c1, c2);
 		}
@@ -132,7 +133,7 @@ export class HexagonGrid{
 		const hexes = [];
 		for(let y = 0; y < this.height; y++){
 			for(let x = 0; x < this.width; x++){
-				hexes.push(Hexagon.fromAxial(x-Math.floor(y*0.5), y));
+				hexes.push(Hexagon.fromAxial(x, y-Math.floor(x*0.5)));
 			}
 		}
 		console.log(hexes);
@@ -168,39 +169,63 @@ export class HexagonGrid{
 		}
 		const sq3 = Math.sqrt(3);
 		if(this.orientation == HexOrientationEnum.Flat){
-				//get q, r, s by comparing distance to lines
-				const vr = new WebGL.Geometry.Base.Vector(1, sq3);
-				const dr = vr.dot(new WebGL.Geometry.Base.Vector(point.y-100, point.x-100));
-				const raw_r = dr / this.draw_layout.side / Math.sqrt(3);
-				const r = Math.floor(raw_r);
+			//try triangle grid
 
-				const vs = new WebGL.Geometry.Base.Vector(-1, sq3);
-				const ds = vs.dot(new WebGL.Geometry.Base.Vector(point.y-100, point.x-100));
-				const raw_s = ds / this.draw_layout.side / Math.sqrt(3);
-				const s = Math.floor(raw_s);
 
-				//const vs = new 
+			const tri_grid = new Triangle.TriangleGrid(3*this.width, 3*this.height+1);
+			//set same as hex
+			tri_grid.setLayout({
+				...this.draw_layout 
+			});
 
-				const vert = 2 * (point.y-100) / Math.sqrt(3) / this.draw_layout.side;
-				const q = Math.floor(vert);
+			const coord = tri_grid.pointToTriCoord(point);
+			//console.log(coord);
+			if(coord != undefined){
+				const x = Math.floor((coord.x + 2)/3);
+				const odd_x = x % 2 != 0;
+				const y = Math.floor((coord.y-(odd_x ? 1 : 0)+1)*0.5);
+				
+				//console.log({x, y});
+				if(x < 0 || x >= this.width) return undefined;
+				if(y < 0 || y >= this.height) return undefined;
+				return {x, y};
+			}
 
-				//console.log(r % 3); // 
-				console.log(s % 3);
-				// r 
+			//get q, r, s by comparing distance to lines
+			/*
+			const vr = new WebGL.Geometry.Base.Vector(1, sq3);
+			const dr = vr.dot(new WebGL.Geometry.Base.Vector(point.y-100, point.x-100));
+			const raw_r = dr / this.draw_layout.side / Math.sqrt(3);
+			const r = Math.floor(raw_r);
 
-				if(q % 2 == 0){
-					//low sides are on +ve side 
-					// even is low on x evens and high on x odds
-					//if()
-				}
+			const vs = new WebGL.Geometry.Base.Vector(-1, sq3);
+			const ds = vs.dot(new WebGL.Geometry.Base.Vector(point.y-100, point.x-100));
+			const raw_s = ds / this.draw_layout.side / Math.sqrt(3);
+			const s = Math.floor(raw_s);
 
-				const x = Math.floor((r+1)/2)-vert;
-				const y = x % 2 == 0 ? Math.floor(vert+1)/2 : Math.floor(vert)/2;
-				//const x = Math.floor((r+1)/2);
+			//const vs = new 
 
-				//console.log(`${q} ${r} ${s}`);
+			const vert = 2 * (point.y-100) / Math.sqrt(3) / this.draw_layout.side;
+			const q = Math.floor(vert);
 
-				//console.log(`${vert} ${r}`);
+			//console.log(r % 3); // 
+			console.log(s % 3);
+			// r 
+
+			if(q % 2 == 0){
+				//low sides are on +ve side 
+				// even is low on x evens and high on x odds
+				//if()
+			}
+
+			const x = Math.floor((r+1)/2)-vert;
+			const y = x % 2 == 0 ? Math.floor(vert+1)/2 : Math.floor(vert)/2;
+			//const x = Math.floor((r+1)/2);
+
+			//console.log(`${q} ${r} ${s}`);
+
+			//console.log(`${vert} ${r}`);
+			*/
 		}else{
 
 		}
@@ -244,6 +269,31 @@ export class HexagonGrid{
 
 			WebGL.WebGL.drawLinesFromPoints(vp, colour_shader, pts, lt, colour);
 			//console.log(pts);
+		}
+	}
+
+	drawSolidHexWithLayout(vp: WebGL.Matrix.TransformationMatrix3x3, 
+		hexagon_shader: WebGL.Shader.MVPHexagonProgram, x: Int32, y: Int32,
+		colour: WebGL.Colour.ColourRGB,
+		override_layout: HexGridDrawLayout | undefined=undefined){
+		let used_layout = this.draw_layout;
+		if(override_layout != undefined){
+			used_layout = override_layout;
+		}
+		if(used_layout != undefined){
+			hexagon_shader.use();
+			hexagon_shader.setColourFromColourRGB(colour);
+			hexagon_shader.setOrientation(this.orientation);
+			WebGL.WebGL.enableBlend();
+			const hex = this.hexes[y*this.width + x];
+			const center = hex.toCoordinates(this.orientation);
+			center.scale(used_layout.side);
+			center.shift(used_layout.x, used_layout.y);
+			const ds = used_layout.side*2;
+			const model = WebGL.WebGL.rectangleModel(center.x, center.y, ds, ds);
+			hexagon_shader.setMvp(vp.multiplyCopy(model));
+			WebGL.Shapes.CenterQuad.drawRelative();
+			WebGL.WebGL.disableBlend();
 		}
 	}
 

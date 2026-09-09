@@ -25,7 +25,7 @@ export class TriangleGrid{
 	height: Int32;
 	layout: TriangleGridLayout | undefined;
 	orientation: TriangleGridOrientation;
-	constructor(w: Int32, h: Int32, ori: TriangleGridOrientation | undefined ){
+	constructor(w: Int32, h: Int32, ori?: TriangleGridOrientation){
 		this.width = w;
 		this.height = h;
 		this.orientation = ori != undefined ? ori : TriangleGridOrientationEnum.HorizontalFlats;
@@ -39,11 +39,39 @@ export class TriangleGrid{
 
 	}
 
+	getTrianglePoints(x: Int32, y: Int32): WebGL.Geometry.Base.Point2D[]{
+		const pts = [];
+		if(this.layout == undefined) return [];
+		const hs = this.layout.side*0.5;
+		const sq3s = hs*Math.sqrt(3);
+		if(this.orientation == TriangleGridOrientationEnum.HorizontalFlats || this.orientation == TriangleGridOrientationEnum.HorizontalPoints){
+			const yt = this.layout.y + sq3s*y;
+			const is_flat = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
+			const is_odd = y % 2 != 0;
+			const x_off = is_flat ? (is_odd ? 1 : 0) : (is_odd ? -1 : 0);
+			const flat_row = (is_flat && !is_odd) || (!is_flat && is_odd);
+			const flat_tri = flat_row ? x % 2 == 0 : x % 2 == 1;
+			const xt = this.layout.x + hs*x_off + (flat_row ? Math.ceil(x*0.5) : Math.floor(x*0.5))*this.layout.side;
+
+			pts.push(new WebGL.Geometry.Base.Point2D(xt, yt));
+			if(flat_tri){
+				pts.push(new WebGL.Geometry.Base.Point2D(xt+this.layout.side, yt));
+				pts.push(new WebGL.Geometry.Base.Point2D(xt+hs, yt+sq3s))
+			}else{
+				pts.push(new WebGL.Geometry.Base.Point2D(xt-hs, yt+sq3s));
+				pts.push(new WebGL.Geometry.Base.Point2D(xt+hs, yt+sq3s));
+			}
+
+		}
+
+		return pts;
+	}
+
 	pointToTriCoord(pt: Base.Point2D): Grid.Coordinate | undefined{
 		if(this.layout == undefined) return;
 		if(this.orientation == TriangleGridOrientationEnum.HorizontalFlats || this.orientation == TriangleGridOrientationEnum.HorizontalPoints){
 			const y = (pt.y - this.layout.y)/(this.layout.side*0.5*Math.sqrt(3));
-			if(y < 0 || y >= this.height) return undefined;
+			//if(y < 0 || y >= this.height) return undefined;
 			//console.log(y);
 			const yc = Math.floor(y);
 			const is_flat = this.orientation == TriangleGridOrientationEnum.HorizontalFlats;
@@ -59,7 +87,7 @@ export class TriangleGrid{
 			//console.log(`${xd.toFixed(2)} ${yd.toFixed(2)}`);
 			const is_left = ((fl_x + (!flat_first ? 1 : 0)) % 2 == 0 ? yd > xd : 1-yd > xd);
 			const xc = fl_x - (is_left ? 1 : 0);
-			if(xc < 0 || xc >= this.width) return undefined;
+			//if(xc < 0 || xc >= this.width) return undefined;
 			const gc = {x: xc, y: yc};
 			//console.log(gc);
 			/*
