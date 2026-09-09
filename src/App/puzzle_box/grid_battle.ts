@@ -77,7 +77,12 @@ class BattleGrid{
 	}
 
   addObjectToGrid(x: Int32, y: Int32, object: BattleObjectInstance){
-    
+    const can_fit = this.shape_grid.canFitShape(object.battle_object, x, y);
+		if(can_fit){
+			this.shape_grid.addShape(object.battle_object, x, y);
+			this.objects.push(object);
+			console.log(object);
+		}
   }
 
 	update(){
@@ -105,6 +110,8 @@ export class BattleEngine{
     this.object_instances = new Map();
     const test_instance = new BattleObjectInstance(this.battle_objects[0]);
     this.object_instances.set(0, test_instance);
+
+		this.battle_grid.addObjectToGrid(4,6, test_instance);//todo test
 	}
 
 	private generateObjectShapes(): Shape.GridShape[]{
