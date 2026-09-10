@@ -1,25 +1,67 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Engine from "./engine";
 import * as Shape from "./shape";
+import * as BObject from "./battle_object";
+import * as Character from "./character";
 
 type Float = number;
 type Int32 = number;
 
 import Point2D = WebGL.Geometry.Base.Point2D;
 
+const ObjectTypeEnum = {
+	Weapon: 0,
+	Accessory: 1
+} as const;
+
+class Hero{
+	current_health
+	max_health: Int32;
+	constructor(mh: Int32){
+		this.max_health = mh;
+		this.current_health = this.max_health;
+	}
+}
+
 class BattleObject extends Shape.GridShapeInstance{
   name: string;
   cooldown: Float;
+	static object_shapes = BattleObject.generateBattleObjectShapes();
 	constructor(shape: Shape.GridShape, name: string, cd: Float){
     super(shape);
     this.name = name;
     this.cooldown = cd;
 	}
 
+	static generateBattleObjectShapes(): Shape.GridShape[]{
+		const shapes = [];
+		shapes.push(new Shape.GridShape(1, 1, [true]));
+		shapes.push(new Shape.GridShape(2, 1, [true, true]));
+		shapes.push(new Shape.GridShape(3, 1, [true, true, true]));
+		return shapes;
+	}
+
   //to override
   trigger(){
-
+		console.log(this.name);
   }
+}
+
+class WeaponObject extends BattleObject{
+	damage_low: Int32;
+	damage_hi: Int32;
+	constructor(shape: Shape.GridShape, name: string, cd: Float, dl: Int32, dh: Int32){
+		super(shape, name, cd);
+		this.damage_low = dl;
+		this.damage_hi = dh;
+	}
+}
+
+class WoodenSword extends BattleObject{
+	constructor(){
+		super(BattleObject.object_shapes[0], "WoodenSword", 1000);
+
+	}
 }
 
 class BattleObjectInstance{
@@ -53,13 +95,13 @@ class BattleGrid{
 	shape_grid: Engine.ShapeIdGrid;
 	interface: Engine.ShapeGridInterface;
 
-  objects: BattleObjectInstance[];
+  //objects: BattleObjectInstance[];
 	//objects: 
 	//layout: Engine.GridLayout;
 	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
 		this.shape_grid = new Engine.ShapeIdGrid(w, h);
 		this.interface = new Engine.ShapeGridInterface(x, y, 30, this.shape_grid);
-    this.objects = [];
+    //this.objects = [];
 	}
 
 	drawInterfaceGridOutline(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, lt: Int32){
@@ -85,7 +127,10 @@ class BattleGrid{
 
 	addObjectToGrid(x: Int32, y: Int32, object: BattleObjectInstance){
 		const id = object.getId();
-    this.shape_grid.addShapeWithId(object.battle_object, x, y, id);
+		const can_fit = this.shape_grid.canFitShape(object.battle_object, x, y);
+		if(can_fit){
+    	this.shape_grid.addShapeWithId(object.battle_object, x, y, id);
+		}
 	}
 
   onMouseDown(coord: WebGL.Grid.Generic.Coordinate){
@@ -95,8 +140,7 @@ class BattleGrid{
 
   
 
-	update(){
-
+	update(dt: Float){
 	}
 }
 
@@ -115,13 +159,21 @@ export class BattleEngine{
 		this.global_mouse = new Point2D(0, 0);
 
 		this.shapes = this.generateObjectShapes();
-		this.battle_objects  = this.generateBattleObjects();
+		this.battle_objects = this.generateBattleObjects();
 
 
 		this.object_instances = new Map();
 		const test_instance = new BattleObjectInstance(this.battle_objects[0]);
 		this.object_instances.set(0, test_instance);
-    this.battle_grid.addObjectToGrid(2,2, test_instance);
+    this.battle_grid.addObjectToGrid(2,5, test_instance);
+
+		const ti2 = new BattleObjectInstance(this.battle_objects[1]);
+		this.object_instances.set(1, ti2);
+		this.battle_grid.addObjectToGrid(4,3, ti2);
+
+		const ti3 = new BattleObjectInstance(this.battle_objects[2]);
+		this.object_instances.set(2, ti3);
+		this.battle_grid.addObjectToGrid(7,3, ti3);
 	}
 
 	private generateObjectShapes(): Shape.GridShape[]{
@@ -142,12 +194,13 @@ export class BattleEngine{
     const objects = [];
 
     const example = new BattleObject(this.shapes[0], "example", 1000);
-
     objects.push(example);
 
-    const e2 = new BattleObject(this.shapes[0], "ex2", 1200);
+    const e2 = new BattleObject(this.shapes[1], "ex2", 1200);
     objects.push(e2);
 
+		const e3 = new BattleObject(this.shapes[2], "a", 1300);
+		objects.push(e3);
 
     return objects;
   }
@@ -168,6 +221,12 @@ export class BattleEngine{
 	}
 	
 	update(dt: Float){
+		//console.log(dt);
 
+		for(const [i, obj_inst] of this.object_instances){
+			obj_inst.update(dt);
+		}
+
+		this.battle_grid.update(dt); // does nothing currently
 	}
 }

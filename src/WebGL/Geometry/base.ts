@@ -73,7 +73,7 @@ export class PointVector{
     point_to.y-main_point.y);
   }
   magnitudeSq(): Float{
-    return this.dx*this.dx+this.dy*this.dy
+    return this.dx*this.dx+this.dy*this.dy;
   }
   magnitude(): Float{
     return Math.sqrt(this.dx*this.dx+this.dy*this.dy);

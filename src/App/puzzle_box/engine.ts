@@ -377,6 +377,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     const dt = t-this.time;
     if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
       this.tetris.update(dt);
+    }else if(this.applet_display == PuzzleAppletDisplayEnum.GridBattle){
+      this.grid_battle.update(dt);
     }
     this.time = t;
   } 
