@@ -5,6 +5,7 @@ import { PuzzleEngine } from "./engine";
 import type { TetrisEngine } from "./tetris";
 import {BattleEngine} from "./grid_battle";
 import * as Tetris from "./tetris";
+import * as Character from "./character";
 
 
 
@@ -17,6 +18,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
   grid_colours: WebGL.Colour.ColourRGB[];
 
   tetris_colours: WebGL.Colour.ColourRGB[];
+
+  colours: WebGL.Colour.ColourRGBCollection;
+
   constructor(w: Int32, h: Int32){
     super(w, h);
     this.font_names.push("font16-Sheet.png");
@@ -34,6 +38,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.tetris_colours.push(WebGL.Colour.ColourUtils.yellow());
     this.tetris_colours.push(WebGL.Colour.ColourUtils.pink());
     this.tetris_colours.push(WebGL.Colour.ColourUtils.grey());
+
+    this.colours = new WebGL.Colour.ColourRGBCollection();
+    this.colours.addBaseColours();
 
     WebGL.BasicModel.init();
   }
@@ -179,6 +186,20 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
     this.colour_shader.use();
     this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
+
+    be.object_instances.forAll((inst, _) => {
+      const coords = inst.battle_object.getCoordinates();
+      for(const c of coords){
+        const gpt = this.getBattleGridGlobalPoint(be, c.x, c.y);
+        const model = WebGL.WebGL.rectangleModel(gpt.x, gpt.y, gs, gs);
+        this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
+        const colour = this.colours.getColour(inst.battle_object.colour)!;
+        this.colour_shader.setColourFromColourRGB(colour);
+        WebGL.Shapes.Quad.draw();
+      }
+    });
+
+    /*
     for(const [id, obj] of be.object_instances){
       const coords = obj.battle_object.getCoordinates();
       for(const c of coords){
@@ -188,9 +209,30 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
         this.colour_shader.setMvp(this.orthographic.multiplyCopy(model));
         WebGL.Shapes.Quad.draw();
       }
-    }
+    }*/
 
     //draw battle grid
     be.battle_grid.drawInterfaceGridOutline(this.orthographic, this.colour_shader, 4);
+  
+    this.drawCharacterHPBar(be.player, 50, 500);
+    this.drawCharacterHPBar(be.enemy, 500, 500);
+  }
+
+  drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){
+    //draw back
+    //this.colour_shader.use();
+    //this.colour_shader.setColourFromColourRGB(this.colours.getColour("red")!);
+
+    WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x,
+      y, w, h, this.colours.getColour("red")!
+    );
+
+    const health_ratio = char.current_health/char.max_health;
+    //draw hp bar
+    WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x, y, w*health_ratio, h, this.colours.getColour("green"));
+
+    const health_text = `${char.current_health.toString()}/${char.max_health.toString()}`;
+    //middle
+    this.text_drawer.drawTextColour(this.orthographic, x, y, health_text, 15, this.colours.getColour("black")!);
   }
 }

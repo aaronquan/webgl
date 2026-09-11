@@ -4,7 +4,7 @@ type Int32 = number;
 type Float = number;
 
 export class Character{
-	current_health
+	current_health: Int32;
 	max_health: Int32;
 	constructor(mh: Int32){
 		this.max_health = mh;

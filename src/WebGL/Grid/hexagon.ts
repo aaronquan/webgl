@@ -185,7 +185,6 @@ export class HexagonGrid{
 				const odd_x = x % 2 != 0;
 				const y = Math.floor((coord.y-(odd_x ? 1 : 0)+1)*0.5);
 				
-				//console.log({x, y});
 				if(x < 0 || x >= this.width) return undefined;
 				if(y < 0 || y >= this.height) return undefined;
 				return {x, y};
