@@ -1,5 +1,6 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Shape from "./shape";
+import * as Character from "./character"
 
 type Float = number;
 type Int32 = number;
@@ -36,7 +37,7 @@ class BattleObject extends Shape.GridShapeInstance{
 	}
 
 	//to override
-	trigger(){
+	trigger(user: Character.Character, target: Character.Character){
 		console.log(this.name);
 	}
 }
@@ -49,8 +50,14 @@ class WeaponObject extends BattleObject{
 		this.damage_low = dl;
 		this.damage_hi = dh;
 	}
-	trigger(){
-		
+	private calcRandomDamage(): Int32{
+		const rand = Math.floor(Math.random()*(this.damage_hi-this.damage_low+1));
+		return rand + this.damage_low;
+	}
+	trigger(user: Character.Character, target: Character.Character){
+		const damage = this.calcRandomDamage();
+		target.takeDamage(damage);
+		//target.current_health -= damage;
 	}
 }
 
@@ -92,10 +99,10 @@ export class BattleObjectInstance{
 		this.cooldown_timer = 0;
 		this.num_triggers = 0;
 	}
-	update(dt: Float){
+	update(dt: Float, user: Character.Character, target: Character.Character){
 		this.cooldown_timer += dt;
 		if(this.cooldown_timer >= this.battle_object.cooldown){
-			this.battle_object.trigger();
+			this.battle_object.trigger(user, target);
 			this.num_triggers++;
 			this.cooldown_timer -= this.battle_object.cooldown;
 		}

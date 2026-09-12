@@ -216,6 +216,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
   
     this.drawCharacterHPBar(be.player, 50, 500);
     this.drawCharacterHPBar(be.enemy, 500, 500);
+
+    be.controls.draw(this.orthographic, this.colour_shader, this.text_drawer);
   }
 
   drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){

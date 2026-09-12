@@ -8,6 +8,7 @@ type Float = number;
 type Int32 = number;
 
 import Point2D = WebGL.Geometry.Base.Point2D;
+import Button = WebGL.Interface.Button;
 
 class BattleGrid{
 	shape_grid: Engine.ShapeIdGrid;
@@ -59,6 +60,46 @@ class BattleGrid{
 	}
 }
 
+class BattleEngineControls{
+	start_battle: WebGL.Interface.Button.BasicButton;
+	constructor(x: Int32, y: Int32){
+		const button_width = 80;
+		const button_height = 30;
+
+		this.start_battle = new Button.BasicButton(x, y, button_width, button_height);
+		this.start_battle.text = "Start";
+		this.start_battle.text_size = 15;
+
+	}
+	setStartBattleFunction(f: () => void){
+		this.start_battle.onPressed = f;
+	}
+	onMouseMove(point: Point2D){
+		this.start_battle.onMouseMove(point);
+	}
+	onMouseDown(point: Point2D){
+		this.start_battle.onMouseDown();
+	}
+	onMouseUp(point: Point2D){
+		this.start_battle.onMouseUp();
+	}
+
+	draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
+		colour_shader: WebGL.Shader.MVPColourProgram, 
+		text_drawer: WebGL.TextDrawer,
+
+	){
+		this.start_battle.draw(vp, colour_shader, text_drawer);
+	}
+}
+
+const BattleStateEnum = {
+	Setup: 0,
+	Battle: 1
+} as const
+
+type BattleState = (typeof BattleStateEnum)[keyof typeof BattleStateEnum];
+
 export class BattleEngine{
 	battle_grid: BattleGrid;
 	battle_grid_coord: WebGL.Grid.Generic.Coordinate | undefined;
@@ -72,7 +113,12 @@ export class BattleEngine{
 
 
 	player: Character.Character;
+	kills: Int32;
 	enemy: Character.Character;
+
+	state: BattleState;
+
+	controls: BattleEngineControls;
 	constructor(){
 		this.battle_grid = new BattleGrid(50, 50, 14, 14);
 		this.global_mouse = new Point2D(0, 0);
@@ -82,16 +128,23 @@ export class BattleEngine{
 
 		this.object_instances = new BObject.BattleObjectInstanceCollection();
 		const ws1 = this.object_instances.createInstance("WoodenSword");
-		const st1 = this.object_instances.createInstance("Stone");
+		//const st1 = this.object_instances.createInstance("Stone");
 		if(ws1 != undefined){
 			this.battle_grid.addObjectToGrid(2, 4, ws1);
 		}
-		if(st1 != undefined){
-			this.battle_grid.addObjectToGrid(5,7, st1);
-		}
+		//if(st1 != undefined){
+			//this.battle_grid.addObjectToGrid(5,7, st1);
+		//}
 
 		this.player = new Character.Character(10);
+		this.kills = 0;
 		this.enemy = new Character.Character(15);
+
+		this.state = BattleStateEnum.Setup;
+
+		this.controls = new BattleEngineControls(
+			this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10, 
+			100);
 	}
 
 	private generateObjectShapes(): Shape.GridShape[]{
@@ -126,6 +179,7 @@ export class BattleEngine{
 	onMouseMove(point: Point2D){
 		this.global_mouse = point;
 		this.battle_grid_coord = this.battle_grid.interface.getCoord(this.global_mouse);
+		this.controls.onMouseMove(point);
 	}
 	onMouseDown(point: Point2D){
 		console.log(this.battle_grid_coord);
@@ -133,15 +187,31 @@ export class BattleEngine{
       this.battle_grid.onMouseDown(this.battle_grid_coord);
     }
 		//this.play_button.onMouseDown();
+		this.controls.onMouseDown(point);
 	}
 	onMouseUp(point: Point2D){
 		//this.play_button.onMouseUp();
+		this.controls.onMouseUp(point);
+	}
+
+	checkEnemy(): boolean{
+		if(this.enemy.isDefeated()){
+			this.kills+=1;
+			this.state = BattleStateEnum.Setup;
+			return true;
+		}
+		return false;
 	}
 	
 	update(dt: Float){
-		this.object_instances.forAll((inst, _) => {
-			inst.update(dt);
-		});
+		if(this.state == BattleStateEnum.Battle){
+			this.object_instances.forAll((inst, _) => {
+				inst.update(dt, this.player, this.enemy);
+				if(this.checkEnemy()){
+					return;
+				}
+			});
+		}
 
 		this.battle_grid.update(dt); // does nothing currently
 	}

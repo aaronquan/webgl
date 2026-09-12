@@ -10,4 +10,10 @@ export class Character{
 		this.max_health = mh;
 		this.current_health = this.max_health;
 	}
+	takeDamage(damage: Int32){
+		this.current_health -= damage;
+	}
+	isDefeated(): boolean{
+		return this.current_health <= 0;
+	}
 }
