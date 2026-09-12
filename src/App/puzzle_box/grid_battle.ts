@@ -112,7 +112,7 @@ export class BattleEngine{
 	global_mouse: Point2D;
 
 
-	player: Character.Character;
+	player: Character.BattleCharacter;
 	kills: Int32;
 	enemy: Character.Character;
 
@@ -124,19 +124,22 @@ export class BattleEngine{
 		this.global_mouse = new Point2D(0, 0);
 
 		this.shapes = this.generateObjectShapes();
+
+		this.player = new Character.BattleCharacter(10);
 		//this.battle_objects = this.generateBattleObjects();
 
 		this.object_instances = new BObject.BattleObjectInstanceCollection();
 		const ws1 = this.object_instances.createInstance("WoodenSword");
-		//const st1 = this.object_instances.createInstance("Stone");
+		const st1 = this.object_instances.createInstance("Stone");
 		if(ws1 != undefined){
 			this.battle_grid.addObjectToGrid(2, 4, ws1);
+			this.player.addObject(ws1);
 		}
-		//if(st1 != undefined){
-			//this.battle_grid.addObjectToGrid(5,7, st1);
-		//}
+		if(st1 != undefined){
+			this.battle_grid.addObjectToGrid(5, 7, st1);
+			this.player.addObject(st1);
+		}
 
-		this.player = new Character.Character(10);
 		this.kills = 0;
 		this.enemy = new Character.Character(15);
 
@@ -144,7 +147,21 @@ export class BattleEngine{
 
 		this.controls = new BattleEngineControls(
 			this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10, 
-			100);
+			100
+		);
+		
+		this.setControlFunctions();
+	}
+
+	private setControlFunctions(){
+		//todo
+		this.controls.setStartBattleFunction(() => {
+			if(this.state == BattleStateEnum.Setup){
+				this.state = BattleStateEnum.Battle;
+			}else{
+				console.log("Already battling");
+			}
+		})
 	}
 
 	private generateObjectShapes(): Shape.GridShape[]{
@@ -160,21 +177,6 @@ export class BattleEngine{
 
 		return shapes;
 	}
-	/*
-  private generateBattleObjects(): BattleObject[]{
-    const objects = [];
-
-    const example = new BattleObject(this.shapes[0], "example", 1000);
-    objects.push(example);
-
-    const e2 = new BattleObject(this.shapes[1], "ex2", 1200);
-    objects.push(e2);
-
-		const e3 = new BattleObject(this.shapes[2], "a", 1300);
-		objects.push(e3);
-
-    return objects;
-  }*/
 
 	onMouseMove(point: Point2D){
 		this.global_mouse = point;
@@ -186,18 +188,21 @@ export class BattleEngine{
     if(this.battle_grid_coord != undefined){
       this.battle_grid.onMouseDown(this.battle_grid_coord);
     }
-		//this.play_button.onMouseDown();
 		this.controls.onMouseDown(point);
 	}
 	onMouseUp(point: Point2D){
-		//this.play_button.onMouseUp();
 		this.controls.onMouseUp(point);
+	}
+
+	resetEnemy(){
+		this.state = BattleStateEnum.Setup;
+		this.enemy.reset();
 	}
 
 	checkEnemy(): boolean{
 		if(this.enemy.isDefeated()){
 			this.kills+=1;
-			this.state = BattleStateEnum.Setup;
+			this.resetEnemy();
 			return true;
 		}
 		return false;
@@ -205,12 +210,20 @@ export class BattleEngine{
 	
 	update(dt: Float){
 		if(this.state == BattleStateEnum.Battle){
+			/*
 			this.object_instances.forAll((inst, _) => {
+				inst.update(dt, this.player, this.enemy);
+				if(this.checkEnemy()){ // this resets state to setup if enemy is defeated
+					return;
+				}
+			});*/
+
+			this.player.forEachObject((inst) => {
 				inst.update(dt, this.player, this.enemy);
 				if(this.checkEnemy()){
 					return;
 				}
-			});
+			}, this.object_instances);
 		}
 
 		this.battle_grid.update(dt); // does nothing currently

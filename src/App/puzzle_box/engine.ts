@@ -528,6 +528,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
       }
       else if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
         this.tetris.onMouseUp(this.mouse_point);
+      }else if(this.applet_display == PuzzleAppletDisplayEnum.GridBattle){
+        this.grid_battle.onMouseUp(this.mouse_point);
       }
     }
 
