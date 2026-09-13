@@ -1,6 +1,7 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Shape from "./shape";
-import * as Character from "./character"
+import * as Character from "./character";
+import * as GridBattle from "./grid_battle";
 
 type Float = number;
 type Int32 = number;
@@ -12,7 +13,7 @@ const ObjectTypeEnum = {
 
 type ObjectType = (typeof ObjectTypeEnum)[keyof typeof ObjectTypeEnum];
 
-class BattleObject extends Shape.GridShapeInstance{
+export class BattleObject extends Shape.GridShapeInstance{
 	name: string;
 	cooldown: Float;
 	object_type: ObjectType;
@@ -39,6 +40,17 @@ class BattleObject extends Shape.GridShapeInstance{
 	//to override
 	trigger(user: Character.Character, target: Character.Character){
 		console.log(this.name);
+	}
+}
+
+class HealingObject extends BattleObject{
+	heal_amount: Int32;
+	constructor(shape: Shape.GridShape, name: string, cd: Float, ha: Int32, colour: string){
+		super(shape, name, cd, ObjectTypeEnum.Accessory, colour);
+		this.heal_amount = ha;
+	}
+	trigger(user: Character.Character, target: Character.Character){
+		user.heal(this.heal_amount);
 	}
 }
 
@@ -74,6 +86,12 @@ export class Stone extends WeaponObject{
 	}
 }
 
+export class BandAid extends HealingObject{
+	constructor(){
+		super(BattleObject.object_shapes[0], "Bandaid", 3000, 2, "red");
+	}
+}
+
 export class BattleObjects{
 	static objects = BattleObjects.generateObjects();
 
@@ -81,6 +99,7 @@ export class BattleObjects{
 		const m = new Map();
 		m.set("WoodenSword", new WoodenSword());
 		m.set("Stone", new Stone());
+		m.set("Bandaid", new BandAid());
 		return m;
 	}
 }
@@ -109,6 +128,31 @@ export class BattleObjectInstance{
 	}
 	getId(): Int32{
 		return this.id;
+	}
+	draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram,
+		grid: GridBattle.BattleGrid, colour_collection: WebGL.Colour.ColourRGBCollection
+	){
+		const cs = grid.interface.cell_size;
+		const colour = colour_collection.getColour(this.battle_object.colour)!;
+		colour_shader.use();
+		if(this.freeform_placement != undefined){
+			for(const c of this.battle_object.getCoordinates()){
+				const cx = this.freeform_placement.x + c.x*cs - this.battle_object.width*cs*0.5;
+				const cy = this.freeform_placement.y + c.y*cs - this.battle_object.height*cs*0.5;
+				WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
+			}
+		}
+		else if(this.battle_object.grid_placement != undefined){
+			const x = grid.interface.x;
+			const y = grid.interface.y;
+			if(colour != undefined){
+				for(const c of this.battle_object.getGridPlacementCoordinates()){
+					const cx = x + c.x*cs;
+					const cy = y + c.y*cs;
+					WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
+				}
+			}
+		}
 	}
 }
 

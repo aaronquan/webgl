@@ -69,22 +69,22 @@ test("shape placement and coords", () => {
   //coords test
   const instance = new Shape.GridShapeInstance(shape);
   instance.setPlacement(2, 2);
-  let coords = instance.getCoordinates(); // base
+  let coords = instance.getGridPlacementCoordinates(); // base
   expect(coords).toStrictEqual([{x: 2, y: 2}, {x: 3, y: 2}, {x: 4, y: 2}, {x:4, y: 3}]);
   
   instance.rotateClockwise();
-  coords = instance.getCoordinates(); // right
+  coords = instance.getGridPlacementCoordinates(); // right
   expect(coords).toStrictEqual([{x: 3, y: 2}, {x: 3, y: 3}, {x: 2, y: 4}, {x:3, y: 4}]);
   
   instance.rotateClockwise();
-  coords = instance.getCoordinates(); //down
+  coords = instance.getGridPlacementCoordinates(); //down
   expect(coords).toStrictEqual([{x: 2, y: 2}, {x: 2, y: 3}, {x: 3, y: 3}, {x:4, y: 3}]);
 
   instance.setRotation(Rotation.RotationEnum.Left);
-  coords = instance.getCoordinates();
+  coords = instance.getGridPlacementCoordinates();
   expect(coords).toStrictEqual([{x: 2, y: 2}, {x: 3, y: 2}, {x: 2, y: 3}, {x:2, y: 4}]);
 
   instance.move(2,1);
-  coords = instance.getCoordinates();
+  coords = instance.getGridPlacementCoordinates();
   expect(coords).toStrictEqual([{x: 4, y: 3}, {x: 5, y: 3}, {x: 4, y: 4}, {x:4, y: 5}]);
 });

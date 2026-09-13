@@ -137,6 +137,18 @@ export class GridShapeInstance{
   }
   getCoordinates(): Grid.Coordinate[]{
     const coordinates: Grid.Coordinate[] = [];
+    for(let y = 0; y < this.height; y++){
+      for(let x = 0; x < this.width; x++){
+        const part = this.getPart(x, y);
+        if(part != undefined && part){
+          coordinates.push({x: x, y: y})
+        }
+      }
+    }
+    return coordinates;
+  }
+  getGridPlacementCoordinates(): Grid.Coordinate[]{
+    const coordinates: Grid.Coordinate[] = [];
     if(this.grid_placement == undefined){
       return coordinates;
     }

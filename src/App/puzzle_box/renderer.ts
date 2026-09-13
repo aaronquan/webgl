@@ -163,7 +163,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     
   }
   drawTetrisActivePiece(te: TetrisEngine, piece: Shape.GridShapeInstance){
-    const coordinates = piece.getCoordinates();
+    const coordinates = piece.getGridPlacementCoordinates();
     for(const coord of coordinates){
       if(te.grid.isInside(coord.x, coord.y)){
         te.grid_interface.drawColourCoord(this.orthographic, this.colour_shader, coord, WebGL.Colour.ColourUtils.green());
@@ -188,6 +188,10 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
 
     be.object_instances.forAll((inst, _) => {
+      inst.draw(this.orthographic, this.colour_shader, be.battle_grid, this.colours);
+
+      //old draw method
+      /*
       const coords = inst.battle_object.getCoordinates();
       for(const c of coords){
         const gpt = this.getBattleGridGlobalPoint(be, c.x, c.y);
@@ -196,7 +200,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
         const colour = this.colours.getColour(inst.battle_object.colour)!;
         this.colour_shader.setColourFromColourRGB(colour);
         WebGL.Shapes.Quad.draw();
-      }
+      }*/
     });
 
     /*
@@ -221,6 +225,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     
     const kill_text = `Kills: ${be.kills}`;
     this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
+  
+    be.battle_object_generators.draw(this.orthographic, this.colour_shader, this.colours);
   }
 
   drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){

@@ -41,7 +41,7 @@ class TetrisGrid extends Grid.GenericGrid2D<Int32>{
     }
   }
   canFitShapeDrop(shape: GShape.GridShapeInstance):boolean{
-    for(const coord of shape.getCoordinates()){
+    for(const coord of shape.getGridPlacementCoordinates()){
       if(this.isInside(coord.x, coord.y)){
         if(this.get(coord.x, coord.y) != undefined){
           return false;
@@ -51,7 +51,7 @@ class TetrisGrid extends Grid.GenericGrid2D<Int32>{
     return true;
   }
   canFitShapeInstance(shape: GShape.GridShapeInstance):boolean{
-    for(const coord of shape.getCoordinates()){
+    for(const coord of shape.getGridPlacementCoordinates()){
       if(this.isInside(coord.x, coord.y)){
         if(this.get(coord.x, coord.y) != undefined){
           return false;
@@ -63,14 +63,14 @@ class TetrisGrid extends Grid.GenericGrid2D<Int32>{
     return true;
   }
   addShape(x: Int32, y: Int32, shape: TetrisInstance){
-    for(const coord of shape.getCoordinates()){
+    for(const coord of shape.getGridPlacementCoordinates()){
       if(this.isInside(coord.x+x, coord.y+y)){
         this.set(coord.x+x, coord.y+y, shape.shape_id);
       }
     }
   }
   addShapeInstance(shape: TetrisInstance){
-    for(const coord of shape.getCoordinates()){
+    for(const coord of shape.getGridPlacementCoordinates()){
       if(this.isInside(coord.x, coord.y)){
         this.set(coord.x, coord.y, shape.shape_id);
       }

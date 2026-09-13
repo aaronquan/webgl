@@ -53,7 +53,7 @@ export class ShapeGridInterface{
     return {x, y};
   }
   trueCoord(point: WebGL.Geometry.Base.Point2D): WebGL.Geometry.Base.Point2D | undefined{
-    if(this.isInside(point)){
+    if(!this.isInside(point)){
       return undefined;
     }
     return new WebGL.Geometry.Base.Point2D((point.x-this.x)/this.cell_size, (point.y-this.y)/this.cell_size);

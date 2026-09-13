@@ -10,6 +10,12 @@ export class Character{
 		this.max_health = mh;
 		this.current_health = this.max_health;
 	}
+	heal(amount: Int32){
+		this.current_health += amount;
+		if(this.current_health >= this.max_health){
+			this.current_health = this.max_health;
+		}
+	}
 	takeDamage(damage: Int32){
 		this.current_health -= damage;
 	}
