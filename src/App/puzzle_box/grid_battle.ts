@@ -43,9 +43,9 @@ export class BattleGrid{
 
 	addObjectToGrid(x: Int32, y: Int32, object: BObject.BattleObjectInstance){
 		const id = object.getId();
-		const can_fit = this.shape_grid.canFitShape(object.battle_object, x, y);
+		const can_fit = this.shape_grid.canFitShape(object, x, y);
 		if(can_fit){
-    	this.shape_grid.addShapeWithId(object.battle_object, x, y, id);
+    	this.shape_grid.addShapeWithId(object, x, y, id);
 		}
 	}
 
@@ -111,6 +111,10 @@ export class BattleObjectInstanceGenerator{
 		this.cell_size = 15;
 		this.objs = [];
 	}
+	getHoveredObject(): BObject.BattleObject | undefined{
+		if(this.hover_index == undefined) return undefined;
+		return this.objs[this.hover_index];
+	}
 	addObject(obj: BObject.BattleObject){
 		this.objs.push(obj);
 	}
@@ -147,9 +151,10 @@ export class BattleObjectInstanceGenerator{
 			WebGL.WebGL.drawColourRect(vp, colour_shader, x, this.y, this.obj_interface_size, this.obj_interface_size, WebGL.Colour.ColourUtils.cyan());
 			const cx = x + this.obj_interface_size*0.5;
 			const cy = this.y + this.obj_interface_size*0.5;
-			const pw = this.objs[i].width*this.cell_size;
-			const ph = this.objs[i].height*this.cell_size;
+			const pw = this.objs[i].getShapeWidth()*this.cell_size;
+			const ph = this.objs[i].getShapeHeight()*this.cell_size;
 			const colour = colour_collection.getColour(this.objs[i].colour)!;
+			const coords = this.objs[i].shape.getCoordinates();
 			if(colour != undefined){
 				WebGL.WebGL.drawColourRect(vp, colour_shader, cx-pw*0.5, cy-ph*0.5, pw, ph, colour);
 			}
@@ -185,9 +190,9 @@ export class BattleEngine{
 		this.global_mouse = new Point2D(0, 0);
 
 		this.battle_object_generators = new BattleObjectInstanceGenerator(220, 500);
-		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get("WoodenSword")!);
-		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get("Stone")!);
-		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get("Bandaid")!);
+		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.WoodenSword.name)!);
+		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Stone.name)!);
+		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.BandAid.name)!);
 
 		this.shapes = this.generateObjectShapes();
 
@@ -195,9 +200,10 @@ export class BattleEngine{
 		//this.battle_objects = this.generateBattleObjects();
 
 		this.object_instances = new BObject.BattleObjectInstanceCollection();
-		const ws1 = this.object_instances.createInstance("WoodenSword");
-		const st1 = this.object_instances.createInstance("Stone");
-		const ba1 = this.object_instances.createInstance("Bandaid");
+		const ws1 = this.object_instances.createInstance(BObject.WoodenSword.name);
+		const st1 = this.object_instances.createInstance(BObject.Stone.name);
+		const ba1 = this.object_instances.createInstance(BObject.BandAid.name);
+		const st2 = this.object_instances.createInstance(BObject.Stone.name);
 		if(ws1 != undefined){
 			this.battle_grid.addObjectToGrid(2, 4, ws1);
 			this.player.addObject(ws1);
@@ -207,8 +213,12 @@ export class BattleEngine{
 			this.player.addObject(st1);
 		}
 		if(ba1 != undefined){
-			this.battle_grid.addObjectToGrid(7,2, ba1);
+			this.battle_grid.addObjectToGrid(1,2, ba1);
 			this.player.addObject(ba1);
+		}
+		if(st2 != undefined){
+			this.battle_grid.addObjectToGrid(8, 8, st2);
+			this.player.addObject(st2);
 		}
 
 		this.kills = 0;
@@ -269,8 +279,8 @@ export class BattleEngine{
 			if(id != undefined){
 				const instance = this.object_instances.getInstance(id);
 				if(instance != undefined){
-					this.battle_grid.shape_grid.removeShape(instance.battle_object);
-					instance.battle_object.displace();
+					this.battle_grid.shape_grid.removeShape(instance);
+					instance.displace();
 					
 					this.dragged_object = instance.getId();
 					instance.freeform_placement = point;
@@ -282,8 +292,9 @@ export class BattleEngine{
 		this.battle_object_generators.onMouseDown(point);
 
 		//create new instance from generator
-		if(this.battle_object_generators.hover_index != undefined){
-			//todo
+		const generator_object = this.battle_object_generators.getHoveredObject();
+		if(generator_object != undefined){
+			const instance = this.object_instances.createInstance(generator_object.name!);
 		}
 	}
 	onMouseUp(point: Point2D){
@@ -307,8 +318,8 @@ export class BattleEngine{
 	}
 
 	getInstanceGridCoord(true_coord: WebGL.Geometry.Base.Point2D, object: BObject.BattleObjectInstance): WebGL.Grid.Generic.Coordinate{
-		const x = true_coord.x - (object.battle_object.width*0.5);
-		const y = true_coord.y - (object.battle_object.height*0.5);
+		const x = true_coord.x - (object.width*0.5);
+		const y = true_coord.y - (object.height*0.5);
 		return {x: Math.round(x), y: Math.round(y)};
 	}
 

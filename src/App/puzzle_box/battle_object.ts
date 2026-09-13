@@ -13,20 +13,33 @@ const ObjectTypeEnum = {
 
 type ObjectType = (typeof ObjectTypeEnum)[keyof typeof ObjectTypeEnum];
 
-export class BattleObject extends Shape.GridShapeInstance{
+export class BattleObject{
 	name: string;
 	cooldown: Float;
 	object_type: ObjectType;
+	shape: Shape.GridShape;
 	static object_shapes = BattleObject.generateBattleObjectShapes();
 
 
 	colour: string; // to override with a sprite name
 	constructor(shape: Shape.GridShape, name: string, cd: Float, ot: ObjectType, colour: string){
-		super(shape);
+		this.shape = shape;
 		this.name = name;
 		this.cooldown = cd;
 		this.object_type = ot;
 		this.colour = colour;
+	}
+
+	getCoordinates(): WebGL.Grid.Generic.Coordinate[]{
+		return this.shape.getCoordinates();
+	}
+
+	getShapeWidth(): Int32{
+		return this.shape.getWidth();
+	}
+
+	getShapeHeight(): Int32{
+		return this.shape.getHeight();
 	}
 
 	static generateBattleObjectShapes(): Shape.GridShape[]{
@@ -74,21 +87,24 @@ class WeaponObject extends BattleObject{
 }
 
 export class WoodenSword extends WeaponObject{
+	static name = "WoodenSword";
 	constructor(){
-		super(BattleObject.object_shapes[1], "WoodenSword", 1000, 1, 2, "yellow");
+		super(BattleObject.object_shapes[1], WoodenSword.name, 1000, 1, 2, "yellow");
 
 	}
 }
 
 export class Stone extends WeaponObject{
+	static name = "Stone";
 	constructor(){
-		super(BattleObject.object_shapes[0], "Stone", 2000, 2, 4, "white");
+		super(BattleObject.object_shapes[0], Stone.name, 2000, 2, 4, "white");
 	}
 }
 
 export class BandAid extends HealingObject{
+	static name = "Bandaid";
 	constructor(){
-		super(BattleObject.object_shapes[0], "Bandaid", 3000, 2, "red");
+		super(BattleObject.object_shapes[0], BandAid.name, 3000, 2, "red");
 	}
 }
 
@@ -97,14 +113,14 @@ export class BattleObjects{
 
 	static generateObjects(): Map<string, BattleObject>{
 		const m = new Map();
-		m.set("WoodenSword", new WoodenSword());
-		m.set("Stone", new Stone());
-		m.set("Bandaid", new BandAid());
+		m.set(WoodenSword.name, new WoodenSword());
+		m.set(Stone.name, new Stone());
+		m.set(BandAid.name, new BandAid());
 		return m;
 	}
 }
 
-export class BattleObjectInstance{
+export class BattleObjectInstance extends Shape.GridShapeInstance{
 	static current_id = 0;
 	id: Int32;
 	battle_object: BattleObject;
@@ -112,6 +128,7 @@ export class BattleObjectInstance{
 	cooldown_timer: Float;
 	num_triggers: Int32;
 	constructor(bo: BattleObject){
+		super(bo.shape);
 		this.id = BattleObjectInstance.current_id;
 		BattleObjectInstance.current_id++;
 		this.battle_object = bo;
@@ -137,16 +154,16 @@ export class BattleObjectInstance{
 		colour_shader.use();
 		if(this.freeform_placement != undefined){
 			for(const c of this.battle_object.getCoordinates()){
-				const cx = this.freeform_placement.x + c.x*cs - this.battle_object.width*cs*0.5;
-				const cy = this.freeform_placement.y + c.y*cs - this.battle_object.height*cs*0.5;
+				const cx = this.freeform_placement.x + c.x*cs - this.battle_object.getShapeWidth()*cs*0.5;
+				const cy = this.freeform_placement.y + c.y*cs - this.battle_object.getShapeHeight()*cs*0.5;
 				WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
 			}
 		}
-		else if(this.battle_object.grid_placement != undefined){
+		else if(this.grid_placement != undefined){
 			const x = grid.interface.x;
 			const y = grid.interface.y;
 			if(colour != undefined){
-				for(const c of this.battle_object.getGridPlacementCoordinates()){
+				for(const c of this.getGridPlacementCoordinates()){
 					const cx = x + c.x*cs;
 					const cy = y + c.y*cs;
 					WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
