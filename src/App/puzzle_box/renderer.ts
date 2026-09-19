@@ -41,6 +41,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
     this.colours = new WebGL.Colour.ColourRGBCollection();
     this.colours.addBaseColours();
+    this.colours.addColour("grey", WebGL.Colour.ColourUtils.grey(0.5));
 
     WebGL.BasicModel.init();
   }
@@ -187,6 +188,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.colour_shader.use();
     this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
 
+    //need to draw this before object instances
+    be.battle_object_generators.draw(this.orthographic, this.colour_shader, this.colours);
+
     be.object_instances.forAll((inst, _) => {
       inst.draw(this.orthographic, this.colour_shader, be.battle_grid, this.colours);
 
@@ -226,7 +230,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     const kill_text = `Kills: ${be.kills}`;
     this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
   
-    be.battle_object_generators.draw(this.orthographic, this.colour_shader, this.colours);
+    be.object_bin.drawBackground(this.orthographic, this.colour_shader, this.colours.getColour("grey")!);
   }
 
   drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){

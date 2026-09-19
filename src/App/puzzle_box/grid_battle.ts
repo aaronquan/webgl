@@ -46,6 +46,7 @@ export class BattleGrid{
 		const can_fit = this.shape_grid.canFitShape(object, x, y);
 		if(can_fit){
     	this.shape_grid.addShapeWithId(object, x, y, id);
+			object.setPlacement(x, y);
 		}
 	}
 
@@ -153,8 +154,19 @@ export class BattleObjectInstanceGenerator{
 			const cy = this.y + this.obj_interface_size*0.5;
 			const pw = this.objs[i].getShapeWidth()*this.cell_size;
 			const ph = this.objs[i].getShapeHeight()*this.cell_size;
-			const colour = colour_collection.getColour(this.objs[i].colour)!;
-			const coords = this.objs[i].shape.getCoordinates();
+			const colour = colour_collection.getColour(this.objs[i].colour);
+			if(colour != undefined){
+				const coords = this.objs[i].shape.getCoordinates();
+				for(const c of coords){
+					const cx = x + this.obj_interface_size*0.5 - pw*0.5;
+					const cy = this.y + this.obj_interface_size*0.5 - ph*0.5 ;
+					WebGL.WebGL.drawColourRect(vp, colour_shader, 
+						cx+c.x*this.cell_size, cy+c.y*this.cell_size, 
+						this.cell_size, this.cell_size, 
+						colour
+					);
+				}
+			}
 			if(colour != undefined){
 				WebGL.WebGL.drawColourRect(vp, colour_shader, cx-pw*0.5, cy-ph*0.5, pw, ph, colour);
 			}
@@ -177,6 +189,7 @@ export class BattleEngine{
 
 	global_mouse: Point2D;
 
+	object_bin: WebGL.Interface.InterfaceElement.InterfaceElement;
 
 	player: Character.BattleCharacter;
 	kills: Int32;
@@ -206,19 +219,23 @@ export class BattleEngine{
 		const st2 = this.object_instances.createInstance(BObject.Stone.name);
 		if(ws1 != undefined){
 			this.battle_grid.addObjectToGrid(2, 4, ws1);
-			this.player.addObject(ws1);
+			ws1.setOwner(this.player);
+			//this.player.addObject(ws1);
 		}
 		if(st1 != undefined){
 			this.battle_grid.addObjectToGrid(5, 7, st1);
-			this.player.addObject(st1);
+			st1.setOwner(this.player);
+			//this.player.addObject(st1);
 		}
 		if(ba1 != undefined){
 			this.battle_grid.addObjectToGrid(1,2, ba1);
-			this.player.addObject(ba1);
+			ba1.setOwner(this.player);
+			//this.player.addObject(ba1);
 		}
 		if(st2 != undefined){
 			this.battle_grid.addObjectToGrid(8, 8, st2);
-			this.player.addObject(st2);
+			st2.setOwner(this.player);
+			//this.player.addObject(st2);
 		}
 
 		this.kills = 0;
@@ -232,6 +249,8 @@ export class BattleEngine{
 		);
 		
 		this.setControlFunctions();
+
+		this.object_bin = new WebGL.Interface.InterfaceElement.InterfaceElement(this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10, 50, 40, 40);
 	}
 
 	private setControlFunctions(){
@@ -256,6 +275,14 @@ export class BattleEngine{
 		shapes.push(trio);
 
 		return shapes;
+	}
+
+	onKeyDown(key: string){
+		switch(key){
+			case "q":
+				console.log(this.object_instances);
+				break;
+		}
 	}
 
 	onMouseMove(point: Point2D){
@@ -295,6 +322,10 @@ export class BattleEngine{
 		const generator_object = this.battle_object_generators.getHoveredObject();
 		if(generator_object != undefined){
 			const instance = this.object_instances.createInstance(generator_object.name!);
+			if(instance != undefined){
+				this.dragged_object = instance.getId();
+				instance.freeform_placement = point;
+			}
 		}
 	}
 	onMouseUp(point: Point2D){
@@ -303,6 +334,7 @@ export class BattleEngine{
 
 		if(this.dragged_object != undefined){
 			const instance = this.object_instances.getInstance(this.dragged_object);
+			this.battle_object_generators.getHoveredObject()
 			if(instance != undefined){
 				instance.freeform_placement = undefined;
 
@@ -310,6 +342,24 @@ export class BattleEngine{
 				if(this.battle_grid_true_coord != undefined){
 					const coord = this.getInstanceGridCoord(this.battle_grid_true_coord, instance);
 					this.battle_grid.addObjectToGrid(coord.x, coord.y, instance);
+				}else if(this.object_bin.isInside(this.global_mouse)){
+					//check if on bin then delete instance
+					console.log("bin it");
+					instance.unlinkOwner();
+					this.object_instances.delete(instance);
+				}else{
+					//reset item to it's last grid location
+					console.log("reset");
+					console.log(instance.placement_history);
+					const last = instance.getLastPlacement();
+					if(last != undefined){
+						this.battle_grid.addObjectToGrid(last.x, last.y, instance);
+					}else{
+						//remove as no placement
+						console.log("remove");
+						instance.unlinkOwner();
+						this.object_instances.delete(instance);
+					}
 				}
 			}
 
@@ -339,13 +389,6 @@ export class BattleEngine{
 	
 	update(dt: Float){
 		if(this.state == BattleStateEnum.Battle){
-			/*
-			this.object_instances.forAll((inst, _) => {
-				inst.update(dt, this.player, this.enemy);
-				if(this.checkEnemy()){ // this resets state to setup if enemy is defeated
-					return;
-				}
-			});*/
 
 			this.player.forEachObject((inst) => {
 				inst.update(dt, this.player, this.enemy);

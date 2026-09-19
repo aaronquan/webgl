@@ -47,6 +47,7 @@ export class BattleObject{
 		shapes.push(new Shape.GridShape(1, 1, [true]));
 		shapes.push(new Shape.GridShape(2, 1, [true, true]));
 		shapes.push(new Shape.GridShape(3, 1, [true, true, true]));
+		shapes.push(new Shape.GridShape(2, 2, [true, false, true, true]));
 		return shapes;
 	}
 
@@ -108,6 +109,13 @@ export class BandAid extends HealingObject{
 	}
 }
 
+export class Hook extends WeaponObject{
+	static name = "Hook";
+	constructor(){
+		super(BattleObject.object_shapes[2], Hook.name, 2000, 3, 5, "blue");
+	}
+}
+
 export class BattleObjects{
 	static objects = BattleObjects.generateObjects();
 
@@ -116,6 +124,7 @@ export class BattleObjects{
 		m.set(WoodenSword.name, new WoodenSword());
 		m.set(Stone.name, new Stone());
 		m.set(BandAid.name, new BandAid());
+		m.set(Hook.name, new Hook());
 		return m;
 	}
 }
@@ -127,6 +136,8 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	freeform_placement: WebGL.Geometry.Base.Point2D | undefined;
 	cooldown_timer: Float;
 	num_triggers: Int32;
+	placement_history: WebGL.Grid.Generic.Coordinate[];
+	owner: Character.BattleCharacter | undefined;
 	constructor(bo: BattleObject){
 		super(bo.shape);
 		this.id = BattleObjectInstance.current_id;
@@ -134,6 +145,15 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.battle_object = bo;
 		this.cooldown_timer = 0;
 		this.num_triggers = 0;
+		this.placement_history = [];
+	}
+	setOwner(char: Character.BattleCharacter){
+		this.owner = char;
+		char.addObject(this);
+	}
+	unlinkOwner(){
+		this.owner?.removeObject(this);
+		this.owner = undefined;
 	}
 	update(dt: Float, user: Character.Character, target: Character.Character){
 		this.cooldown_timer += dt;
@@ -142,6 +162,27 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 			this.num_triggers++;
 			this.cooldown_timer -= this.battle_object.cooldown;
 		}
+	}
+	setPlacement(x: number, y: number){
+		super.setPlacement(x, y);
+		const last = this.placement_history.at(-1);
+		//console.log("placing at x"+x.toString());
+		if(last != undefined && last.x != x && last.y != y){
+			//this.placement_history.push()
+		}else{
+			this.placement_history.push({x, y});
+		}
+	}
+	getLastPlacement(): WebGL.Grid.Generic.Coordinate | undefined{
+		return this.placement_history.at(-1);
+	}
+	useLastPlacement(): boolean{
+		const last = this.placement_history.at(-1);
+		if(last != undefined){
+			this.setPlacement(last.x, last.y);
+			return true;
+		}
+		return false;
 	}
 	getId(): Int32{
 		return this.id;
@@ -174,9 +215,12 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 }
 
 export class BattleObjectInstanceCollection{
-	objects: Map<Int32, BattleObjectInstance>;
+	private objects: Map<Int32, BattleObjectInstance>;
 	constructor(){
 		this.objects = new Map();
+	}
+	delete(instance: BattleObjectInstance){
+		this.objects.delete(instance.getId());
 	}
 	createInstance(object_key: string): BattleObjectInstance | undefined{
 		const battle_object = BattleObjects.objects.get(object_key);

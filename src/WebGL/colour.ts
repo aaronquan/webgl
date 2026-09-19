@@ -19,6 +19,9 @@ export class ColourRGBCollection{
   getColour(cs: string): ColourRGB | undefined{
     return this.colour_map.get(cs);
   }
+  addColour(key: string, colour: ColourRGB){
+    this.colour_map.set(key, colour);
+  }
   addBaseColours(){
     this.colour_map.set("black", ColourUtils.black());
     this.colour_map.set("white", ColourUtils.white());
