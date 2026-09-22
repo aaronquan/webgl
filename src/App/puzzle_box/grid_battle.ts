@@ -277,13 +277,30 @@ export class BattleEngine{
 		return shapes;
 	}
 
+	rotateSelected(){
+		console.log("rot");
+		if(this.dragged_object != undefined){
+			const instance = this.object_instances.getInstance(this.dragged_object)!; // should be known to exist
+			instance.rotateClockwise();
+			console.log("rotating");
+
+			//todo: not rotating correctly
+			
+		}
+	}
+
 	onKeyDown(key: string){
 		switch(key){
 			case "q":
 				console.log(this.object_instances);
 				break;
+			case "r":
+				//rotate selected
+				this.rotateSelected();
+				break;
 		}
 	}
+	
 
 	onMouseMove(point: Point2D){
 		this.global_mouse = point;

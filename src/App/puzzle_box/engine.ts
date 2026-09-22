@@ -437,7 +437,11 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   }
 
   override handleKeyDown(ev: KeyboardEvent){
-    this.tetris.onKeyDown(ev);
+    if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+      this.tetris.onKeyDown(ev);
+    }else if(this.applet_display == PuzzleAppletDisplayEnum.GridBattle){
+      this.grid_battle.onKeyDown(ev.key);
+    }
     switch(ev.key){
       case "`":
         //snapshot of screen to texture
