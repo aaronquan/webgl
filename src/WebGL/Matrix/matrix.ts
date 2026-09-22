@@ -290,4 +290,17 @@ export class TransformationMatrix3x3 extends Matrix3x3{
     }
     return c;
   }
+
+
+  // ratio is interpolation ratio 0-1
+  static interpolate(m1: TransformationMatrix3x3, m2: TransformationMatrix3x3, ratio: Float): TransformationMatrix3x3{
+    const matrix = new TransformationMatrix3x3();
+    //maybe just interpolate all matrix values
+    for(let i = 0; i < 9; i++){
+      //matrix._matrix[i] = ;
+      matrix._matrix[i] = (m1._matrix[i]+m2._matrix[i])*ratio;
+    }
+    return matrix;
+
+  }
 }

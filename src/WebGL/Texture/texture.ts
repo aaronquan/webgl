@@ -374,7 +374,7 @@ export class Canvas2DFont{
   collection: GlyphCollection;
   
   private loaded: boolean;
-  static canvas = new OffscreenCanvas(500, 500);
+  static canvas: OffscreenCanvas | undefined = undefined;
   static canvas_loaded = false;
   static alphabet = "abcdefghijklmnopqrstuvwxyz";
   constructor(style: string, size: Int32){
@@ -387,7 +387,7 @@ export class Canvas2DFont{
   static load(){
     //maybe not needed
     if(!Canvas2DFont.canvas_loaded){
-      
+      Canvas2DFont.canvas = new OffscreenCanvas(500, 500);
       Canvas2DFont.canvas_loaded = true;
     }
   }
@@ -395,7 +395,7 @@ export class Canvas2DFont{
     if(this.loaded){
       return;
     }
-    const canvas = Canvas2DFont.canvas;
+    const canvas = Canvas2DFont.canvas!;
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "white";
     ctx.font = `${this.font_size.toString()}px ${this.font_style}`;

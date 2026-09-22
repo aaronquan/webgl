@@ -27,4 +27,12 @@ test('3x3 matrix tests', () => {
   const inverse_result = Matrix.Matrix3x3.new([0.2, 0.2, 0, -0.2, 0.3, 1, 0.2, -0.3, 0]);
   const inverse = minor_test.inverseCopy();
   expect(Matrix.Matrix3x3.equals(inverse, inverse_result)).toBeTruthy();
+
+
+  //interpolate test
+
+  const m1 = Matrix.TransformationMatrix3x3.identity();
+  const m2 = Matrix.TransformationMatrix3x3.translate(1,2);
+  const inter = Matrix.TransformationMatrix3x3.interpolate(m1, m2, 0.3);
+  console.log(inter);
 });

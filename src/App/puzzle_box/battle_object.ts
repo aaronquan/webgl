@@ -3,6 +3,8 @@ import * as Shape from "./shape";
 import * as Character from "./character";
 import * as GridBattle from "./grid_battle";
 
+import TranformAnimator2D = WebGL.Animator.TranformAnimator2D;
+
 type Float = number;
 type Int32 = number;
 
@@ -138,6 +140,8 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	num_triggers: Int32;
 	placement_history: WebGL.Grid.Generic.Coordinate[];
 	owner: Character.BattleCharacter | undefined;
+
+	transform_animator: TranformAnimator2D;
 	constructor(bo: BattleObject){
 		super(bo.shape);
 		this.id = BattleObjectInstance.current_id;
@@ -146,6 +150,11 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.cooldown_timer = 0;
 		this.num_triggers = 0;
 		this.placement_history = [];
+
+		this.transform_animator = new TranformAnimator2D();
+		//add animations for trigger
+		
+		
 	}
 	setOwner(char: Character.BattleCharacter){
 		this.owner = char;
