@@ -176,7 +176,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		super.setPlacement(x, y);
 		const last = this.placement_history.at(-1);
 		//console.log("placing at x"+x.toString());
-		if(last != undefined && last.x != x && last.y != y){
+		if(last != undefined && last.x == x && last.y == y){
 			//this.placement_history.push()
 		}else{
 			this.placement_history.push({x, y});
