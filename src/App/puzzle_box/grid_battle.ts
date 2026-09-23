@@ -41,13 +41,14 @@ export class BattleGrid{
 		}
 	}
 
-	addObjectToGrid(x: Int32, y: Int32, object: BObject.BattleObjectInstance){
+	addObjectToGrid(x: Int32, y: Int32, object: BObject.BattleObjectInstance): boolean{
 		const id = object.getId();
 		const can_fit = this.shape_grid.canFitShape(object, x, y);
 		if(can_fit){
-    	this.shape_grid.addShapeWithId(object, x, y, id);
+    		this.shape_grid.addShapeWithId(object, x, y, id);
 			object.setPlacement(x, y);
 		}
+		return can_fit;
 	}
 
 	getShapeIdFromCoord(coord: WebGL.Grid.Generic.Coordinate): Int32 | undefined{
@@ -150,13 +151,13 @@ export class BattleObjectInstanceGenerator{
 		let x = this.x;
 		for(let i = 0; i < this.objs.length; i++){
 			WebGL.WebGL.drawColourRect(vp, colour_shader, x, this.y, this.obj_interface_size, this.obj_interface_size, WebGL.Colour.ColourUtils.cyan());
-			const cx = x + this.obj_interface_size*0.5;
-			const cy = this.y + this.obj_interface_size*0.5;
+			//const cx = x + this.obj_interface_size*0.5;
+			//const cy = this.y + this.obj_interface_size*0.5;
 			const pw = this.objs[i].getShapeWidth()*this.cell_size;
 			const ph = this.objs[i].getShapeHeight()*this.cell_size;
 			const colour = colour_collection.getColour(this.objs[i].colour);
 			if(colour != undefined){
-				const coords = this.objs[i].shape.getCoordinates();
+				const coords = this.objs[i].getCoordinates();
 				for(const c of coords){
 					const cx = x + this.obj_interface_size*0.5 - pw*0.5;
 					const cy = this.y + this.obj_interface_size*0.5 - ph*0.5 ;
@@ -167,12 +168,58 @@ export class BattleObjectInstanceGenerator{
 					);
 				}
 			}
-			if(colour != undefined){
-				WebGL.WebGL.drawColourRect(vp, colour_shader, cx-pw*0.5, cy-ph*0.5, pw, ph, colour);
-			}
+			//if(colour != undefined){
+			//	WebGL.WebGL.drawColourRect(vp, colour_shader, cx-pw*0.5, cy-ph*0.5, pw, ph, colour);
+			//}
 			x += this.obj_interface_size;
 		}
 	}
+}
+
+
+//space for objects
+class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
+	//
+	objects: Int32[]; //ids of battle objects
+	//objects exist as a square inside the zone
+	//adding objects makes existing objects smaller to compensate
+	//prioritise width -> height if equal
+
+	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
+		super(x, y, w, h);
+		this.objects = [];
+	}
+
+	addObject(o_id: Int32){
+		this.objects.push(o_id);
+	}
+	removeObject(o_id: Int32){
+		WebGL.Utils.Array.removeFirstValue(this.objects, o_id);
+	}
+
+	onMouseOver(pt: Point2D){
+		if(this.isInside(pt)){
+
+		}
+	}
+
+	onMouseDown(pt: Point2D){
+
+	}
+	onMouseUp(pt: Point2D){
+
+	}
+
+	draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
+		colour_shader: WebGL.Shader.MVPColourProgram,
+
+	){
+		//background first
+		super.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.white());
+
+
+	}
+
 }
 
 export class BattleEngine{
@@ -181,7 +228,7 @@ export class BattleEngine{
 	battle_grid_true_coord: WebGL.Geometry.Base.Point2D | undefined;
 
 	//battle object
-	shapes: Shape.GridShape[];
+	//shapes: Shape.GridShape[]; // shapes are now included inside instances
 
 	battle_object_generators: BattleObjectInstanceGenerator;
 	object_instances: BObject.BattleObjectInstanceCollection;
@@ -206,8 +253,9 @@ export class BattleEngine{
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.WoodenSword.name)!);
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Stone.name)!);
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.BandAid.name)!);
+		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Hook.name)!);
 
-		this.shapes = this.generateObjectShapes();
+		//this.shapes = this.generateObjectShapes();
 
 		this.player = new Character.BattleCharacter(10);
 		//this.battle_objects = this.generateBattleObjects();
@@ -263,6 +311,7 @@ export class BattleEngine{
 		})
 	}
 
+	/*
 	private generateObjectShapes(): Shape.GridShape[]{
 		const shapes = [];
 		const single = new Shape.GridShape(1, 1, [true]);
@@ -275,17 +324,16 @@ export class BattleEngine{
 		shapes.push(trio);
 
 		return shapes;
-	}
+	}*/
 
-	rotateSelected(){
-		console.log("rot");
+	rotateSelected(clockwise: boolean=true){
 		if(this.dragged_object != undefined){
 			const instance = this.object_instances.getInstance(this.dragged_object)!; // should be known to exist
-			instance.rotateClockwise();
-			console.log("rotating");
-
-			//todo: not rotating correctly
-			
+			if(clockwise){
+				instance.rotateClockwise();
+			}else{
+				instance.rotateAntiClockwise();
+			}
 		}
 	}
 
@@ -295,13 +343,20 @@ export class BattleEngine{
 				console.log(this.object_instances);
 				break;
 			case "r":
-				//rotate selected
+				//rotate selected clockwise
 				this.rotateSelected();
 				break;
 		}
 	}
-	
 
+	onScrollWheel(ev: WheelEvent){
+		console.log(ev.deltaY);
+		if(ev.deltaY > 0){
+			this.rotateSelected();
+		}else{
+			this.rotateSelected(false);
+		}
+	}
 	onMouseMove(point: Point2D){
 		this.global_mouse = point;
 		this.battle_grid_coord = this.battle_grid.interface.getCoord(this.global_mouse);
@@ -316,9 +371,10 @@ export class BattleEngine{
 			}
 		}
 	}
+
 	onMouseDown(point: Point2D){
 		//pick up objects from grid
-    if(this.battle_grid_coord != undefined){
+		if(this.battle_grid_coord != undefined){
 			const id = this.battle_grid.getShapeIdFromCoord(this.battle_grid_coord);
 			if(id != undefined){
 				const instance = this.object_instances.getInstance(id);
@@ -330,7 +386,7 @@ export class BattleEngine{
 					instance.freeform_placement = point;
 				}
 			}
-    }
+		}
 
 		this.controls.onMouseDown(point);
 		this.battle_object_generators.onMouseDown(point);
@@ -348,7 +404,7 @@ export class BattleEngine{
 	onMouseUp(point: Point2D){
 		this.controls.onMouseUp(point);
 		this.battle_object_generators.onMouseUp(point);
-
+		//place objects
 		if(this.dragged_object != undefined){
 			const instance = this.object_instances.getInstance(this.dragged_object);
 			this.battle_object_generators.getHoveredObject()
@@ -358,7 +414,10 @@ export class BattleEngine{
 				//add dragged object to grid if can
 				if(this.battle_grid_true_coord != undefined){
 					const coord = this.getInstanceGridCoord(this.battle_grid_true_coord, instance);
-					this.battle_grid.addObjectToGrid(coord.x, coord.y, instance);
+					const added_object = this.battle_grid.addObjectToGrid(coord.x, coord.y, instance);
+					if(!added_object){
+						console.log("object deleted");
+					}
 				}else if(this.object_bin.isInside(this.global_mouse)){
 					//check if on bin then delete instance
 					console.log("bin it");

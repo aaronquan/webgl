@@ -115,7 +115,7 @@ export class BandAid extends HealingObject{
 export class Hook extends WeaponObject{
 	static name = "Hook";
 	constructor(){
-		super(BattleObject.object_shapes[2], Hook.name, 2000, 3, 5, "blue");
+		super(BattleObject.object_shapes[3], Hook.name, 2000, 3, 5, "blue");
 	}
 }
 
@@ -219,9 +219,9 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		colour_shader.use();
 		colour_shader.setColourFromColourRGB(colour);
 		if(this.freeform_placement != undefined){
-			for(const c of this.battle_object.getCoordinates()){
-				const cx = this.freeform_placement.x + c.x*cs - this.battle_object.getShapeWidth()*cs*0.5;
-				const cy = this.freeform_placement.y + c.y*cs - this.battle_object.getShapeHeight()*cs*0.5;
+			for(const c of this.getCoordinates()){
+				const cx = this.freeform_placement.x + c.x*cs - this.width*cs*0.5;
+				const cy = this.freeform_placement.y + c.y*cs - this.height*cs*0.5;
 				WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
 			}
 		}

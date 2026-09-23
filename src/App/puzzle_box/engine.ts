@@ -541,13 +541,17 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
   };
   // to override
   protected override handleScrollWheel(ev: WheelEvent){
-    if(this.dragged_shape != undefined){
-      if(ev.deltaY > 0){
-        this.dragged_shape.rotateClockwise();
-      }else if(ev.deltaY < 0){
-        this.dragged_shape.rotateAntiClockwise();
+    if(this.applet_display == PuzzleAppletDisplayEnum.Tetris){
+      if(this.dragged_shape != undefined){
+        if(ev.deltaY > 0){
+          this.dragged_shape.rotateClockwise();
+        }else if(ev.deltaY < 0){
+          this.dragged_shape.rotateAntiClockwise();
+        }
+        this.refreshPreviewPositions();
       }
-      this.refreshPreviewPositions();
+    }else if(this.applet_display == PuzzleAppletDisplayEnum.GridBattle){
+      this.grid_battle.onScrollWheel(ev);
     }
   }
 }
