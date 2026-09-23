@@ -7,6 +7,15 @@ type Comparator = LessThan | Equals | GreaterThan;
 type Int32 = number;
 type Float = number;
 
+export function removeFirstValue<T>(arr: T[], v: T){
+  const i = arr.findIndex((va) => v == va);
+  if(i != -1){
+    arr.splice(i, 1);
+    return true;
+  }
+  return false;
+}
+
 export function flatten<T>(arr: T[][]): T[]{
   const flat = [];
   for(const a of arr){
