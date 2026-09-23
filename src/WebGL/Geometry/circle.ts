@@ -5,6 +5,54 @@ type Int32 = number;
 
 import Point2D = Base.Point2D;
 
+export class Rect{
+  left: Float;
+  right: Float;
+  width: Float;
+  height: Float;
+  bot: Float;
+  top: Float; // higher value than bot
+  // l < r && b < t
+  constructor(l: Float, b: Float, w: Float, h: Float){
+    this.left = l;
+    this.bot = b;
+
+    //assert(w.)
+
+    this.width = w;
+    this.height = h;
+
+    this.right = this.left+this.width;
+    this.top = this.bot+this.height;
+  }
+  from2Points(p1: Point2D, p2: Point2D): Rect{
+    const l = Math.min(p1.x, p2.x);
+    const r = Math.max(p1.x, p2.x);
+    const b = Math.min(p1.y, p2.y);
+    const t = Math.max(p1.y, p2.y);
+    return new Rect(l, r-l, b, t-b);
+  }
+  //left right bot top
+  fromLRBT(l: Float, r: Float, b: Float, t: Float): Rect{
+    return new Rect(l, b, r-l, t-b);
+  }
+  getWidth(): Float{
+    return this.width;
+  }
+  getHeight(): Float{
+    return this.height;
+  }
+  move(x: Float, y: Float){
+    this.left += x; this.right += x;
+    this.bot += y; this.top += y;
+  }
+  isInside(x: Float, y: Float){
+    const in_x = this.left <= x && x <= this.right;
+    const in_y = this.bot <= y && y <= this.top;
+    return in_x && in_y;
+  }
+}
+
 export class Circle{
 	centre: Base.Point2D;
 	radius: Float;

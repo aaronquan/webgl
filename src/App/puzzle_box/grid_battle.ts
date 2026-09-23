@@ -410,6 +410,7 @@ export class BattleEngine{
 			this.player.forEachObject((inst) => {
 				inst.update(dt, this.player, this.enemy);
 				if(this.checkEnemy()){
+					console.log("return dead");
 					return;
 				}
 			}, this.object_instances);

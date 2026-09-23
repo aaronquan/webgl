@@ -28,7 +28,7 @@ export class Character{
 }
 
 export class BattleCharacter extends Character{
-	held_object_ids: Set<Int32>;
+	private held_object_ids: Set<Int32>;
 	constructor(mh: Int32){
 		super(mh);
 		this.held_object_ids = new Set();
