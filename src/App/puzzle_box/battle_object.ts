@@ -164,7 +164,6 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.transform_animator.addSequence("trigger_start");
 		this.transform_animator.addSequence("trigger_end");
 		//this.transform_animator.setAnimation("trigger_end");
-		this.transform_animator.play();
 		
 	}
 	setOwner(char: Character.BattleCharacter){
@@ -179,10 +178,17 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		if(!this.isPlaced()){
 			return;
 		}
-		this.transform_animator.update(dt);
+		const fin = this.transform_animator.update(dt);
+		if(fin){
+			this.transform_animator.reset();
+			this.transform_animator.pause();
+		}
 		this.cooldown_timer += dt;
 		if(this.cooldown_timer >= this.battle_object.cooldown){
 			this.battle_object.trigger(user, target);
+			console.log("triggering "+this.id.toString());
+			this.transform_animator.reset();
+			this.transform_animator.play();
 			this.num_triggers++;
 			this.cooldown_timer -= this.battle_object.cooldown;
 		}

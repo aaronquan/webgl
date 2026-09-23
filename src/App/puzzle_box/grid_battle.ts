@@ -185,6 +185,8 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 	//adding objects makes existing objects smaller to compensate
 	//prioritise width -> height if equal
 
+	hovered_index: Int32 | undefined;
+
 	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
 		super(x, y, w, h);
 		this.objects = [];
@@ -245,6 +247,8 @@ export class BattleEngine{
 	state: BattleState;
 
 	controls: BattleEngineControls;
+
+	dump_zone: DumpZone;
 	constructor(){
 		this.battle_grid = new BattleGrid(50, 50, 14, 14);
 		this.global_mouse = new Point2D(0, 0);
@@ -291,14 +295,17 @@ export class BattleEngine{
 
 		this.state = BattleStateEnum.Setup;
 
+		const int_x = this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10;
 		this.controls = new BattleEngineControls(
-			this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10, 
+			int_x, 
 			100
 		);
 		
 		this.setControlFunctions();
 
-		this.object_bin = new WebGL.Interface.InterfaceElement.InterfaceElement(this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10, 50, 40, 40);
+		this.object_bin = new WebGL.Interface.InterfaceElement.InterfaceElement(int_x, 50, 40, 40);
+	
+		this.dump_zone = new DumpZone(int_x, 150, 400, 300);
 	}
 
 	private setControlFunctions(){
@@ -465,14 +472,18 @@ export class BattleEngine{
 	
 	update(dt: Float){
 		if(this.state == BattleStateEnum.Battle){
-
+			let reset = false;
 			this.player.forEachObject((inst) => {
 				inst.update(dt, this.player, this.enemy);
 				if(this.checkEnemy()){
-					console.log("return dead");
-					return;
+					reset = true;
+					//return; // this return does not exit for each
 				}
 			}, this.object_instances);
+			if(reset){
+				console.log("resetting")
+				this.resetEnemy();
+			}
 		}
 
 		this.battle_grid.update(dt); // does nothing currently

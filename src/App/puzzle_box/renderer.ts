@@ -231,6 +231,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
   
     be.object_bin.drawBackground(this.orthographic, this.colour_shader, this.colours.getColour("grey")!);
+    be.dump_zone.draw(this.orthographic, this.colour_shader); 
+    // will need updating as dump zone is deved
   }
 
   drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){

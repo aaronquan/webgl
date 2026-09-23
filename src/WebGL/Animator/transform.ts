@@ -84,6 +84,14 @@ export class TransformSequenceAnimator2D extends TransformAnimator2D{
 	addSequence(key: string){
 		this.sequence.push(key);
 	}
+	reset(){
+		this.index = 0;
+		this.current_animation = this.sequence[this.index];
+		const anim = this.getCurrentAnimation();
+		if(anim != undefined){
+			this.getCurrentAnimation()!.setTime(0);
+		}
+	}
 
 	update(dt: Float): boolean {
 		if(this.paused){
