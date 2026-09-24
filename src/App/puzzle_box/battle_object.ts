@@ -3,7 +3,8 @@ import * as Shape from "./shape";
 import * as Character from "./character";
 import * as GridBattle from "./grid_battle";
 
-import TranformAnimator2D = WebGL.Animator.TranformAnimator2D;
+import TransformAnimator2D = WebGL.Animator.TransformAnimator2D;
+import TransformSequenceAnimator2D = WebGL.Animator.TransformSequenceAnimator2D;
 
 type Float = number;
 type Int32 = number;
@@ -141,7 +142,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	placement_history: WebGL.Grid.Generic.Coordinate[];
 	owner: Character.BattleCharacter | undefined;
 
-	transform_animator: TranformAnimator2D;
+	transform_animator: TransformSequenceAnimator2D;
 	constructor(bo: BattleObject){
 		super(bo.shape);
 		this.id = BattleObjectInstance.current_id;
@@ -151,9 +152,18 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.num_triggers = 0;
 		this.placement_history = [];
 
-		this.transform_animator = new TranformAnimator2D();
+		this.transform_animator = new TransformSequenceAnimator2D();
 		//add animations for trigger
-		
+		const m1 = WebGL.Matrix.TransformationMatrix3x3.identity();
+		const m2 = WebGL.Matrix.TransformationMatrix3x3.scale(2, 2);
+		const trigger_animator_start = new WebGL.Animator.LinearTransformAnimator(m1, m2, 200);
+		const trigger_animator_end = new WebGL.Animator.LinearTransformAnimator(m2, m1, 200);
+		this.transform_animator.addTranformation("trigger_start", trigger_animator_start);
+		this.transform_animator.addTranformation("trigger_end", trigger_animator_end);
+		this.transform_animator.setAnimation("trigger_start");
+		this.transform_animator.addSequence("trigger_start");
+		this.transform_animator.addSequence("trigger_end");
+		//this.transform_animator.setAnimation("trigger_end");
 		
 	}
 	setOwner(char: Character.BattleCharacter){
@@ -165,9 +175,20 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.owner = undefined;
 	}
 	update(dt: Float, user: Character.Character, target: Character.Character){
+		if(!this.isPlaced()){
+			return;
+		}
+		const fin = this.transform_animator.update(dt);
+		if(fin){
+			this.transform_animator.reset();
+			this.transform_animator.pause();
+		}
 		this.cooldown_timer += dt;
 		if(this.cooldown_timer >= this.battle_object.cooldown){
 			this.battle_object.trigger(user, target);
+			console.log("triggering "+this.id.toString());
+			this.transform_animator.reset();
+			this.transform_animator.play();
 			this.num_triggers++;
 			this.cooldown_timer -= this.battle_object.cooldown;
 		}
@@ -176,7 +197,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		super.setPlacement(x, y);
 		const last = this.placement_history.at(-1);
 		//console.log("placing at x"+x.toString());
-		if(last != undefined && last.x == x && last.y == y){
+		if(last != undefined && last.x != x && last.y != y){
 			//this.placement_history.push()
 		}else{
 			this.placement_history.push({x, y});
@@ -202,6 +223,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		const cs = grid.interface.cell_size;
 		const colour = colour_collection.getColour(this.battle_object.colour)!;
 		colour_shader.use();
+		colour_shader.setColourFromColourRGB(colour);
 		if(this.freeform_placement != undefined){
 			for(const c of this.getCoordinates()){
 				const cx = this.freeform_placement.x + c.x*cs - this.width*cs*0.5;
@@ -212,11 +234,19 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		else if(this.grid_placement != undefined){
 			const x = grid.interface.x;
 			const y = grid.interface.y;
+			const hcs = cs*0.5;
 			if(colour != undefined){
 				for(const c of this.getGridPlacementCoordinates()){
-					const cx = x + c.x*cs;
-					const cy = y + c.y*cs;
-					WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
+					const cx = x + c.x*cs + hcs;
+					const cy = y + c.y*cs + hcs;
+					//WebGL.WebGL.drawColourRect(vp, colour_shader, cx, cy, cs, cs, colour);
+					const model = WebGL.WebGL.rectangleModel(cx, cy, cs, cs);
+					const transformation = this.transform_animator.getMatrix();
+					const draw_model = model.multiplyCopy(transformation);
+
+					colour_shader.setMvp(vp.multiplyCopy(draw_model));
+
+					WebGL.Shapes.CenterQuad.draw();
 				}
 			}
 		}
