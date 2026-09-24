@@ -86,11 +86,17 @@ export class LineSegment2D{
     return undefined;
   }
 	//todo?
-	getX(): Float | undefined{
-
-		return undefined;
+	getX(y: Float): Float | undefined{
+    //to test
+    const min_py = this.p1.y < this.p2.y ? this.p1 : this.p2;
+    const max_py = this.p1.y >= this.p2.y ? this.p2 : this.p1;
+    if(min_py.y < y || y > max_py.y){
+      return undefined;
+    }
+    const rat = (max_py.y-min_py.y)/(y-min_py.y)
+		return (max_py.x-min_py.x)*rat+min_py.x;
 	}
-	getY(): Float | undefined{
+	getY(x: Float): Float | undefined{
 		return undefined;
 	}
   toLineEquationABC(): LineABC{
