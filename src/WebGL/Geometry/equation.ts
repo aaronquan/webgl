@@ -1,4 +1,4 @@
-import * as Interface from "./../Interface/interface";
+import * as Interface from "../Interface/interface";
 import * as Base from "./base";
 import * as Waves from "./waves";
 
@@ -8,7 +8,8 @@ import Vector = Base.PointVector;
 type Int32 = number;
 type Float = number;
 
-interface Equation{
+export interface Equation{
+  getY:(x: Float) => Float | undefined;
 	serialise: () => string;
 
 }
@@ -86,6 +87,7 @@ export class LineSegment2D{
   }
 	//todo?
 	getX(): Float | undefined{
+
 		return undefined;
 	}
 	getY(): Float | undefined{

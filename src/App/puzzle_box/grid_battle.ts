@@ -184,7 +184,7 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 	//objects exist as a square inside the zone
 	//adding objects makes existing objects smaller to compensate
 	//prioritise width -> height if equal
-
+	
 	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
 		super(x, y, w, h);
 		this.objects = [];

@@ -1,6 +1,6 @@
 export * as Base from "./base";
 export * as Rotation from "./rotation";
 export * as Triangle from "./triangle";
-export * as Equations from "./equations";
+export * as Equations from "./equation";
 export * as Circle from "./circle";
 export * as Waves from "./waves"

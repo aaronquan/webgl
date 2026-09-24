@@ -91,3 +91,7 @@ export class LinearTransformAnimator implements Animator2D{
 		return TransformationMatrix.interpolate(this.start_matrix, this.end_matrix, this.getRatio());
 	}
 }
+
+export class CurveAnimator2D{
+	
+}

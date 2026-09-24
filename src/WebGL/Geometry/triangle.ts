@@ -1,5 +1,5 @@
 import * as Base from "./base";
-import * as Equation from "./equations";
+import * as Equation from "./equation";
 
 import Point2D = Base.Point2D;
 import LineSegment2D = Equation.LineSegment2D;
