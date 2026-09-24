@@ -297,8 +297,7 @@ export class TransformationMatrix3x3 extends Matrix3x3{
     const matrix = new TransformationMatrix3x3();
     //maybe just interpolate all matrix values
     for(let i = 0; i < 9; i++){
-      //matrix._matrix[i] = ;
-      matrix._matrix[i] = (m1._matrix[i]+m2._matrix[i])*ratio;
+      matrix._matrix[i] = (m2._matrix[i]-m1._matrix[i])*ratio+m1._matrix[i];
     }
     return matrix;
 
