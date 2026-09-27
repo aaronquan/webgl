@@ -190,6 +190,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
     //need to draw this before object instances
     be.battle_object_generators.draw(this.orthographic, this.colour_shader, this.colours);
+    be.dump_zone.draw(this.orthographic, this.colour_shader, be.object_instances, this.colours); 
+    be.object_bin.drawBackground(this.orthographic, this.colour_shader, this.colours.getColour("grey")!);
 
     be.object_instances.forAll((inst, _) => {
       inst.draw(this.orthographic, this.colour_shader, be.battle_grid, this.colours);
@@ -230,8 +232,6 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     const kill_text = `Kills: ${be.kills}`;
     this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
   
-    be.object_bin.drawBackground(this.orthographic, this.colour_shader, this.colours.getColour("grey")!);
-    be.dump_zone.draw(this.orthographic, this.colour_shader); 
     // will need updating as dump zone is deved
   }
 

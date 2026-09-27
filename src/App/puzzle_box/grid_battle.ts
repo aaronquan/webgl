@@ -185,23 +185,93 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 	//adding objects makes existing objects smaller to compensate
 	//prioritise width -> height if equal
 
+	relative_mouse: Point2D;
+
+	object_width: Int32;
+	object_height: Int32;
+	square_size: Float;
+
 	hovered_index: Int32 | undefined;
+
+	x_offset: Float; // starting object x
+	y_offset: Float; // starting object y
+
 
 	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
 		super(x, y, w, h);
 		this.objects = [];
+
+		this.relative_mouse = new Point2D();
+
+		this.object_width = 0;
+		this.object_height = 0;
+		this.square_size = 0;
+		this.x_offset = 0;
+		this.y_offset = 0;
 	}
 
 	addObject(o_id: Int32){
 		this.objects.push(o_id);
+		this.recalculateObjectDimensions();
 	}
 	removeObject(o_id: Int32){
 		WebGL.Utils.Array.removeFirstValue(this.objects, o_id);
+		this.recalculateObjectDimensions();
+	}
+	recalculateObjectDimensions(){
+		const size = this.objects.length;
+		//test height = 1 -> size
+		const wh_ratio = this.width/this.height;
+		let smallest_ratio = 1;
+		let sm_width = 0;
+		let sm_height = 0;
+		for(let h = 1; h <= size; h++){
+			const w = Math.ceil(size/h);
+			const rat = w/h;
+			const rat_diff = Math.abs(wh_ratio-rat);
+			if(smallest_ratio > rat_diff){
+				sm_width = w;
+				sm_height = h;
+				smallest_ratio = rat_diff;
+			}
+		}
+		this.object_width = sm_width;
+		this.object_height = sm_height;
+		if(this.object_width/this.object_height > wh_ratio){
+			//object width greater so go by width
+			this.square_size = this.width/this.object_width;
+			//this.square_size = this.height/this.object_height;
+		}else{
+			this.square_size = this.height/this.object_height;
+		}
+		this.x_offset = (this.width - this.square_size*this.object_width)*0.5;
+		this.y_offset = (this.height - this.square_size*this.object_height)*0.5;
+
+		this.updateHoveredIndex(this.relative_mouse);
+	}
+
+	updateHoveredIndex(rel_pt: Point2D){
+		//try and calculate object hover
+		const px = rel_pt.x - this.x_offset;
+		const py = rel_pt.y - this.y_offset;
+		const cx = Math.floor(px/this.square_size);
+		const cy = Math.floor(py/this.square_size);
+		const index = cy*this.object_width+cx;
+		if(index >= 0 || index < this.objects.length){
+			this.hovered_index = index;
+		}else{
+			this.hovered_index = undefined;
+		}
 	}
 
 	onMouseOver(pt: Point2D){
 		if(this.isInside(pt)){
-
+			const relative_point = new Point2D(pt.x-this.x, pt.y-this.y);
+			this.relative_mouse = relative_point;
+			//calculate object hover
+			this.updateHoveredIndex(relative_point);
+		}else{
+			this.hovered_index = undefined;
 		}
 	}
 
@@ -212,13 +282,61 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 
 	}
 
+	getDraggedObjectId(): Int32 | undefined{
+		if(this.hovered_index != undefined){
+			return this.objects[this.hovered_index];
+		}
+		return undefined;
+	}
+
 	draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
 		colour_shader: WebGL.Shader.MVPColourProgram,
-
+		object_instances: BObject.BattleObjectInstanceCollection,
+		colours: WebGL.Colour.ColourRGBCollection
 	){
+		const inner_border = 3;
 		//background first
-		super.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.white());
+		super.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.grey());
+		//draw squares
+		//const ox = (this.width - this.square_size*this.object_width)*0.5;
+		//const oy = (this.height - this.square_size*this.object_height)*0.5;
+		let x = 0;
+		let y = 0;
+		for(let i = 0; i < this.objects.length; i++){
+			const bg_colour = i == this.hovered_index ? WebGL.Colour.ColourUtils.red() : WebGL.Colour.ColourUtils.cyan();
+			const sx = this.x+this.x_offset+x*this.square_size;
+			const sy = this.y+this.y_offset+y*this.square_size;
+			//background
+			WebGL.WebGL.drawColourRect(vp, colour_shader, 
+				sx, sy, 
+				this.square_size, this.square_size, 
+				bg_colour
+			);
 
+			const instance = object_instances.getInstance(this.objects[i]);
+			if(instance != undefined){
+				const sub_square_size = (this.square_size-inner_border-inner_border)/Math.max(instance.width, instance.height);
+				//console.log(sub_square_size);a
+				const coords = instance.getCoordinates();
+				const inst_colour = colours.getColour(instance.battle_object.colour)!;
+				const ox = (this.square_size - instance.width*sub_square_size)*0.5;
+				const oy = (this.square_size - instance.height*sub_square_size)*0.5;
+				
+				for(const c of coords){
+					WebGL.WebGL.drawColourRect(vp, colour_shader, 
+						sx+ox+c.x*sub_square_size, sy+oy+c.y*sub_square_size,
+						sub_square_size, sub_square_size,
+						inst_colour
+					);
+				}
+			}
+
+			x++;
+			if(x == this.object_width){
+				x = 0;
+				y++;
+			}
+		}
 
 	}
 
@@ -353,6 +471,9 @@ export class BattleEngine{
 				//rotate selected clockwise
 				this.rotateSelected();
 				break;
+			case "a":
+				this.dump_zone.addObject(1);
+				break;
 		}
 	}
 
@@ -368,6 +489,7 @@ export class BattleEngine{
 		this.global_mouse = point;
 		this.battle_grid_coord = this.battle_grid.interface.getCoord(this.global_mouse);
 		this.battle_grid_true_coord = this.battle_grid.interface.trueCoord(this.global_mouse);
+		this.dump_zone.onMouseOver(point);
 		this.controls.onMouseMove(point);
 		this.battle_object_generators.onMouseMove(point);
 
@@ -407,6 +529,12 @@ export class BattleEngine{
 				instance.freeform_placement = point;
 			}
 		}
+
+		const dump_id = this.dump_zone.getDraggedObjectId();
+		if(dump_id != undefined){
+			this.dragged_object = dump_id;
+			this.dump_zone.removeObject(dump_id);
+		}
 	}
 	onMouseUp(point: Point2D){
 		this.controls.onMouseUp(point);
@@ -423,7 +551,8 @@ export class BattleEngine{
 					const coord = this.getInstanceGridCoord(this.battle_grid_true_coord, instance);
 					const added_object = this.battle_grid.addObjectToGrid(coord.x, coord.y, instance);
 					if(!added_object){
-						console.log("object deleted");
+						this.dump_zone.addObject(instance.getId());
+						console.log("object dumped");
 					}
 				}else if(this.object_bin.isInside(this.global_mouse)){
 					//check if on bin then delete instance
@@ -431,6 +560,9 @@ export class BattleEngine{
 					instance.unlinkOwner();
 					this.object_instances.delete(instance);
 				}else{
+					this.dump_zone.addObject(instance.getId());
+
+					/*
 					//reset item to it's last grid location
 					console.log("reset");
 					console.log(instance.placement_history);
@@ -438,11 +570,13 @@ export class BattleEngine{
 					if(last != undefined){
 						this.battle_grid.addObjectToGrid(last.x, last.y, instance);
 					}else{
-						//remove as no placement
-						console.log("remove");
-						instance.unlinkOwner();
-						this.object_instances.delete(instance);
-					}
+						//place in the dump zone
+						this.dump_zone.addObject(instance.getId());
+						//remove as no placement or pu
+						console.log("dump");
+						//instance.unlinkOwner();
+						//this.object_instances.delete(instance);
+					}*/
 				}
 			}
 
