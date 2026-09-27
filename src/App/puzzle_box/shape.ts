@@ -1,4 +1,5 @@
-import * as WebGL from "../../WebGL/globals"
+import * as WebGL from "../../WebGL/globals";
+import * as GridBattle from "./grid_battle";
 
 import Rotation = WebGL.Geometry.Rotation;
 import Grid = WebGL.Grid.Generic;
@@ -161,6 +162,26 @@ export class GridShapeInstance{
       }
     }
     return coordinates;
+  }
+  getGridAdjacencies(grid: GridBattle.BattleGrid): WebGL.Grid.Generic.Coordinate[]{
+    //const seen = new Map<Int32, Set<Int32>>(); // adding as Grid.Generic class
+    const seen = new WebGL.Grid.Generic.SeenCoordinates();
+    
+    const placements = this.getGridPlacementCoordinates()
+    for(const c of placements){
+      seen.setSeen(c);
+    }
+    const adjacencies = [];
+    for(const c of placements){
+      const places = [{x: c.x+1, y:c.y}, {x: c.x-1, y: c.y}, {x: c.x, y: c.y+1}, {x: c.x, y: c.y-1}];
+      for(const p of places){
+        if(grid.isValidCoordinate(p) && !seen.isSeen(p)){
+          adjacencies.push(p);
+          seen.setSeen(p);
+        }
+      }
+    }
+    return adjacencies;
   }
   isPlaced(): boolean{
     return this.grid_placement != undefined;

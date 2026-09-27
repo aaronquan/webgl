@@ -19,6 +19,9 @@ class IdGrid{
     this.height = h;
     this.object_id = Array.from({length: this.height*this.width}, () => undefined);
   }
+  isValidCoordinate(coord: WebGL.Grid.Generic.Coordinate): boolean{
+    return coord.x >= 0 && coord.x < this.width && coord.y >= 0 && coord.y < this.height;
+  }
   getId(x: Int32, y: Int32) : (Int32 | undefined){
     return this.object_id[x + y*this.width];
   }

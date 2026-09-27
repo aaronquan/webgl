@@ -13,6 +13,48 @@ export type Coordinate = {
   y: Int32;
 }
 
+
+// 
+export class CoordinateChunk{
+  private coordinates: Coordinate[];
+  private seen: SeenCoordinates;
+  constructor(coords: Coordinate[]=[]){
+    this.seen = new SeenCoordinates();
+    this.coordinates = [];
+    for(const c of coords){
+      this.addCoordinate(c);
+    }
+  }
+  hasCoordinate(coord: Coordinate): boolean{
+    return this.seen.isSeen(coord);
+  }
+  addCoordinate(coord: Coordinate){
+    if(!this.seen.isSeen(coord)){
+      this.coordinates.push(coord);
+      this.seen.setSeen(coord);
+    }
+  }
+  getAdjacents(): CoordinateChunk{
+    const chunk = new CoordinateChunk();
+    for(const c of this.coordinates){
+      const adjacents = CoordinateChunk.adjacent(c);
+      for(const adj of adjacents){
+        if(!this.hasCoordinate(adj)){
+          chunk.addCoordinate(adj);
+        }
+      }
+    }
+    return chunk
+  }
+  static adjacent(coord: Coordinate): Coordinate[]{
+    return [{x:coord.x+1, y:coord.y}, 
+      {x:coord.x, y:coord.y+1}, 
+      {x:coord.x-1, y: coord.y},
+      {x: coord.x, y: coord.y-1}
+    ];
+  }
+}
+
 export class GenericGrid2D<T> implements Grid{
   width: Int32;
   height: Int32;
@@ -111,5 +153,24 @@ export class GenericGrid2DInterface<G extends Grid>{
     WebGL.WebGL.drawColourRect(vp, shader, 
       x, y, this.cell_size, this.cell_size, colour
     );
+  }
+}
+
+export class SeenCoordinates{
+  private seen: Map<Int32, Set<Int32>>;
+  constructor(){
+    this.seen = new Map();
+  }
+  isSeen(coord: Coordinate):boolean{
+    if(!this.seen.has(coord.x)){
+      return false;
+    }
+    return this.seen.get(coord.x)!.has(coord.y);
+  }
+  setSeen(coord: Coordinate){
+    if(!this.seen.has(coord.x)){
+      this.seen.set(coord.x, new Set([coord.y]));
+    }
+    this.seen.get(coord.x)!.add(coord.y);
   }
 }

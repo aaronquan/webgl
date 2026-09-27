@@ -20,6 +20,10 @@ export class BattleGrid{
     //this.objects = [];
 	}
 
+	isValidCoordinate(coord: WebGL.Grid.Generic.Coordinate): boolean{
+		return this.shape_grid.isValidCoordinate(coord);
+	}
+
 	drawInterfaceGridOutline(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, lt: Int32){
 		const hlt = lt*0.5;
 		//vertical lines
@@ -57,6 +61,7 @@ export class BattleGrid{
 
 	update(dt: Float){
 	}
+
 }
 
 class BattleEngineControls{
@@ -242,7 +247,8 @@ export class BattleEngine{
 
 	player: Character.BattleCharacter;
 	kills: Int32;
-	enemy: Character.Character;
+	enemy: Character.BattleCharacter;
+	//enemy_grid: BattleGrid; //todo
 
 	state: BattleState;
 
@@ -291,7 +297,7 @@ export class BattleEngine{
 		}
 
 		this.kills = 0;
-		this.enemy = new Character.Character(15);
+		this.enemy = new Character.BattleCharacter(15);
 
 		this.state = BattleStateEnum.Setup;
 

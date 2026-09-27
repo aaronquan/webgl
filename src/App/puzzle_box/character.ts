@@ -1,4 +1,5 @@
 import * as BObject from "./battle_object";
+import * as GridBattle from "./grid_battle";
 
 type Int32 = number;
 type Float = number;
