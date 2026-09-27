@@ -1,6 +1,7 @@
 import * as WebGL from "./../globals";
+import * as Matrix from "./../Matrix/matrix";
 
-import TransformationMatrix = WebGL.Matrix.TransformationMatrix3x3;
+import TransformationMatrix = Matrix.TransformationMatrix3x3;
 
 type Int32 = number;
 type Float = number;
