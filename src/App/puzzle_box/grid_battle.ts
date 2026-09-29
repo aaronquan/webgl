@@ -1,68 +1,15 @@
 import * as WebGL from "./../../WebGL/globals";
-import * as Engine from "./engine";
-import * as Shape from "./shape";
+//import * as Engine from "./engine";
+//import * as Shape from "./shape";
 import * as BObject from "./battle_object";
 import * as Character from "./character";
+import * as BattleGrid from "./battle_grid";
 
 type Float = number;
 type Int32 = number;
 
 import Point2D = WebGL.Geometry.Base.Point2D;
 import Button = WebGL.Interface.Button;
-
-export class BattleGrid{
-	shape_grid: Engine.ShapeIdGrid;
-	interface: Engine.ShapeGridInterface;
-
-	constructor(x: Int32, y: Int32, w: Int32, h: Int32){
-		this.shape_grid = new Engine.ShapeIdGrid(w, h);
-		this.interface = new Engine.ShapeGridInterface(x, y, 30, this.shape_grid);
-    //this.objects = [];
-	}
-
-	isValidCoordinate(coord: WebGL.Grid.Generic.Coordinate): boolean{
-		return this.shape_grid.isValidCoordinate(coord);
-	}
-
-	drawInterfaceGridOutline(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, lt: Int32){
-		const hlt = lt*0.5;
-		//vertical lines
-		colour_shader.use();
-		colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.blue());
-		let y_shift = 0;
-		for(let y = 0; y <= this.shape_grid.height; y++){
-			const model = WebGL.WebGL.rectangleModel(this.interface.x-hlt, this.interface.y+y_shift-hlt, this.interface.interfaceWidth()+lt, lt);
-			colour_shader.setMvp(vp.multiplyCopy(model));
-			WebGL.Shapes.Quad.draw();
-			y_shift += this.interface.cell_size;
-		}
-		let x_shift = 0;
-		for(let x = 0; x <= this.shape_grid.width; x++){
-			const model = WebGL.WebGL.rectangleModel(this.interface.x+x_shift-hlt, this.interface.y, lt, this.interface.interfaceHeight()+hlt);
-			colour_shader.setMvp(vp.multiplyCopy(model));
-			WebGL.Shapes.Quad.draw();	
-			x_shift += this.interface.cell_size;
-		}
-	}
-
-	addObjectToGrid(x: Int32, y: Int32, object: BObject.BattleObjectInstance): boolean{
-		const id = object.getId();
-		const can_fit = this.shape_grid.canFitShape(object, x, y);
-		if(can_fit){
-    		this.shape_grid.addShapeWithId(object, x, y, id);
-			object.setPlacement(x, y);
-		}
-		return can_fit;
-	}
-
-	getShapeIdFromCoord(coord: WebGL.Grid.Generic.Coordinate): Int32 | undefined{
-		return this.shape_grid.getId(coord.x, coord.y);
-	}
-
-	update(dt: Float){
-	}
-
-}
 
 class BattleEngineControls{
 	start_battle: WebGL.Interface.Button.BasicButton;
@@ -348,7 +295,7 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 }
 
 export class BattleEngine{
-	battle_grid: BattleGrid;
+	//battle_grid: BattleGrid;
 	battle_grid_coord: WebGL.Grid.Generic.Coordinate | undefined;
 	battle_grid_true_coord: WebGL.Geometry.Base.Point2D | undefined;
 
@@ -363,10 +310,14 @@ export class BattleEngine{
 
 	object_bin: WebGL.Interface.InterfaceElement.InterfaceElement;
 
+	player_grid: BattleGrid.BattleGrid;
 	player: Character.BattleCharacter;
-	kills: Int32;
+
+	enemy_grid: BattleGrid.BattleGrid;
 	enemy: Character.BattleCharacter;
 	//enemy_grid: BattleGrid; //todo
+
+	kills: Int32;
 
 	state: BattleState;
 
@@ -374,7 +325,7 @@ export class BattleEngine{
 
 	dump_zone: DumpZone;
 	constructor(){
-		this.battle_grid = new BattleGrid(50, 50, 14, 14);
+		//this.battle_grid = new BattleGrid(50, 50, 14, 14);
 		this.global_mouse = new Point2D(0, 0);
 
 		this.battle_object_generators = new BattleObjectInstanceGenerator(220, 500);
@@ -383,43 +334,47 @@ export class BattleEngine{
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.BandAid.name)!);
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Hook.name)!);
 
-		//this.shapes = this.generateObjectShapes();
-
-		this.player = new Character.BattleCharacter(10);
-		//this.battle_objects = this.generateBattleObjects();
-
 		this.object_instances = new BObject.BattleObjectInstanceCollection();
+
+		//this.shapes = this.generateObjectShapes();
+		this.player_grid = new BattleGrid.BattleGrid(10, 10, 10, 10);
+		this.player = new Character.BattleCharacter(10, this.player_grid);
+
+		this.enemy_grid = new BattleGrid.BattleGrid(720, 10, 10, 10);
+		this.enemy = Character.EnemyCharacter.createBaseEnemy(this.enemy_grid, this.object_instances);
+
+
+		//test player objects
 		const ws1 = this.object_instances.createInstance(BObject.WoodenSword.name);
 		const st1 = this.object_instances.createInstance(BObject.Stone.name);
 		const ba1 = this.object_instances.createInstance(BObject.BandAid.name);
 		const st2 = this.object_instances.createInstance(BObject.Stone.name);
 		if(ws1 != undefined){
-			this.battle_grid.addObjectToGrid(2, 4, ws1);
+			this.player.addObjectToGrid(2, 4, ws1);
 			ws1.setOwner(this.player);
-			//this.player.addObject(ws1);
 		}
 		if(st1 != undefined){
-			this.battle_grid.addObjectToGrid(5, 7, st1);
+			this.player.addObjectToGrid(5, 7, st1);
 			st1.setOwner(this.player);
-			//this.player.addObject(st1);
 		}
 		if(ba1 != undefined){
-			this.battle_grid.addObjectToGrid(1,2, ba1);
+			this.player.addObjectToGrid(1,2, ba1);
 			ba1.setOwner(this.player);
-			//this.player.addObject(ba1);
 		}
 		if(st2 != undefined){
-			this.battle_grid.addObjectToGrid(8, 8, st2);
+			this.player.addObjectToGrid(8, 8, st2);
 			st2.setOwner(this.player);
-			//this.player.addObject(st2);
 		}
 
 		this.kills = 0;
-		this.enemy = new Character.BattleCharacter(15);
+		//this.enemy = new Character.BattleCharacter(15, new BattleGrid.BattleGrid(720, 10, 10, 10));
+		//const ws2 = this.object_instances.createInstance(BObject.WoodenSword.name)!;
+		//this.enemy.addObjectToGrid(1, 1, ws2);
 
 		this.state = BattleStateEnum.Setup;
 
-		const int_x = this.battle_grid.interface.x+this.battle_grid.interface.interfaceWidth()+10;
+		const player_interface = this.player.getGridInterface();
+		const int_x = player_interface.x+player_interface.interfaceWidth()+10;
 		this.controls = new BattleEngineControls(
 			int_x, 
 			100
@@ -436,26 +391,13 @@ export class BattleEngine{
 		this.controls.setStartBattleFunction(() => {
 			if(this.state == BattleStateEnum.Setup){
 				this.state = BattleStateEnum.Battle;
+				this.player.setTarget(this.enemy);
+				this.enemy.setTarget(this.player);
 			}else{
 				console.log("Already battling");
 			}
 		})
 	}
-
-	/*
-	private generateObjectShapes(): Shape.GridShape[]{
-		const shapes = [];
-		const single = new Shape.GridShape(1, 1, [true]);
-		shapes.push(single);
-
-		const duo = new Shape.GridShape(2, 1, [true, true]);
-		shapes.push(duo);
-
-		const trio = new Shape.GridShape(3, 1, [true, true, true]);
-		shapes.push(trio);
-
-		return shapes;
-	}*/
 
 	rotateSelected(clockwise: boolean=true){
 		if(this.dragged_object != undefined){
@@ -484,7 +426,6 @@ export class BattleEngine{
 	}
 
 	onScrollWheel(ev: WheelEvent){
-		console.log(ev.deltaY);
 		if(ev.deltaY > 0){
 			this.rotateSelected();
 		}else{
@@ -493,8 +434,10 @@ export class BattleEngine{
 	}
 	onMouseMove(point: Point2D){
 		this.global_mouse = point;
-		this.battle_grid_coord = this.battle_grid.interface.getCoord(this.global_mouse);
-		this.battle_grid_true_coord = this.battle_grid.interface.trueCoord(this.global_mouse);
+
+		const player_grid_interface = this.player.getGrid().interface;
+		this.battle_grid_coord = player_grid_interface.getCoord(this.global_mouse);
+		this.battle_grid_true_coord = player_grid_interface.trueCoord(this.global_mouse);
 		this.dump_zone.onMouseOver(point);
 		this.controls.onMouseMove(point);
 		this.battle_object_generators.onMouseMove(point);
@@ -508,13 +451,14 @@ export class BattleEngine{
 	}
 
 	onMouseDown(point: Point2D){
+		const player_grid = this.player.getGrid();
 		//pick up objects from grid
 		if(this.battle_grid_coord != undefined){
-			const id = this.battle_grid.getShapeIdFromCoord(this.battle_grid_coord);
+			const id = player_grid.getShapeIdFromCoord(this.battle_grid_coord);
 			if(id != undefined){
 				const instance = this.object_instances.getInstance(id);
 				if(instance != undefined){
-					this.battle_grid.shape_grid.removeShape(instance);
+					player_grid.shape_grid.removeShape(instance);
 					instance.displace();
 					
 					this.dragged_object = instance.getId();
@@ -555,8 +499,9 @@ export class BattleEngine{
 				//add dragged object to grid if can
 				if(this.battle_grid_true_coord != undefined){
 					const coord = this.getInstanceGridCoord(this.battle_grid_true_coord, instance);
-					const added_object = this.battle_grid.addObjectToGrid(coord.x, coord.y, instance);
+					const added_object = this.player.addObjectToGrid(coord.x, coord.y, instance);
 					if(!added_object){
+						//object is not added
 						this.dump_zone.addObject(instance.getId());
 						console.log("object dumped");
 					}
@@ -599,6 +544,8 @@ export class BattleEngine{
 	resetEnemy(){
 		this.state = BattleStateEnum.Setup;
 		this.enemy.reset();
+		this.player.resetObjects(this.object_instances);
+		this.enemy.resetObjects(this.object_instances);
 	}
 
 	checkEnemy(): boolean{
@@ -612,6 +559,7 @@ export class BattleEngine{
 	
 	update(dt: Float){
 		if(this.state == BattleStateEnum.Battle){
+			/*
 			let reset = false;
 			this.player.forEachObject((inst) => {
 				inst.update(dt, this.player, this.enemy);
@@ -623,9 +571,14 @@ export class BattleEngine{
 			if(reset){
 				console.log("resetting")
 				this.resetEnemy();
+			}*/
+			const killed_target = this.player.update(dt, this.object_instances); // does the object updates
+			if(killed_target){
+				console.log("resetting");
+				this.resetEnemy();
 			}
+			this.enemy.update(dt, this.object_instances);
 		}
 
-		this.battle_grid.update(dt); // does nothing currently
 	}
 }

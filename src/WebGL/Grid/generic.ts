@@ -25,8 +25,14 @@ export class CoordinateChunk{
       this.addCoordinate(c);
     }
   }
+  hasXY(x: Int32, y: Int32): boolean{
+    return this.hasCoordinate({x, y});
+  }
   hasCoordinate(coord: Coordinate): boolean{
     return this.seen.isSeen(coord);
+  }
+  addXY(x: Int32, y: Int32){
+    this.addCoordinate({x, y});
   }
   addCoordinate(coord: Coordinate){
     if(!this.seen.isSeen(coord)){
@@ -44,7 +50,7 @@ export class CoordinateChunk{
         }
       }
     }
-    return chunk
+    return chunk;
   }
   static adjacent(coord: Coordinate): Coordinate[]{
     return [{x:coord.x+1, y:coord.y}, 
@@ -58,11 +64,14 @@ export class CoordinateChunk{
 export class GenericGrid2D<T> implements Grid{
   width: Int32;
   height: Int32;
-  grid: (T | undefined)[];
+  protected grid: (T | undefined)[];
   constructor(w: Int32, h: Int32){
     this.width = w;
     this.height = h;
     this.grid = Array.from({length: this.width*this.height}, () => undefined);
+  }
+  isValidCoordinate(coord: WebGL.Grid.Generic.Coordinate): boolean{
+    return coord.x >= 0 && coord.x < this.width && coord.y >= 0 && coord.y < this.height;
   }
   isInside(x: Int32, y: Int32): boolean{
     const in_x = 0 <= x && x < this.width;

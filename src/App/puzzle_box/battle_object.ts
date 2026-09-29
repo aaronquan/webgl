@@ -1,7 +1,7 @@
 import * as WebGL from "./../../WebGL/globals";
 import * as Shape from "./shape";
 import * as Character from "./character";
-import * as GridBattle from "./grid_battle";
+import * as BattleGrid from "./battle_grid";
 
 import TransformAnimator2D = WebGL.Animator.TransformAnimator2D;
 import TransformSequenceAnimator2D = WebGL.Animator.TransformSequenceAnimator2D;
@@ -166,6 +166,12 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		//this.transform_animator.setAnimation("trigger_end");
 		
 	}
+	reset(){
+		this.cooldown_timer = 0;
+		this.transform_animator.reset();
+		this.transform_animator.pause();
+		console.log("reseting object");
+	}
 	setOwner(char: Character.BattleCharacter){
 		this.owner = char;
 		char.addObject(this);
@@ -217,14 +223,16 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	getId(): Int32{
 		return this.id;
 	}
-	draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram,
-		grid: GridBattle.BattleGrid, colour_collection: WebGL.Colour.ColourRGBCollection
+	draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, 
+		colour_collection: WebGL.Colour.ColourRGBCollection
 	){
-		const cs = grid.interface.cell_size;
+		//const grid = this.owner?.getGrid();
+		//const cs = grid != undefined ? grid.interface.cell_size : 15;
 		const colour = colour_collection.getColour(this.battle_object.colour)!;
 		colour_shader.use();
 		colour_shader.setColourFromColourRGB(colour);
 		if(this.freeform_placement != undefined){
+			const cs = 15;
 			for(const c of this.getCoordinates()){
 				const cx = this.freeform_placement.x + c.x*cs - this.width*cs*0.5;
 				const cy = this.freeform_placement.y + c.y*cs - this.height*cs*0.5;
@@ -232,6 +240,8 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 			}
 		}
 		else if(this.grid_placement != undefined){
+			const grid = this.owner!.getGrid();
+			const cs = grid.interface.cell_size;
 			const x = grid.interface.x;
 			const y = grid.interface.y;
 			const hcs = cs*0.5;
@@ -272,6 +282,15 @@ export class BattleObjectInstanceCollection{
 	}
 	addObjectInstance(inst: BattleObjectInstance){
 		this.objects.set(inst.getId(), inst);
+	}
+	//takes object key
+	addObjectFromString(str: string): BattleObjectInstance | undefined{
+		if(!BattleObjects.objects.has(str)){
+			return undefined;
+		}
+		const inst = new BattleObjectInstance(BattleObjects.objects.get(str)!);
+		this.addObjectInstance(inst);
+		return inst;
 	}
 	getInstance(id: Int32): BattleObjectInstance | undefined{
 		return this.objects.get(id);

@@ -63,7 +63,6 @@ export class TransformAnimator2D{
 		anim.setRatio(start);
 		this.current_animation = anim_key;
 		this.matrix = anim.getMatrix();
-		console.log(this.matrix);
 		return true;
 	}
 
@@ -93,7 +92,7 @@ export class TransformSequenceAnimator2D extends TransformAnimator2D{
 			this.getCurrentAnimation()!.setTime(0);
 		}
 	}
-
+	//returns true if animation finished (doesn't call reset)
 	update(dt: Float): boolean {
 		if(this.paused){
 			return false;
@@ -109,7 +108,12 @@ export class TransformSequenceAnimator2D extends TransformAnimator2D{
 					reset = true;
 				}
 				this.current_animation = this.sequence[this.index];
-				this.getCurrentAnimation()!.setTime(tr);
+				const next_anim = this.getCurrentAnimation();
+				if(next_anim != undefined){
+					next_anim.setTime(tr);
+				}else{
+					console.log("anim not found");
+				}
 			}
 			this.matrix = anim.getMatrix();
 		}
@@ -158,8 +162,4 @@ export class LinearTransformAnimator implements Animator2D{
 	getMatrix(): TransformationMatrix{
 		return TransformationMatrix.interpolate(this.start_matrix, this.end_matrix, this.getRatio());
 	}
-}
-
-export class CurveAnimator2D{
-	
 }

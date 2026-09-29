@@ -100,6 +100,9 @@ class TetrisGrid extends Grid.GenericGrid2D<Int32>{
     }
     return false;
   }
+  getGrid(): (Int32 | undefined)[]{
+    return this.grid;
+  }
 }
 
 class TetrisInstance extends GShape.GridShapeInstance{

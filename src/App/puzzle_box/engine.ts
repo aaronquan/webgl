@@ -10,6 +10,7 @@ import Button = WebGL.Interface.Button;
 import Rotation = WebGL.Geometry.Rotation;
 import Grid = WebGL.Grid.Generic;
 
+/*
 class IdGrid{
   width: Int32;
   height: Int32;
@@ -17,7 +18,7 @@ class IdGrid{
   constructor(w: Int32, h: Int32){
     this.width = w;
     this.height = h;
-    this.object_id = Array.from({length: this.height*this.width}, () => undefined);
+    this.object_id = Array.from({length: this.width*this.height}, () => undefined);
   }
   isValidCoordinate(coord: WebGL.Grid.Generic.Coordinate): boolean{
     return coord.x >= 0 && coord.x < this.width && coord.y >= 0 && coord.y < this.height;
@@ -26,99 +27,8 @@ class IdGrid{
     return this.object_id[x + y*this.width];
   }
 }
+*/
 
-export class ShapeGridInterface{
-  x: Int32;
-  y: Int32;
-  cell_size: Int32;
-  grid: ShapeIdGrid;
-  constructor(x: Int32, y: Int32, size: Int32, grid: ShapeIdGrid){
-    this.x = x;
-    this.y = y;
-    this.cell_size = size;
-    this.grid = grid;
-  }
-  isInside(point: WebGL.Geometry.Base.Point2D): boolean{
-    const in_x = this.x < point.x && point.x < this.x+this.interfaceWidth();
-    const in_y = this.y < point.y && point.y < this.y+this.interfaceHeight();
-    return in_x && in_y;
-  }
-  interfaceWidth(): Int32{
-    return this.cell_size*this.grid.width;
-  }
-  interfaceHeight(): Int32{
-    return this.cell_size*this.grid.height;
-  }
-  getCoord(point: WebGL.Geometry.Base.Point2D): Grid.Coordinate | undefined{
-    if(!this.isInside(point)) return undefined;
-    const x = Math.floor((point.x-this.x)/this.cell_size);
-    const y = Math.floor((point.y-this.y)/this.cell_size);
-    return {x, y};
-  }
-  trueCoord(point: WebGL.Geometry.Base.Point2D): WebGL.Geometry.Base.Point2D | undefined{
-    if(!this.isInside(point)){
-      return undefined;
-    }
-    return new WebGL.Geometry.Base.Point2D((point.x-this.x)/this.cell_size, (point.y-this.y)/this.cell_size);
-  }
-}
-
-export class ShapeIdGrid extends IdGrid{
-  isFree(x: Int32, y: Int32): boolean{
-    return this.object_id[x+y*this.width] == undefined;
-  }
-  canFitShape(shape: Shape.GridShapeInstance, x: Int32, y: Int32): boolean{
-    //test borders
-    if(x < 0 || y < 0 || x+shape.width > this.width || y+shape.height > this.height){
-      return false;
-    }
-
-    //test individual parts
-    for(let py = 0; py < shape.height; py++){
-      for(let px = 0; px < shape.width; px++){
-        if(shape.getPart(px, py) && !this.isFree(x+px, y+py)){
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-  addShape(shape: Shape.GridShapeInstance, x: Int32, y: Int32){
-    for(let py = 0; py < shape.height; py++){
-      for(let px = 0; px < shape.width; px++){
-        if(shape.getPart(px, py)){
-          this.object_id[(x+px)+(y+py)*this.width] = shape.id;
-        }
-      }
-    }
-    shape.grid_placement = {x, y};
-  }
-  addShapeWithId(shape: Shape.GridShapeInstance, x: Int32, y: Int32, id: Int32){
-    for(let py = 0; py < shape.height; py++){
-      for(let px = 0; px < shape.width; px++){
-        if(shape.getPart(px, py)){
-          this.object_id[(x+px)+(y+py)*this.width] = id;
-        }
-      }
-    }
-    shape.grid_placement = {x, y};
-  }
-  removeShape(shape: Shape.GridShapeInstance){
-    console.log(shape);
-    if(shape.grid_placement == undefined){
-      return;
-    }
-    const x = shape.grid_placement.x;
-    const y = shape.grid_placement.y;
-    for(let py = 0; py < shape.height; py++){
-      for(let px = 0; px < shape.width; px++){
-        if(shape.getPart(px, py)){
-          this.object_id[(x+px)+(y+py)*this.width] = undefined;
-        }
-      }
-    }
-  }
-}
 
 /*
 export const RotationEnum = {
@@ -306,8 +216,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
 
   dragged_shape: Shape.GridShapeInstance | undefined;
 
-  grid: ShapeIdGrid;
-  interface_grid: ShapeGridInterface;
+  grid: Shape.ShapeIdGrid;
+  interface_grid: Shape.ShapeGridInterface;
 
   hovered_grid_coord: Coord | undefined;
   mouse_grid_point: WebGL.Geometry.Base.Point2D | undefined;
@@ -349,8 +259,8 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
       position = this.shape_label_layout.next(position);
     }
 
-    this.grid = new ShapeIdGrid(10, 10);
-    this.interface_grid = new ShapeGridInterface(100, 250, 50, this.grid);
+    this.grid = new Shape.ShapeIdGrid(10, 10);
+    this.interface_grid = new Shape.ShapeGridInterface(100, 250, 50, this.grid);
     this.hovered_grid_coord = undefined;
     this.mouse_grid_point = undefined;
 
@@ -429,7 +339,7 @@ export class PuzzleEngine extends WebGL.App.BaseEngine{
     if(this.hovered_grid_coord == undefined){
       return undefined;
     }
-    return this.grid.getId(this.hovered_grid_coord.x, this.hovered_grid_coord.y);
+    return this.grid.get(this.hovered_grid_coord.x, this.hovered_grid_coord.y);
   }
 
   snapshotCanvas(){

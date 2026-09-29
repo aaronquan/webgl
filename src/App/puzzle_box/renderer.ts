@@ -7,6 +7,8 @@ import {BattleEngine} from "./grid_battle";
 import * as Tetris from "./tetris";
 import * as Character from "./character";
 
+import * as BattleGrid from "./battle_grid";
+
 
 
 type Int32 = number;
@@ -70,7 +72,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
   }
 
-  drawShapeGrid(engine: PuzzleEngine, grid: PEngine.ShapeGridInterface){
+  drawShapeGrid(engine: PuzzleEngine, grid: Shape.ShapeGridInterface){
     const grey = WebGL.Colour.ColourUtils.grey();
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, 
       grid.x, grid.y, 
@@ -83,7 +85,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     const clear_border = (grid.cell_size-rect_size)*0.5;
     for(let gy = 0; gy < grid.grid.height; gy++){
       for(let gx = 0; gx < grid.grid.width; gx++){
-        const id = grid.grid.object_id[gx+gy*grid.grid.width];
+        const id = grid.grid.get(gx, gy);
         let col = black;
         if(engine.isInPositionPreview(gx, gy)){
           col = red;
@@ -145,9 +147,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     if(te.active_piece != undefined){
       this.drawTetrisActivePiece(te, te.active_piece);
     }
-
-    for(let i = 0; i < te.grid.grid.length; i++){
-      const c = te.grid.grid[i];
+    const grid = te.grid.getGrid();
+    for(let i = 0; i < grid.length; i++){
+      const c = grid[i];
       if(c != undefined){
         const coord = te.grid.getCoord(i);
         te.grid_interface.drawColourCoord(this.orthographic, this.colour_shader, coord, this.tetris_colours[c]);
@@ -174,16 +176,16 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
 
   getBattleGridGlobalPoint(be: BattleEngine, x: Int32, y: Int32): WebGL.Geometry.Base.Point2D{
-    const ix = be.battle_grid.interface.x;
-    const iy = be.battle_grid.interface.y;
-    const cs = be.battle_grid.interface.cell_size;
+    const grid = be.player.getGrid();
+    const ix = grid.interface.x;
+    const iy = grid.interface.y;
+    const cs = grid.interface.cell_size;
     return new WebGL.Geometry.Base.Point2D(ix+cs*x, iy+cs*y);
   }
 
   drawBattle(be: BattleEngine){
-
-    //todo draw instance
-    const gs = be.battle_grid.interface.cell_size;
+    const grid = be.player.getGrid();
+    const gs = grid.interface.cell_size;
 
     this.colour_shader.use();
     this.colour_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.red());
@@ -194,7 +196,10 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     be.object_bin.drawBackground(this.orthographic, this.colour_shader, this.colours.getColour("grey")!);
 
     be.object_instances.forAll((inst, _) => {
-      inst.draw(this.orthographic, this.colour_shader, be.battle_grid, this.colours);
+      //if(inst.owner == undefined){
+      inst.draw(this.orthographic, this.colour_shader, this.colours);
+      //}
+      //inst.draw(this.orthographic, this.colour_shader, grid, this.colours);
 
       //old draw method
       /*
@@ -222,7 +227,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     }*/
 
     //draw battle grid
-    be.battle_grid.drawInterfaceGridOutline(this.orthographic, this.colour_shader, 4);
+    //grid.drawInterfaceGridOutline(this.orthographic, this.colour_shader, 4);
+    this.drawBattleGrid(be.player.getGrid());
+    this.drawBattleGrid(be.enemy.getGrid());
   
     this.drawCharacterHPBar(be.player, 50, 500);
     this.drawCharacterHPBar(be.enemy, 500, 500);
@@ -233,6 +240,10 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
   
     // will need updating as dump zone is deved
+  }
+
+  drawBattleGrid(bg: BattleGrid.BattleGrid){
+    bg.drawInterfaceGridOutline(this.orthographic, this.colour_shader, 3);
   }
 
   drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){

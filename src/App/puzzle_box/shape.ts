@@ -1,5 +1,5 @@
 import * as WebGL from "../../WebGL/globals";
-import * as GridBattle from "./grid_battle";
+//import * as GridBattle from "./grid_battle";
 
 import Rotation = WebGL.Geometry.Rotation;
 import Grid = WebGL.Grid.Generic;
@@ -163,6 +163,11 @@ export class GridShapeInstance{
     }
     return coordinates;
   }
+  getGridAdjacencies(): WebGL.Grid.Generic.CoordinateChunk{
+    const chunk = new WebGL.Grid.Generic.CoordinateChunk(this.getGridPlacementCoordinates());
+    return chunk.getAdjacents();
+  }
+  /*
   getGridAdjacencies(grid: GridBattle.BattleGrid): WebGL.Grid.Generic.Coordinate[]{
     //const seen = new Map<Int32, Set<Int32>>(); // adding as Grid.Generic class
     const seen = new WebGL.Grid.Generic.SeenCoordinates();
@@ -182,7 +187,7 @@ export class GridShapeInstance{
       }
     }
     return adjacencies;
-  }
+  }*/
   isPlaced(): boolean{
     return this.grid_placement != undefined;
   }
@@ -200,3 +205,95 @@ export class GridShapeInstance{
   }
 }
 
+export class ShapeGridInterface{
+  x: Int32;
+  y: Int32;
+  cell_size: Int32;
+  grid: ShapeIdGrid;
+  constructor(x: Int32, y: Int32, size: Int32, grid: ShapeIdGrid){
+    this.x = x;
+    this.y = y;
+    this.cell_size = size;
+    this.grid = grid;
+  }
+  isInside(point: WebGL.Geometry.Base.Point2D): boolean{
+    const in_x = this.x < point.x && point.x < this.x+this.interfaceWidth();
+    const in_y = this.y < point.y && point.y < this.y+this.interfaceHeight();
+    return in_x && in_y;
+  }
+  interfaceWidth(): Int32{
+    return this.cell_size*this.grid.width;
+  }
+  interfaceHeight(): Int32{
+    return this.cell_size*this.grid.height;
+  }
+  getCoord(point: WebGL.Geometry.Base.Point2D): Grid.Coordinate | undefined{
+    if(!this.isInside(point)) return undefined;
+    const x = Math.floor((point.x-this.x)/this.cell_size);
+    const y = Math.floor((point.y-this.y)/this.cell_size);
+    return {x, y};
+  }
+  trueCoord(point: WebGL.Geometry.Base.Point2D): WebGL.Geometry.Base.Point2D | undefined{
+    if(!this.isInside(point)){
+      return undefined;
+    }
+    return new WebGL.Geometry.Base.Point2D((point.x-this.x)/this.cell_size, (point.y-this.y)/this.cell_size);
+  }
+}
+
+export class ShapeIdGrid extends Grid.GenericGrid2D<Int32>{
+  isFree(x: Int32, y: Int32): boolean{
+    return this.grid[x+y*this.width] == undefined;
+  }
+  canFitShape(shape: GridShapeInstance, x: Int32, y: Int32): boolean{
+    //test borders
+    if(x < 0 || y < 0 || x+shape.width > this.width || y+shape.height > this.height){
+      return false;
+    }
+
+    //test individual parts
+    for(let py = 0; py < shape.height; py++){
+      for(let px = 0; px < shape.width; px++){
+        if(shape.getPart(px, py) && !this.isFree(x+px, y+py)){
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  addShape(shape: GridShapeInstance, x: Int32, y: Int32){
+    for(let py = 0; py < shape.height; py++){
+      for(let px = 0; px < shape.width; px++){
+        if(shape.getPart(px, py)){
+          this.grid[(x+px)+(y+py)*this.width] = shape.id;
+        }
+      }
+    }
+    shape.grid_placement = {x, y};
+  }
+  addShapeWithId(shape: GridShapeInstance, x: Int32, y: Int32, id: Int32){
+    for(let py = 0; py < shape.height; py++){
+      for(let px = 0; px < shape.width; px++){
+        if(shape.getPart(px, py)){
+          this.grid[(x+px)+(y+py)*this.width] = id;
+        }
+      }
+    }
+    shape.grid_placement = {x, y};
+  }
+  removeShape(shape: GridShapeInstance){
+    console.log("removing"+shape.id);
+    if(shape.grid_placement == undefined){
+      return;
+    }
+    const x = shape.grid_placement.x;
+    const y = shape.grid_placement.y;
+    for(let py = 0; py < shape.height; py++){
+      for(let px = 0; px < shape.width; px++){
+        if(shape.getPart(px, py)){
+          this.grid[(x+px)+(y+py)*this.width] = undefined;
+        }
+      }
+    }
+  }
+}
