@@ -11,16 +11,68 @@ type Int32 = number;
 
 const ObjectTypeEnum = {
 	Weapon: 0,
-	Accessory: 1
+	Accessory: 1,
+	Apparel: 2
 } as const;
 
 type ObjectType = (typeof ObjectTypeEnum)[keyof typeof ObjectTypeEnum];
+
+const TriggerTypeEnum = {
+	Start: 0,
+	Health: 1,
+	Cooldown: 2
+} as const;
+
+type TriggerType = (typeof TriggerTypeEnum)[keyof typeof TriggerTypeEnum];
+
+const ConditionalTypeEnum = {
+	Buff: 0,
+	UserHealth: 1,
+} as const;
+
+type ConditionalType = (typeof ConditionalTypeEnum)[keyof typeof ConditionalTypeEnum];
+
+type TriggerCondition = {
+	trigger_type: TriggerType;
+	cooldown: Float | undefined;
+	current_cooldown: Float;
+	health_percent: Float | undefined;
+	health_amount: Float | undefined;
+	limit: Int32 | undefined;
+	current_limit: Int32;
+}
+
+const ActionTypeEnum = {
+	Attack: 0,
+	UserBuff: 1,
+	TargetBuff: 2,
+	Heal: 3
+} as const;
+
+type ActionType = (typeof ActionTypeEnum)[keyof typeof ActionTypeEnum];
+
+type ObjectAction = {
+	action_type: ActionType,
+	low_value: Int32,
+	high_value: Int32,
+	base_accuracy: Float,
+
+}
+
+type TriggerAction = {
+	//trigger_type: TriggerType,
+	condition: TriggerCondition,
+	action: ObjectAction
+}
 
 export class BattleObject{
 	name: string;
 	cooldown: Float;
 	object_type: ObjectType;
 	shape: Shape.GridShape;
+	user_buff_change: Character.BuffChange[];
+	target_buff_change: Character.BuffChange[];
+	triggers: TriggerAction[];
 	static object_shapes = BattleObject.generateBattleObjectShapes();
 
 
@@ -31,6 +83,46 @@ export class BattleObject{
 		this.cooldown = cd;
 		this.object_type = ot;
 		this.colour = colour;
+		this.user_buff_change = [];
+		this.target_buff_change = [];
+		this.triggers = []; // test this with wood sword
+	}
+
+	testCondition(condition: TriggerCondition): boolean{
+		if(condition.limit != undefined && condition.limit >= condition.current_limit){
+			return false;
+		}
+		switch(condition.trigger_type){
+			case TriggerTypeEnum.Cooldown:
+				/*if(condition.current_cooldown == undefined){
+					console.log("exception: current cooldown not assigned");
+					return false;
+				}*/
+				if(condition.cooldown == undefined){
+					console.log("exception: cooldown not assigned");
+					return false;
+				}
+				if(condition.current_cooldown >= condition.cooldown){
+					condition.current_cooldown -= condition.cooldown;
+					condition.current_limit++;
+					return true;
+				}
+				break;
+			case TriggerTypeEnum.Start:
+				if(condition.current_cooldown == 0){
+					condition.current_limit++;
+					//condition.current_cooldown++;
+				}
+				break;
+		}
+
+		return false;
+	}
+
+	testAction(action: TriggerAction){
+		if(this.testCondition(action.condition)){
+
+		}
 	}
 
 	getCoordinates(): WebGL.Grid.Generic.Coordinate[]{
@@ -55,8 +147,12 @@ export class BattleObject{
 	}
 
 	//to override
-	trigger(user: Character.Character, target: Character.Character){
+	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
+		//
+		user.buffs.applyBuffChange(this.user_buff_change);
+		target.buffs.applyBuffChange(this.target_buff_change);
 		console.log(this.name);
+
 	}
 }
 
@@ -66,7 +162,8 @@ class HealingObject extends BattleObject{
 		super(shape, name, cd, ObjectTypeEnum.Accessory, colour);
 		this.heal_amount = ha;
 	}
-	trigger(user: Character.Character, target: Character.Character){
+	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
+		super.trigger(user, target);
 		user.heal(this.heal_amount);
 	}
 }
@@ -83,7 +180,8 @@ class WeaponObject extends BattleObject{
 		const rand = Math.floor(Math.random()*(this.damage_hi-this.damage_low+1));
 		return rand + this.damage_low;
 	}
-	trigger(user: Character.Character, target: Character.Character){
+	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
+		super.trigger(user, target);
 		const damage = this.calcRandomDamage();
 		target.takeDamage(damage);
 		//target.current_health -= damage;
@@ -109,13 +207,21 @@ export class BandAid extends HealingObject{
 	static name = "Bandaid";
 	constructor(){
 		super(BattleObject.object_shapes[0], BandAid.name, 3000, 2, "red");
+		this.user_buff_change.push({buff: Character.BattleBuffEnum.Regen, amount: 1});
 	}
 }
 
 export class Hook extends WeaponObject{
 	static name = "Hook";
 	constructor(){
-		super(BattleObject.object_shapes[3], Hook.name, 2000, 3, 5, "blue");
+		super(BattleObject.object_shapes[3], Hook.name, 2500, 4, 7, "blue");
+	}
+}
+
+export class MagicWand extends WeaponObject{
+	static name = "MagicWand";
+	constructor(){
+		super(BattleObject.object_shapes[1], MagicWand.name, 1800, 3,5, "pink");
 	}
 }
 
@@ -180,7 +286,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.owner?.removeObject(this);
 		this.owner = undefined;
 	}
-	update(dt: Float, user: Character.Character, target: Character.Character){
+	update(dt: Float, user: Character.BattleCharacter, target: Character.BattleCharacter){
 		if(!this.isPlaced()){
 			return;
 		}

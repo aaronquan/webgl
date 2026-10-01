@@ -294,6 +294,37 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 
 }
 
+
+export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.InterfaceElement{
+	character_buffs: Character.BattleBuffCollection;
+
+	constructor(x: Int32, y: Int32, width: Int32, height: Int32, buffs: Character.BattleBuffCollection){
+		super(x, y, width, height);
+		this.character_buffs = buffs;
+	}
+	draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
+		colour_shader: WebGL.Shader.MVPColourProgram,
+		text_drawer: WebGL.TextDrawer
+	){
+		//background
+		//
+		this.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.white());
+
+		//buffs values
+		let x = this.x;
+		for(const [id, value] of this.character_buffs.buffs){
+			//todo: use icons for buffs
+			const char = Character.BattleBuffCollection.buffToChar(id);
+			const text = `${char} ${value.toString()}`;
+			const tsize = 12;
+			const text_width = text_drawer.getTextWidth(text, tsize);
+			text_drawer.drawText(vp, x, this.y, text, tsize);
+			//exchange with x inc
+			x += text_width;
+		}
+	}
+}
+
 export class BattleEngine{
 	//battle_grid: BattleGrid;
 	battle_grid_coord: WebGL.Grid.Generic.Coordinate | undefined;
@@ -312,6 +343,8 @@ export class BattleEngine{
 
 	player_grid: BattleGrid.BattleGrid;
 	player: Character.BattleCharacter;
+
+	player_buff_interface: CharacterBuffInterface;
 
 	enemy_grid: BattleGrid.BattleGrid;
 	enemy: Character.BattleCharacter;
@@ -339,6 +372,8 @@ export class BattleEngine{
 		//this.shapes = this.generateObjectShapes();
 		this.player_grid = new BattleGrid.BattleGrid(10, 10, 10, 10);
 		this.player = new Character.BattleCharacter(10, this.player_grid);
+
+		this.player_buff_interface = new CharacterBuffInterface(10, 400, 400, 80, this.player.buffs); //todo
 
 		this.enemy_grid = new BattleGrid.BattleGrid(720, 10, 10, 10);
 		this.enemy = Character.EnemyCharacter.createBaseEnemy(this.enemy_grid, this.object_instances);
