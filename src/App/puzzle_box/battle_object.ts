@@ -35,22 +35,22 @@ type ConditionalType = (typeof ConditionalTypeEnum)[keyof typeof ConditionalType
 type TriggerCondition = {
 	trigger_type: TriggerType;
 	cooldown: Float | undefined;
-	current_cooldown: Float;
+	//current_cooldown: Float;
 	health_percent: Float | undefined;
 	health_amount: Float | undefined;
-	limit: Int32 | undefined;
-	current_limit: Int32;
+	trigger_limit: Int32 | undefined;
+	//current_limit: Int32;
 }
 
 function cooldownCondition(cd: Float): TriggerCondition{
 	return {
 		trigger_type: TriggerTypeEnum.Cooldown,
 		cooldown: cd,
-		current_cooldown: 0,
-		current_limit: 0,
+		//current_cooldown: 0,
+		//current_limit: 0,
 		health_percent: undefined,
 		health_amount: undefined,
-		limit: undefined,
+		trigger_limit: undefined,
 	}
 }
 
@@ -68,13 +68,20 @@ type ObjectAction = {
 	low_value: Int32,
 	high_value: Int32,
 	base_accuracy: Float,
-
+	buff: Character.BattleBuff | undefined//uses low_value-high_value for amount
+	//buff_amount: Int32 | undefined
 }
 
 type TriggerAction = {
 	//trigger_type: TriggerType,
 	condition: TriggerCondition,
-	action: ObjectAction[]
+	actions: ObjectAction[]
+}
+
+type ActionInstance = {
+	trigger_action: TriggerAction,
+	current_cooldown: Float,
+	triggers: Int32
 }
 
 export class BattleObject{
@@ -100,16 +107,34 @@ export class BattleObject{
 		this.trigger_actions = []; // test this with wood sword
 	}
 
+	static startOfBattleCondition(): TriggerCondition{
+		return {
+			trigger_type: TriggerTypeEnum.Start,
+			cooldown: undefined,
+			health_percent: undefined,
+			health_amount: undefined,
+			trigger_limit: 1,
+		}
+	}
+
+	static cooldownCondition(cd: Float): TriggerCondition{
+		return {
+			trigger_type: TriggerTypeEnum.Cooldown,
+			cooldown: cd,
+			health_percent: undefined,
+			health_amount: undefined,
+			trigger_limit: undefined,
+		}
+	}
+
+	//moved to instance
+	/*
 	testCondition(condition: TriggerCondition): boolean{
 		if(condition.limit != undefined && condition.limit >= condition.current_limit){
 			return false;
 		}
 		switch(condition.trigger_type){
 			case TriggerTypeEnum.Cooldown:
-				/*if(condition.current_cooldown == undefined){
-					console.log("exception: current cooldown not assigned");
-					return false;
-				}*/
 				if(condition.cooldown == undefined){
 					console.log("exception: cooldown not assigned");
 					return false;
@@ -129,13 +154,7 @@ export class BattleObject{
 		}
 
 		return false;
-	}
-
-	testAction(action: TriggerAction){
-		if(this.testCondition(action.condition)){
-
-		}
-	}
+	}*/
 	protected calcRandomDamage(low: Int32, hi: Int32): Int32{
 		const rand = Math.floor(Math.random()*(hi-low+1));
 		return rand + low;
@@ -225,11 +244,12 @@ export class WoodenSword extends WeaponObject{
 		super(BattleObject.object_shapes[1], WoodenSword.name, 1000, 1, 2, "yellow");
 		const attack: TriggerAction = {
 			condition: cooldownCondition(1500),
-			action: [{
+			actions: [{
 				action_type: ActionTypeEnum.Attack,
 				low_value: 2,
 				high_value: 3,
-				base_accuracy: 100
+				base_accuracy: 100,
+				buff: undefined
 			}]
 		}
 		this.trigger_actions.push(attack);
@@ -265,6 +285,26 @@ export class MagicWand extends WeaponObject{
 	}
 }
 
+export class HealingPack extends HealingObject{
+	static name = "HealingPack";
+	constructor(){
+		super(BattleObject.object_shapes[1], HealingPack.name, 1000, 1, "green");
+		const start_action: TriggerAction = {
+			condition: BattleObject.startOfBattleCondition(),
+			actions: [
+				{
+					action_type: ActionTypeEnum.UserBuff,
+					low_value: 1,
+					high_value: 1,
+					base_accuracy: 100,
+					buff: Character.BattleBuffEnum.Regen
+				}
+			]
+		}
+		this.trigger_actions.push(start_action);
+	}
+}
+
 export class BattleObjects{
 	static objects = BattleObjects.generateObjects();
 
@@ -288,6 +328,8 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	placement_history: WebGL.Grid.Generic.Coordinate[];
 	owner: Character.BattleCharacter | undefined;
 
+	action_instances: ActionInstance[];
+
 	transform_animator: TransformSequenceAnimator2D;
 	constructor(bo: BattleObject){
 		super(bo.shape);
@@ -310,8 +352,13 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.transform_animator.addSequence("trigger_start");
 		this.transform_animator.addSequence("trigger_end");
 		//this.transform_animator.setAnimation("trigger_end");
+
+		this.action_instances = this.battle_object.trigger_actions.map((act) => {
+			return {trigger_action: act, current_cooldown: 0, triggers: 0};
+		});
 		
 	}
+
 	reset(){
 		this.cooldown_timer = 0;
 		this.transform_animator.reset();
@@ -326,11 +373,27 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.owner?.removeObject(this);
 		this.owner = undefined;
 	}
-	startOfBattle(){
-		for(const effect of this.battle_object.trigger_actions){
-			const condition = this.battle_object.testCondition(effect.condition);
+	testActionInstanceCondition(act_inst: ActionInstance): boolean{
+		const condition = act_inst.trigger_action.condition;
+		switch(condition.trigger_type){
+			case TriggerTypeEnum.Start:
+				if(act_inst.triggers >= 1){
+					return false;
+				}
+				return true;
+			case TriggerTypeEnum.Cooldown:
+				break;
+			case TriggerTypeEnum.Health:
+				break;
+		}
+
+		return false;
+	}
+	runActionsWithoutTime(){
+		for(const effect of this.action_instances){
+			const condition = this.testActionInstanceCondition(effect);
 			if(condition){
-				effect.action;
+				//run effects
 			}
 		}
 		//this.battle_object.testCondition()
