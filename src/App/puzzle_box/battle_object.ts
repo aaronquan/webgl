@@ -42,6 +42,18 @@ type TriggerCondition = {
 	current_limit: Int32;
 }
 
+function cooldownCondition(cd: Float): TriggerCondition{
+	return {
+		trigger_type: TriggerTypeEnum.Cooldown,
+		cooldown: cd,
+		current_cooldown: 0,
+		current_limit: 0,
+		health_percent: undefined,
+		health_amount: undefined,
+		limit: undefined,
+	}
+}
+
 const ActionTypeEnum = {
 	Attack: 0,
 	UserBuff: 1,
@@ -62,7 +74,7 @@ type ObjectAction = {
 type TriggerAction = {
 	//trigger_type: TriggerType,
 	condition: TriggerCondition,
-	action: ObjectAction
+	action: ObjectAction[]
 }
 
 export class BattleObject{
@@ -72,7 +84,7 @@ export class BattleObject{
 	shape: Shape.GridShape;
 	user_buff_change: Character.BuffChange[];
 	target_buff_change: Character.BuffChange[];
-	triggers: TriggerAction[];
+	trigger_actions: TriggerAction[];
 	static object_shapes = BattleObject.generateBattleObjectShapes();
 
 
@@ -85,7 +97,7 @@ export class BattleObject{
 		this.colour = colour;
 		this.user_buff_change = [];
 		this.target_buff_change = [];
-		this.triggers = []; // test this with wood sword
+		this.trigger_actions = []; // test this with wood sword
 	}
 
 	testCondition(condition: TriggerCondition): boolean{
@@ -122,6 +134,24 @@ export class BattleObject{
 	testAction(action: TriggerAction){
 		if(this.testCondition(action.condition)){
 
+		}
+	}
+	protected calcRandomDamage(low: Int32, hi: Int32): Int32{
+		const rand = Math.floor(Math.random()*(hi-low+1));
+		return rand + low;
+	}
+
+	runAction(action: ObjectAction, user: Character.BattleCharacter, target: Character.BattleCharacter){
+		switch(action.action_type){
+			case ActionTypeEnum.Attack:
+				const rand_damage = this.calcRandomDamage(action.low_value, action.high_value);
+				target.takeDamage(rand_damage);
+				console.log(`target damaged: ${rand_damage}`);
+				break;
+			case ActionTypeEnum.Heal:
+				user.heal(action.low_value);
+				console.log(`user healed ${action.low_value}`);
+				break;
 		}
 	}
 
@@ -176,13 +206,14 @@ class WeaponObject extends BattleObject{
 		this.damage_low = dl;
 		this.damage_hi = dh;
 	}
+	/*
 	private calcRandomDamage(): Int32{
 		const rand = Math.floor(Math.random()*(this.damage_hi-this.damage_low+1));
 		return rand + this.damage_low;
-	}
+	}*/
 	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
 		super.trigger(user, target);
-		const damage = this.calcRandomDamage();
+		const damage = this.calcRandomDamage(this.damage_low, this.damage_hi);
 		target.takeDamage(damage);
 		//target.current_health -= damage;
 	}
@@ -192,7 +223,16 @@ export class WoodenSword extends WeaponObject{
 	static name = "WoodenSword";
 	constructor(){
 		super(BattleObject.object_shapes[1], WoodenSword.name, 1000, 1, 2, "yellow");
-
+		const attack: TriggerAction = {
+			condition: cooldownCondition(1500),
+			action: [{
+				action_type: ActionTypeEnum.Attack,
+				low_value: 2,
+				high_value: 3,
+				base_accuracy: 100
+			}]
+		}
+		this.trigger_actions.push(attack);
 	}
 }
 
@@ -285,6 +325,15 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	unlinkOwner(){
 		this.owner?.removeObject(this);
 		this.owner = undefined;
+	}
+	startOfBattle(){
+		for(const effect of this.battle_object.trigger_actions){
+			const condition = this.battle_object.testCondition(effect.condition);
+			if(condition){
+				effect.action;
+			}
+		}
+		//this.battle_object.testCondition()
 	}
 	update(dt: Float, user: Character.BattleCharacter, target: Character.BattleCharacter){
 		if(!this.isPlaced()){
