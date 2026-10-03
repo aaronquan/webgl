@@ -58,7 +58,7 @@ const ObjectActionTypeEnum = {
 	Attack: 0,
 	UserBuff: 1,
 	TargetBuff: 2,
-	Heal: 3
+	UserHeal: 3
 } as const;
 
 type ObjectActionType = (typeof ObjectActionTypeEnum)[keyof typeof ObjectActionTypeEnum];
@@ -187,7 +187,7 @@ export class BattleObject{
 				target.takeDamage(rand_damage);
 				console.log(`target damaged: ${rand_damage}`);
 				break;
-			case ObjectActionTypeEnum.Heal:
+			case ObjectActionTypeEnum.UserHeal:
 				user.heal(action.low_value);
 				console.log(`user healed ${action.low_value}`);
 				break;
@@ -308,8 +308,8 @@ export class HealingPack extends HealingObject{
 			actions: [
 				{
 					action_type: ObjectActionTypeEnum.UserBuff,
-					low_value: 1,
-					high_value: 1,
+					low_value: 2,
+					high_value: 2,
 					base_accuracy: 100,
 					buff: Character.BattleBuffEnum.Regen
 				}
@@ -328,6 +328,7 @@ export class BattleObjects{
 		m.set(Stone.name, new Stone());
 		m.set(BandAid.name, new BandAid());
 		m.set(Hook.name, new Hook());
+		m.set(HealingPack.name, new HealingPack());
 		return m;
 	}
 }
@@ -404,10 +405,13 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 				}
 				act_inst.current_cooldown += dt;
 				if(act_inst.current_cooldown >= condition.cooldown){
+					act_inst.current_cooldown -= condition.cooldown;
+					
 					if(condition.trigger_limit != undefined && act_inst.triggers > condition.trigger_limit){
 						console.log("above trigger limit");
 						return false;
 					}else{
+						console.log(`trigger`);
 						act_inst.triggers++;
 						return true;
 					}
@@ -415,13 +419,38 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 				break;
 			case TriggerTypeEnum.Health:
 				//todo
+				
 				break;
 		}
 
 		return false;
 	}
+	protected calcRandomValue(low: Int32, hi: Int32): Int32{
+		const rand = Math.floor(Math.random()*(hi-low+1));
+		return rand + low;
+	}
 	runAction(action: ObjectAction, user: Character.BattleCharacter, targets: Character.BattleCharacter[]){
-		//todo
+		switch(action.action_type){
+			case ObjectActionTypeEnum.Attack:
+				if(targets.length >= 1){
+					const target = targets[0];
+					const damage = this.calcRandomValue(action.low_value, action.high_value);
+					target.takeDamage(damage);
+				}
+				break;
+			case ObjectActionTypeEnum.UserBuff:
+				if(action.buff == undefined){
+					console.log("object action buff cannot be undefined");
+					return;
+				}
+				user.addBuff(action.buff, action.low_value);
+				console.log("adding buff");
+				break;
+			case ObjectActionTypeEnum.UserHeal:
+				const heal = this.calcRandomValue(action.low_value, action.high_value);
+				user.heal(heal);
+				break;
+		}
 	}
 	runActionsWithoutTime(){
 		this.runActionsWithTime(0);
@@ -441,6 +470,9 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 						targets.push(this.owner.target);
 					}
 					this.runAction(action, this.owner, targets);
+					this.num_triggers++;
+					this.transform_animator.reset();
+					this.transform_animator.play();
 				}
 			}
 		}
@@ -448,7 +480,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	startOfBattle(){
 		this.runActionsWithoutTime();
 	}
-	update(dt: Float, user: Character.BattleCharacter, target: Character.BattleCharacter){
+	update(dt: Float){
 		if(!this.isPlaced()){
 			return;
 		}
@@ -457,12 +489,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 			this.transform_animator.reset();
 			this.transform_animator.pause();
 		}
-		for(const effect of this.action_instances){
-			const condition = this.testActionInstanceCondition(effect, dt);
-			if(condition){
-
-			}
-		}
+		this.runActionsWithTime(dt);
 		//Testing other trigger
 		/*
 		this.cooldown_timer += dt;

@@ -113,6 +113,12 @@ export class BattleCharacter extends Character{
 	buffTick(){
 		this.buffs.characterTick(this);
 	}
+	addBuff(buff: BattleBuff, amount: Int32){
+		this.buffs.addBuffOfType(buff, amount);
+	}
+	hasBuffs(buff: BattleBuff, amount: Int32): boolean{
+		return this.buffs.hasBuffsOfType(buff, amount);
+	}
 	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection): boolean{
 		//add grid updates here for playing
 		this.battle_time += dt;
@@ -128,7 +134,7 @@ export class BattleCharacter extends Character{
 		let reset = false;
 		if(this.target != undefined){
 			this.forEachObject((inst) => {
-				inst.update(dt, this, this.target!);
+				inst.update(dt);
 				if(this.target!.isDefeated()){
 					reset = true;
 					//return; // this return does not exit for each

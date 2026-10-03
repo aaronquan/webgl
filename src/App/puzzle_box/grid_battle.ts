@@ -365,7 +365,8 @@ export class BattleEngine{
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.WoodenSword.name)!);
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Stone.name)!);
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.BandAid.name)!);
-		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Hook.name)!);
+		//this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Hook.name)!);
+		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.HealingPack.name)!);
 
 		this.object_instances = new BObject.BattleObjectInstanceCollection();
 
