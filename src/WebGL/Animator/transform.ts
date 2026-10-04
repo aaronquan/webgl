@@ -90,6 +90,7 @@ export class TransformSequenceAnimator2D extends TransformAnimator2D{
 		const anim = this.getCurrentAnimation();
 		if(anim != undefined){
 			this.getCurrentAnimation()!.setTime(0);
+			this.matrix = anim.getMatrix();
 		}
 	}
 	//returns true if animation finished (doesn't call reset)
