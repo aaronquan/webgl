@@ -31,3 +31,18 @@ test("coordinate_chunk", () => {
   const adj_test2 = t_chunk2.getAdjacents();
   expect(adj_test2.hasXY(2,3)).toBeTruthy();
 });
+
+test("algorithms", () => {
+
+  //coordinate distance sq
+  const c1: Grid.Generic.Coordinate = {x:0, y:0};
+  const c2: Grid.Generic.Coordinate = {x:1, y:1};
+
+  const dist_sq = Grid.Generic.GridAlgorithms.coordinateDistanceSquared(c1, c2);
+  expect(dist_sq).toBe(2);
+
+  //positions at distance
+  const coords = Grid.Generic.GridAlgorithms.coordinatesWithinRange(3);
+  console.log(coords);
+
+});

@@ -4,12 +4,14 @@ import * as WebGL from "./../../WebGL/globals";
 import * as BObject from "./battle_object";
 import * as Character from "./character";
 import * as BattleGrid from "./battle_grid";
+import { MinPriorityQueue } from "@datastructures-js/priority-queue";
 
 type Float = number;
 type Int32 = number;
 
 import Point2D = WebGL.Geometry.Base.Point2D;
 import Button = WebGL.Interface.Button;
+import SortedArray = WebGL.Utils.Array.SortedArray;
 
 class BattleEngineControls{
 	start_battle: WebGL.Interface.Button.BasicButton;
@@ -325,6 +327,90 @@ export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.Int
 	}
 }
 
+type BattleEvent = {
+	time_stamp: Float,
+	character: Character.BattleCharacter,
+	type: BObject.ObjectActionType,
+	value: Int32
+}
+
+
+type NextCooldownTrigger = {
+	time: Float;
+	actions: BObject.ObjectAction[];
+	item_id: Int32;
+}
+
+type BuffReachedTrigger = {
+	buff: Character.BattleBuff;
+	buff_amount: Int32;
+	actions: BObject.ObjectAction[];
+	item_id: Int32;
+}
+
+class Battle{
+	left_character: Character.BattleCharacter;
+	right_character: Character.BattleCharacter;
+
+	objects: BObject.BattleObjectInstanceCollection;
+
+	events: BattleEvent[];
+
+	//log: string[];
+
+	constructor(lc: Character.BattleCharacter, rc: Character.BattleCharacter, 
+		objs: BObject.BattleObjectInstanceCollection){
+		this.left_character = lc;
+		this.right_character = rc;
+		this.objects = objs;
+		this.events = [];
+	}
+	update(dt: Float){
+		//play the battle out in time
+	}
+
+	//simulate battle 
+	// object order is left first the right with grids from left to right
+	preSimulateBattle(){
+		const order = this.left_character.getGrid().getObjectOrder();
+		order.push(...this.right_character.getGrid().getObjectOrder());
+		console.log(order);
+
+		const cooldown_queue = new MinPriorityQueue<NextCooldownTrigger>({compare: (i) => i.time});
+		const buff_reached_triggers = new Map<Character.BattleBuff, SortedArray<BuffReachedTrigger>>();
+
+		const simulated_buffs_left = ; 
+
+		//adding initial triggers
+		for(const id of order){
+			const object = this.objects.getInstance(id)!;
+			for(const actions of object.action_instances){
+				const condition = actions.trigger_action.condition;
+				switch(condition.trigger_type){
+					case BObject.TriggerTypeEnum.Cooldown:
+						cooldown_queue.push({time: condition.value_amount!, item_id: id, actions: actions.trigger_action.actions});
+						break;
+					case BObject.TriggerTypeEnum.Start:
+						//todo
+						//apply actions
+
+						break;
+					case BObject.TriggerTypeEnum.BuffReached:
+						const buff = condition.secondary_value as Character.BattleBuff;
+						const reached = condition.value_amount!;
+						const obj = {buff, buff_amount: reached, item_id: id, actions: actions.trigger_action.actions};
+						if(buff_reached_triggers.has(buff)){
+							buff_reached_triggers.get(buff)!.add(obj);
+						}else{
+							buff_reached_triggers.set(buff, new SortedArray([obj], (a, b) => a.buff_amount - b.buff_amount));
+						}
+						break;
+				}
+			}
+		}
+	}
+}
+
 export class BattleEngine{
 	//battle_grid: BattleGrid;
 	battle_grid_coord: WebGL.Grid.Generic.Coordinate | undefined;
@@ -356,6 +442,8 @@ export class BattleEngine{
 
 	controls: BattleEngineControls;
 
+	test_battle: Battle;
+
 	dump_zone: DumpZone;
 	constructor(){
 		//this.battle_grid = new BattleGrid(50, 50, 14, 14);
@@ -378,6 +466,7 @@ export class BattleEngine{
 
 		this.enemy_grid = new BattleGrid.BattleGrid(720, 10, 10, 10);
 		this.enemy = Character.EnemyCharacter.createBaseEnemy(this.enemy_grid, this.object_instances);
+
 
 
 		//test player objects
@@ -421,6 +510,9 @@ export class BattleEngine{
 		this.object_bin = new WebGL.Interface.InterfaceElement.InterfaceElement(int_x, 50, 40, 40);
 	
 		this.dump_zone = new DumpZone(int_x, 150, 400, 300);
+
+		this.test_battle = new Battle(this.player, this.enemy, this.object_instances);
+		this.test_battle.preSimulateBattle();
 	}
 
 	private setControlFunctions(){

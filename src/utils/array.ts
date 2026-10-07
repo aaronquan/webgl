@@ -74,6 +74,7 @@ export function binarySearchLowerBound<T>(arr: T[], compare: (t:T) => Float): In
   return j;
 }
 
+// retruns array of Random numbers from 0-n with size
 export function random0ToN(size: Int32): Int32[]{
   const arr = Array.from({length: size}, (_, i) => i);
   for(let i = arr.length-1; i > 0; i--){
@@ -83,6 +84,11 @@ export function random0ToN(size: Int32): Int32[]{
     [arr[j], arr[i]] = [arr[i], arr[j]];
   }
   return arr;
+}
+
+export function randomPick<T>(arr: T[]): T{
+  const p = Math.floor(Math.random()*arr.length);
+  return arr[p];
 }
 
 function testBinarySearch(){

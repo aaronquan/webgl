@@ -57,5 +57,21 @@ export class BattleGrid{
 
 	update(dt: Float){
 	}
+	//scan rows left to right for order
+	getObjectOrder(): Int32[]{
+		const order: Int32[] = [];
+		const seen = new Set();
+
+		for(let y = 0; y < this.shape_grid.height; y++){
+			for(let x = 0; x < this.shape_grid.width; x++){
+				const v = this.shape_grid.get(x, y);
+				if(v != undefined && !seen.has(v)){
+					order.push(v);
+					seen.add(v);
+				}
+			}
+		}
+		return order;
+	}
 
 }

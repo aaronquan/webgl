@@ -84,6 +84,11 @@ export class BattleBuffCollection{
 	}
 }
 
+//instance of a battle character in battle
+export class BattleCharacterInstance{
+	
+}
+
 export class BattleCharacter extends Character{
 	static tick_time = 1000;
 	protected held_object_ids: Set<Int32>;

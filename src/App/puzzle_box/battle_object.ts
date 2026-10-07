@@ -17,7 +17,7 @@ const ObjectTypeEnum = {
 
 type ObjectType = (typeof ObjectTypeEnum)[keyof typeof ObjectTypeEnum];
 
-const TriggerTypeEnum = {
+export const TriggerTypeEnum = {
 	Start: 0,
 	LowerHealthPercent: 1,
 	Cooldown: 2,
@@ -41,7 +41,7 @@ type TriggerCondition = {
 	//current_cooldown: Float;
 	//value_percent: Float | undefined;
 	value_amount: Float | undefined; //could be percent
-	secondary_value: Float | undefined; // 
+	secondary_value: Float | undefined; // is buff on buffreached
 	trigger_limit: Int32 | undefined;
 	//current_limit: Int32;
 }
@@ -68,9 +68,9 @@ const ObjectActionTypeEnum = {
 	UserBuffRemove: 5
 } as const;
 
-type ObjectActionType = (typeof ObjectActionTypeEnum)[keyof typeof ObjectActionTypeEnum];
+export type ObjectActionType = (typeof ObjectActionTypeEnum)[keyof typeof ObjectActionTypeEnum];
 
-type ObjectAction = {
+export type ObjectAction = {
 	action_type: ObjectActionType,
 	low_value: Int32,
 	high_value: Int32,
@@ -190,7 +190,7 @@ export class BattleObject{
 		}
 	}
 
-	static buffRemoveAction(buff: Character.BattleBuff, value: Int32, sub_action: TriggerAction | undefined=undefined): ObjecAction{
+	static buffRemoveAction(buff: Character.BattleBuff, value: Int32, sub_action: TriggerAction | undefined=undefined): ObjectAction{
 		return{
 			action_type: ObjectActionTypeEnum.UserBuffRemove,
 			low_value: value,
@@ -210,10 +210,6 @@ export class BattleObject{
 			buff: undefined,
 			sub_action
 		}
-	}
-
-	static actionToString(action: ObjectAction): string{
-		
 	}
 
 	//moved to instance
@@ -558,6 +554,14 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		const rand = Math.floor(Math.random()*(hi-low+1));
 		return rand + low;
 	}
+	userActionToString(action: ObjectAction, user: Character.BattleCharacter): string{
+		const str = "";
+		switch(action.action_type){
+			case ObjectActionTypeEnum.Attack:
+
+		}
+		return str;
+	}
 	runAction(action: ObjectAction, user: Character.BattleCharacter, targets: Character.BattleCharacter[]){
 		switch(action.action_type){
 			case ObjectActionTypeEnum.Attack:
@@ -565,6 +569,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					const target = targets[0];
 					const damage = this.calcRandomValue(action.low_value, action.high_value);
 					target.takeDamage(damage);
+
 				}
 				break;
 			case ObjectActionTypeEnum.UserBuffAdd:
