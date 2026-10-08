@@ -468,6 +468,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.cooldown_timer = 0;
 		for(const action of this.action_instances){
 			action.current_cooldown = 0;
+			action.triggers = 0;
 		}
 		this.transform_animator.reset();
 		this.transform_animator.pause();

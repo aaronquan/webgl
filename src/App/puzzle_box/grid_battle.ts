@@ -349,8 +349,8 @@ type BuffReachedTrigger = {
 }
 
 class Battle{
-	left_character: Character.BattleCharacter;
-	right_character: Character.BattleCharacter;
+	left_character: Character.BattleCharacterInstance;
+	right_character: Character.BattleCharacterInstance;
 
 	objects: BObject.BattleObjectInstanceCollection;
 
@@ -360,8 +360,8 @@ class Battle{
 
 	constructor(lc: Character.BattleCharacter, rc: Character.BattleCharacter, 
 		objs: BObject.BattleObjectInstanceCollection){
-		this.left_character = lc;
-		this.right_character = rc;
+		this.left_character = new Character.BattleCharacterInstance(lc);
+		this.right_character = new Character.BattleCharacterInstance(rc);
 		this.objects = objs;
 		this.events = [];
 	}
@@ -379,7 +379,7 @@ class Battle{
 		const cooldown_queue = new MinPriorityQueue<NextCooldownTrigger>({compare: (i) => i.time});
 		const buff_reached_triggers = new Map<Character.BattleBuff, SortedArray<BuffReachedTrigger>>();
 
-		const simulated_buffs_left = ; 
+		//const simulated_buffs_left = ; 
 
 		//adding initial triggers
 		for(const id of order){

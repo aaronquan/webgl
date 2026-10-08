@@ -38,11 +38,14 @@ test("algorithms", () => {
   const c1: Grid.Generic.Coordinate = {x:0, y:0};
   const c2: Grid.Generic.Coordinate = {x:1, y:1};
 
-  const dist_sq = Grid.Generic.GridAlgorithms.coordinateDistanceSquared(c1, c2);
+  const dist_sq = Grid.Algorithm.GridAlgorithms.coordinateDistanceSquared(c1, c2);
   expect(dist_sq).toBe(2);
 
   //positions at distance
-  const coords = Grid.Generic.GridAlgorithms.coordinatesWithinRange(3);
+  const coords = Grid.Algorithm.GridAlgorithms.coordinatesWithinRange(3);
+  //for()
+  expect(coords.findIndex((c) => c.x == 0 && c.y == 1) != -1).toBeTruthy();
+  expect(coords.findIndex((c) => c.x == 0 && c.y == 2) != -1).toBeFalsy();
   console.log(coords);
 
 });

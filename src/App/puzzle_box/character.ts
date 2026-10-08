@@ -86,19 +86,79 @@ export class BattleBuffCollection{
 
 //instance of a battle character in battle
 export class BattleCharacterInstance{
-	
+	static tick_time = 1000;
+	//todo
+	character: BattleCharacter;
+	target: BattleCharacter | undefined;
+	buffs: BattleBuffCollection;
+
+	battle_time: Float;
+	character_tick_time: Float;
+	constructor(char: BattleCharacter){
+		this.character = char;
+		this.battle_time = 0;
+		this.character_tick_time = 0;
+		this.buffs = new BattleBuffCollection();
+	}
+	getGrid(): BattleGrid.BattleGrid{
+		return this.character.getGrid();
+	}
+	addBuff(buff: BattleBuff, amount: Int32){
+		this.buffs.addBuffOfType(buff, amount);
+	}
+	hasBuffs(buff: BattleBuff, amount: Int32): boolean{
+		return this.buffs.hasBuffsOfType(buff, amount);
+	}
+	resetObjects(obj_map: BattleObject.BattleObjectInstanceCollection){
+		this.forEachObject((inst) => {
+			inst.reset();
+		}, obj_map);
+	}
+	setTarget(char: BattleCharacter){
+		this.target = char;
+	}
+	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection){
+		//add grid updates here for playing
+		this.battle_time += dt;
+		this.character_tick_time += dt;
+		if(this.character_tick_time >= BattleCharacter.tick_time){
+			//tick for buffs, e.g 
+			console.log("buff tick");
+			this.buffs.characterTick(this.character);
+			this.character_tick_time -= BattleCharacter.tick_time;
+		}
+
+		//update objects in grid
+		let reset = false;
+		if(this.target != undefined){
+			this.forEachObject((inst) => {
+				inst.update(dt);
+				if(this.target!.isDefeated()){
+					reset = true;
+					//return; // this return does not exit for each
+				}
+			}, battle_objects);
+		}
+		return reset;
+	}
+	forEachObject(obj_function: (bo: BattleObject.BattleObjectInstance) => void, obj_map: BattleObject.BattleObjectInstanceCollection){
+		this.character.forEachObject(obj_function, obj_map);
+	}
 }
 
 export class BattleCharacter extends Character{
 	static tick_time = 1000;
 	protected held_object_ids: Set<Int32>;
-	protected battle_grid: BattleGrid.BattleGrid; // todo finish adding this
+	protected battle_grid: BattleGrid.BattleGrid;
+
+	//remove instance vars and put them inside BattleCharacterInstance
 	target: BattleCharacter | undefined;
 
 	buffs: BattleBuffCollection;
 
 	battle_time: Float;
 	character_tick_time: Float;
+
 	constructor(mh: Int32, grid: BattleGrid.BattleGrid=new BattleGrid.BattleGrid(0, 0, 10, 10)){
 		super(mh);
 		this.held_object_ids = new Set();
