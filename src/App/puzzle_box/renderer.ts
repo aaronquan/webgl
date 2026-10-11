@@ -231,8 +231,8 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.drawBattleGrid(be.player.getGrid());
     this.drawBattleGrid(be.enemy.getGrid());
   
-    this.drawCharacterHPBar(be.player, 50, 500);
-    this.drawCharacterHPBar(be.enemy, 500, 500);
+    this.drawCharacterHPBar(be.test_battle.left_character, 50, 500);
+    this.drawCharacterHPBar(be.test_battle.right_character, 500, 500);
 
     be.controls.draw(this.orthographic, this.colour_shader, this.text_drawer);
     be.player_buff_interface.draw(this.orthographic, this.colour_shader, this.text_drawer);
@@ -247,7 +247,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     bg.drawInterfaceGridOutline(this.orthographic, this.colour_shader, 3);
   }
 
-  drawCharacterHPBar(char: Character.Character, x: Int32, y: Int32, w: Int32=150, h: Int32=30){
+  drawCharacterHPBar(char_instance: Character.BattleCharacterInstance, x: Int32, y: Int32, w: Int32=150, h: Int32=30){
     //draw back
     //this.colour_shader.use();
     //this.colour_shader.setColourFromColourRGB(this.colours.getColour("red")!);
@@ -255,7 +255,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x,
       y, w, h, this.colours.getColour("red")!
     );
-
+    const char = char_instance.character;
     const health_ratio = char.current_health/char.max_health;
     //draw hp bar
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x, y, w*health_ratio, h, this.colours.getColour("green"));

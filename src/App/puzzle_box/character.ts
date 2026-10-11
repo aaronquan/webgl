@@ -1,5 +1,6 @@
 import * as BattleObject from "./battle_object";
 import * as BattleGrid from "./battle_grid";
+import * as Battle from "./battle";
 import * as Shape from "./shape";
 //import type { ShapeGridInterface } from "./shape";
 
@@ -89,7 +90,7 @@ export class BattleCharacterInstance{
 	static tick_time = 1000;
 	//todo
 	character: BattleCharacter;
-	target: BattleCharacter | undefined;
+	target: BattleCharacterInstance | undefined;
 	buffs: BattleBuffCollection;
 
 	battle_time: Float;
@@ -99,6 +100,9 @@ export class BattleCharacterInstance{
 		this.battle_time = 0;
 		this.character_tick_time = 0;
 		this.buffs = new BattleBuffCollection();
+	}
+	isDefeated(): boolean{
+		return this.character.isDefeated();
 	}
 	getGrid(): BattleGrid.BattleGrid{
 		return this.character.getGrid();
@@ -114,10 +118,15 @@ export class BattleCharacterInstance{
 			inst.reset();
 		}, obj_map);
 	}
-	setTarget(char: BattleCharacter){
+	setTarget(char: BattleCharacterInstance){
 		this.target = char;
 	}
-	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection){
+	startOfBattle(battle_objects: BattleObject.BattleObjectInstanceCollection){
+		this.forEachObject((inst) => {
+			inst.startOfBattle();
+		}, battle_objects);
+	}
+	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection, events: Battle.BattleEvent[]){
 		//add grid updates here for playing
 		this.battle_time += dt;
 		this.character_tick_time += dt;

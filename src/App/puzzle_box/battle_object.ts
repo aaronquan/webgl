@@ -2,6 +2,7 @@ import * as WebGL from "./../../WebGL/globals";
 import * as Shape from "./shape";
 import * as Character from "./character";
 import * as BattleGrid from "./battle_grid";
+import * as Battle from "./battle";
 
 import TransformAnimator2D = WebGL.Animator.TransformAnimator2D;
 import TransformSequenceAnimator2D = WebGL.Animator.TransformSequenceAnimator2D;
@@ -563,7 +564,9 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		}
 		return str;
 	}
-	runAction(action: ObjectAction, user: Character.BattleCharacter, targets: Character.BattleCharacter[]){
+	runAction(action: ObjectAction, user: Character.BattleCharacter, targets: Character.BattleCharacter[],
+		events: Battle.BattleEvent 
+	){
 		switch(action.action_type){
 			case ObjectActionTypeEnum.Attack:
 				if(targets.length >= 1){
@@ -623,6 +626,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		//this.battle_object.testCondition()
 	}
 	runActionsWithTime(dt: Float){
+		//console.log("running");
 		if(this.owner == undefined){
 			return undefined;
 		}
@@ -647,7 +651,9 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.runActionsWithoutTime();
 	}
 	update(dt: Float){
+		console.log("np");
 		if(!this.isPlaced()){
+			console.log("np");
 			return;
 		}
 		const fin = this.transform_animator.update(dt);

@@ -53,6 +53,13 @@ export class CoordinateChunk{
     }
     return chunk;
   }
+  getRandom(): Coordinate | undefined{
+    if(this.coordinates.length == 0){
+      return undefined;
+    }
+    const i = Math.floor(Math.random()*this.coordinates.length);
+    return this.coordinates[i];
+  }
   static adjacent(coord: Coordinate): Coordinate[]{
     return [{x:coord.x+1, y:coord.y}, 
       {x:coord.x, y:coord.y+1}, 

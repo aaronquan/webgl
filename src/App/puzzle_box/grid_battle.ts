@@ -4,6 +4,8 @@ import * as WebGL from "./../../WebGL/globals";
 import * as BObject from "./battle_object";
 import * as Character from "./character";
 import * as BattleGrid from "./battle_grid";
+import * as Battle from "./battle";
+
 import { MinPriorityQueue } from "@datastructures-js/priority-queue";
 
 type Float = number;
@@ -327,89 +329,6 @@ export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.Int
 	}
 }
 
-type BattleEvent = {
-	time_stamp: Float,
-	character: Character.BattleCharacter,
-	type: BObject.ObjectActionType,
-	value: Int32
-}
-
-
-type NextCooldownTrigger = {
-	time: Float;
-	actions: BObject.ObjectAction[];
-	item_id: Int32;
-}
-
-type BuffReachedTrigger = {
-	buff: Character.BattleBuff;
-	buff_amount: Int32;
-	actions: BObject.ObjectAction[];
-	item_id: Int32;
-}
-
-class Battle{
-	left_character: Character.BattleCharacterInstance;
-	right_character: Character.BattleCharacterInstance;
-
-	objects: BObject.BattleObjectInstanceCollection;
-
-	events: BattleEvent[];
-
-	//log: string[];
-
-	constructor(lc: Character.BattleCharacter, rc: Character.BattleCharacter, 
-		objs: BObject.BattleObjectInstanceCollection){
-		this.left_character = new Character.BattleCharacterInstance(lc);
-		this.right_character = new Character.BattleCharacterInstance(rc);
-		this.objects = objs;
-		this.events = [];
-	}
-	update(dt: Float){
-		//play the battle out in time
-	}
-
-	//simulate battle 
-	// object order is left first the right with grids from left to right
-	preSimulateBattle(){
-		const order = this.left_character.getGrid().getObjectOrder();
-		order.push(...this.right_character.getGrid().getObjectOrder());
-		console.log(order);
-
-		const cooldown_queue = new MinPriorityQueue<NextCooldownTrigger>({compare: (i) => i.time});
-		const buff_reached_triggers = new Map<Character.BattleBuff, SortedArray<BuffReachedTrigger>>();
-
-		//const simulated_buffs_left = ; 
-
-		//adding initial triggers
-		for(const id of order){
-			const object = this.objects.getInstance(id)!;
-			for(const actions of object.action_instances){
-				const condition = actions.trigger_action.condition;
-				switch(condition.trigger_type){
-					case BObject.TriggerTypeEnum.Cooldown:
-						cooldown_queue.push({time: condition.value_amount!, item_id: id, actions: actions.trigger_action.actions});
-						break;
-					case BObject.TriggerTypeEnum.Start:
-						//todo
-						//apply actions
-
-						break;
-					case BObject.TriggerTypeEnum.BuffReached:
-						const buff = condition.secondary_value as Character.BattleBuff;
-						const reached = condition.value_amount!;
-						const obj = {buff, buff_amount: reached, item_id: id, actions: actions.trigger_action.actions};
-						if(buff_reached_triggers.has(buff)){
-							buff_reached_triggers.get(buff)!.add(obj);
-						}else{
-							buff_reached_triggers.set(buff, new SortedArray([obj], (a, b) => a.buff_amount - b.buff_amount));
-						}
-						break;
-				}
-			}
-		}
-	}
-}
 
 export class BattleEngine{
 	//battle_grid: BattleGrid;
@@ -442,7 +361,7 @@ export class BattleEngine{
 
 	controls: BattleEngineControls;
 
-	test_battle: Battle;
+	test_battle: Battle.Battle;
 
 	dump_zone: DumpZone;
 	constructor(){
@@ -511,16 +430,17 @@ export class BattleEngine{
 	
 		this.dump_zone = new DumpZone(int_x, 150, 400, 300);
 
-		this.test_battle = new Battle(this.player, this.enemy, this.object_instances);
-		this.test_battle.preSimulateBattle();
+		this.test_battle = new Battle.Battle(this.player, this.enemy, this.object_instances);
+		//this.test_battle.preSimulateBattle();
 	}
 
 	private setControlFunctions(){
 		this.controls.setStartBattleFunction(() => {
 			if(this.state == BattleStateEnum.Setup){
 				this.state = BattleStateEnum.Battle;
-				this.player.setTarget(this.enemy);
-				this.enemy.setTarget(this.player);
+				//this.player.setTarget(this.enemy);
+				//this.enemy.setTarget(this.player);
+				this.test_battle.startOfBattle();
 			}else{
 				console.log("Already battling");
 			}
@@ -700,12 +620,16 @@ export class BattleEngine{
 				console.log("resetting")
 				this.resetEnemy();
 			}*/
+
+			/*
 			const killed_target = this.player.update(dt, this.object_instances); // does the object updates
 			if(killed_target){
 				console.log("resetting");
 				this.resetEnemy();
 			}
-			this.enemy.update(dt, this.object_instances);
+			this.enemy.update(dt, this.object_instances);*/
+
+			this.test_battle.update(dt);
 		}
 
 	}
