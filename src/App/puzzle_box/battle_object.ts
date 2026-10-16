@@ -615,7 +615,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					//const damage = this.calcRandomValue(action.low_value, action.high_value);
 					const damage = this.battle_object.getDamage();
 					target.takeDamage(damage);
-					battle.addEvent(user, action.action_type, damage);
+					battle.addEvent(user, this, action.action_type, damage);
 				}
 				break;
 			case ObjectActionTypeEnum.UserBuffAdd:
