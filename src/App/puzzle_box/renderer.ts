@@ -255,7 +255,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x,
       y, w, h, this.colours.getColour("red")!
     );
-    const char = char_instance.character;
+    const char = char_instance;
     const health_ratio = char.current_health/char.max_health;
     //draw hp bar
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x, y, w*health_ratio, h, this.colours.getColour("green"));

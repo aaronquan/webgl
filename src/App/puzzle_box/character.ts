@@ -20,12 +20,13 @@ export type BuffChange = {
 }
 
 export class Character{
-	current_health: Int32;
+	//current_health: Int32;
 	max_health: Int32;
 	constructor(mh: Int32){
 		this.max_health = mh;
-		this.current_health = this.max_health;
+		//this.current_health = this.max_health;
 	}
+	/*
 	heal(amount: Int32){
 		this.current_health += amount;
 		if(this.current_health >= this.max_health){
@@ -40,7 +41,7 @@ export class Character{
 	}
 	reset(){
 		this.current_health = this.max_health;
-	}
+	}*/
 }
 
 export class BattleBuffCollection{
@@ -62,7 +63,7 @@ export class BattleBuffCollection{
 	removeBuffOfType(type: BattleBuff, amount: Int32){
 		this.addBuffOfType(type, -amount);
 	}
-	characterTick(character: BattleCharacter){
+	characterTick(character: BattleCharacterInstance){
 		character.heal(this.buffs.get(BattleBuffEnum.Regen)!);
 	}
 	applyBuffChange(buff_changes: BuffChange[]){
@@ -95,14 +96,28 @@ export class BattleCharacterInstance{
 
 	battle_time: Float;
 	character_tick_time: Float;
+
+	max_health: Int32;
+	current_health: Int32;
 	constructor(char: BattleCharacter){
 		this.character = char;
 		this.battle_time = 0;
 		this.character_tick_time = 0;
 		this.buffs = new BattleBuffCollection();
+		this.max_health = char.max_health;
+		this.current_health = char.max_health;
+	}
+	heal(amount: Int32){
+		this.current_health += amount;
+		if(this.current_health >= this.max_health){
+			this.current_health = this.max_health;
+		}
+	}
+	takeDamage(damage: Int32){
+		this.current_health -= damage;
 	}
 	isDefeated(): boolean{
-		return this.character.isDefeated();
+		return this.current_health <= 0;
 	}
 	getGrid(): BattleGrid.BattleGrid{
 		return this.character.getGrid();
@@ -113,6 +128,12 @@ export class BattleCharacterInstance{
 	hasBuffs(buff: BattleBuff, amount: Int32): boolean{
 		return this.buffs.hasBuffsOfType(buff, amount);
 	}
+	resetAll(obj_map: BattleObject.BattleObjectInstanceCollection){
+		this.resetObjects(obj_map);
+		this.current_health = this.max_health;
+		this.character_tick_time = 0;
+		this.battle_time = 0;
+	}
 	resetObjects(obj_map: BattleObject.BattleObjectInstanceCollection){
 		this.forEachObject((inst) => {
 			inst.reset();
@@ -121,19 +142,19 @@ export class BattleCharacterInstance{
 	setTarget(char: BattleCharacterInstance){
 		this.target = char;
 	}
-	startOfBattle(battle_objects: BattleObject.BattleObjectInstanceCollection){
+	startOfBattle(battle_objects: BattleObject.BattleObjectInstanceCollection, battle: Battle.Battle){
 		this.forEachObject((inst) => {
-			inst.startOfBattle();
+			inst.startOfBattle(this, battle);
 		}, battle_objects);
 	}
-	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection, events: Battle.BattleEvent[]){
+	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection, battle: Battle.Battle){
 		//add grid updates here for playing
 		this.battle_time += dt;
 		this.character_tick_time += dt;
 		if(this.character_tick_time >= BattleCharacter.tick_time){
 			//tick for buffs, e.g 
 			console.log("buff tick");
-			this.buffs.characterTick(this.character);
+			this.buffs.characterTick(this);
 			this.character_tick_time -= BattleCharacter.tick_time;
 		}
 
@@ -141,7 +162,7 @@ export class BattleCharacterInstance{
 		let reset = false;
 		if(this.target != undefined){
 			this.forEachObject((inst) => {
-				inst.update(dt);
+				inst.update(dt, this, battle);
 				if(this.target!.isDefeated()){
 					reset = true;
 					//return; // this return does not exit for each
@@ -155,34 +176,39 @@ export class BattleCharacterInstance{
 	}
 }
 
+
+//
+
 export class BattleCharacter extends Character{
 	static tick_time = 1000;
 	protected held_object_ids: Set<Int32>;
 	protected battle_grid: BattleGrid.BattleGrid;
 
 	//remove instance vars and put them inside BattleCharacterInstance
-	target: BattleCharacter | undefined;
+	//target: BattleCharacter | undefined;
 
-	buffs: BattleBuffCollection;
+	//buffs: BattleBuffCollection;
 
-	battle_time: Float;
-	character_tick_time: Float;
+	//battle_time: Float;
+	//character_tick_time: Float;
 
 	constructor(mh: Int32, grid: BattleGrid.BattleGrid=new BattleGrid.BattleGrid(0, 0, 10, 10)){
 		super(mh);
 		this.held_object_ids = new Set();
 		this.battle_grid = grid;
 
-		this.buffs = new BattleBuffCollection();
+		//this.buffs = new BattleBuffCollection();
 
-		this.battle_time = 0;
-		this.character_tick_time = 0;
+		//this.battle_time = 0;
+		//this.character_tick_time = 0;
 	}
-	setTarget(char: BattleCharacter){
-		this.target = char;
-	}
+
 	getGrid(): BattleGrid.BattleGrid{
 		return this.battle_grid;
+	}
+	/*
+	setTarget(char: BattleCharacter){
+		this.target = char;
 	}
 	buffTick(){
 		this.buffs.characterTick(this);
@@ -193,7 +219,7 @@ export class BattleCharacter extends Character{
 	hasBuffs(buff: BattleBuff, amount: Int32): boolean{
 		return this.buffs.hasBuffsOfType(buff, amount);
 	}
-	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection): boolean{
+	update(dt: Float, battle_objects: BattleObject.BattleObjectInstanceCollection, events: Battle.BattleEvent[]): boolean{
 		//add grid updates here for playing
 		this.battle_time += dt;
 		this.character_tick_time += dt;
@@ -208,7 +234,7 @@ export class BattleCharacter extends Character{
 		let reset = false;
 		if(this.target != undefined){
 			this.forEachObject((inst) => {
-				inst.update(dt);
+				inst.update(dt, events);
 				if(this.target!.isDefeated()){
 					reset = true;
 					//return; // this return does not exit for each
@@ -216,7 +242,7 @@ export class BattleCharacter extends Character{
 			}, battle_objects);
 		}
 		return reset;
-	}
+	}*/
 	resetObjects(obj_map: BattleObject.BattleObjectInstanceCollection){
 		this.forEachObject((inst) => {
 			inst.reset();

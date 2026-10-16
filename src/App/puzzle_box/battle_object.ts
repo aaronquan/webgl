@@ -44,6 +44,7 @@ type TriggerCondition = {
 	value_amount: Float | undefined; //could be percent
 	secondary_value: Float | undefined; // is buff on buffreached
 	trigger_limit: Int32 | undefined;
+
 	//current_limit: Int32;
 }
 
@@ -60,13 +61,14 @@ function cooldownCondition(cd: Float): TriggerCondition{
 	}
 }*/
 
-const ObjectActionTypeEnum = {
+export const ObjectActionTypeEnum = {
 	Attack: 0,
 	UserBuffAdd: 1,
 	TargetBuff: 2,
 	UserHeal: 3,
 	None: 4,
-	UserBuffRemove: 5
+	UserBuffRemove: 5,
+	Modifier: 6
 } as const;
 
 export type ObjectActionType = (typeof ObjectActionTypeEnum)[keyof typeof ObjectActionTypeEnum];
@@ -78,7 +80,8 @@ export type ObjectAction = {
 	base_accuracy: Float,
 	buff: Character.BattleBuff | undefined,//uses low_value-high_value for amount
 	//buff_amount: Int32 | undefined
-	sub_action: TriggerAction | undefined
+	sub_action: TriggerAction | undefined,
+	modifier_string?: string;
 }
 
 type TriggerAction = {
@@ -213,6 +216,18 @@ export class BattleObject{
 		}
 	}
 
+	static modifierAction(modifier_string: string, value: Int32, sub_action: TriggerAction | undefined=undefined): ObjectAction{
+		return {
+			action_type: ObjectActionTypeEnum.Modifier,
+			low_value: value,
+			high_value: value,
+			base_accuracy: 100,
+			buff: undefined,
+			modifier_string,
+			sub_action
+		}
+	}
+
 	//moved to instance
 	/*
 	testCondition(condition: TriggerCondition): boolean{
@@ -241,11 +256,16 @@ export class BattleObject{
 
 		return false;
 	}*/
+	/*
 	protected calcRandomDamage(low: Int32, hi: Int32): Int32{
 		const rand = Math.floor(Math.random()*(hi-low+1));
 		return rand + low;
-	}
+	}*/
 
+	//to override in any weapons
+	getDamage(): Int32{
+		return 0;
+	}
 	/*
 	runAction(action: ObjectAction, user: Character.BattleCharacter, target: Character.BattleCharacter){
 		switch(action.action_type){
@@ -286,7 +306,7 @@ export class BattleObject{
 	}
 
 	//to override
-	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
+	trigger(user: Character.BattleCharacterInstance, target: Character.BattleCharacterInstance){
 		//
 		user.buffs.applyBuffChange(this.user_buff_change);
 		target.buffs.applyBuffChange(this.target_buff_change);
@@ -301,7 +321,7 @@ class HealingObject extends BattleObject{
 		super(shape, name, cd, ObjectTypeEnum.Accessory, colour);
 		this.heal_amount = ha;
 	}
-	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
+	trigger(user: Character.BattleCharacterInstance, target: Character.BattleCharacterInstance){
 		super.trigger(user, target);
 		user.heal(this.heal_amount);
 	}
@@ -315,16 +335,19 @@ class WeaponObject extends BattleObject{
 		this.damage_low = dl;
 		this.damage_hi = dh;
 	}
-	/*
-	private calcRandomDamage(): Int32{
+	
+	protected calcRandomDamage(): Int32{
 		const rand = Math.floor(Math.random()*(this.damage_hi-this.damage_low+1));
 		return rand + this.damage_low;
-	}*/
-	trigger(user: Character.BattleCharacter, target: Character.BattleCharacter){
+	}
+	trigger(user: Character.BattleCharacterInstance, target: Character.BattleCharacterInstance){
 		super.trigger(user, target);
-		const damage = this.calcRandomDamage(this.damage_low, this.damage_hi);
-		target.takeDamage(damage);
+		//const damage = this.calcRandomDamage(this.damage_low, this.damage_hi);
+		//target.takeDamage(damage);
 		//target.current_health -= damage;
+	}
+	override getDamage(): Int32{
+		return this.calcRandomDamage();
 	}
 }
 
@@ -388,10 +411,16 @@ export class MagicWand extends WeaponObject{
 	static name = "MagicWand";
 	constructor(){
 		super(BattleObject.object_shapes[1], MagicWand.name, 1800, 3,5, "pink");
+		const add_damage = {
+			condition: BattleObject.buffReachedCondition(Character.BattleBuffEnum.Mana, 1),
+			actions: [BattleObject.modifierAction("low_damage", 1), BattleObject.modifierAction("high_damage", 1)]
+		}
 		const attack = {
 			condition: BattleObject.cooldownCondition(2000),
 			//try using mana
+			actions: [BattleObject.weaponAction(1,1, 100, add_damage)]
 		}
+		this.trigger_actions.push(attack);
 	}
 }
 
@@ -424,6 +453,11 @@ export class BattleObjects{
 	}
 }
 
+type BattleObjectInstanceModifiers = {
+	low_damage: Int32,
+	high_damage: Int32
+}
+
 export class BattleObjectInstance extends Shape.GridShapeInstance{
 	static current_id = 0;
 	id: Int32;
@@ -437,6 +471,9 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	action_instances: ActionInstance[];
 
 	transform_animator: TransformSequenceAnimator2D;
+
+	modifiers: BattleObjectInstanceModifiers;
+
 	constructor(bo: BattleObject){
 		super(bo.shape);
 		this.id = BattleObjectInstance.current_id;
@@ -463,6 +500,10 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 			return {trigger_action: act, current_cooldown: 0, triggers: 0};
 		});
 		
+		this.modifiers = {
+			low_damage: 0,
+			high_damage: 0
+		}
 	}
 
 	reset(){
@@ -483,7 +524,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		this.owner?.removeObject(this);
 		this.owner = undefined;
 	}
-	testSubActionCondition(condition: TriggerCondition, user: Character.BattleCharacter): boolean{
+	testSubActionCondition(condition: TriggerCondition, user: Character.BattleCharacterInstance): boolean{
 		switch(condition.trigger_type){
 			case TriggerTypeEnum.Cooldown:
 				console.log("cooldown should not be a subaction");
@@ -507,7 +548,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		return false;
 	}
 
-	testActionInstanceCondition(act_inst: ActionInstance, user: Character.BattleCharacter, dt: Float=0): boolean{
+	testActionInstanceCondition(act_inst: ActionInstance, user: Character.BattleCharacterInstance, dt: Float=0): boolean{
 		const condition = act_inst.trigger_action.condition;
 		act_inst.current_cooldown += dt;
 		switch(condition.trigger_type){
@@ -564,16 +605,17 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		}
 		return str;
 	}
-	runAction(action: ObjectAction, user: Character.BattleCharacter, targets: Character.BattleCharacter[],
-		events: Battle.BattleEvent 
+	runAction(action: ObjectAction, user: Character.BattleCharacterInstance, targets: Character.BattleCharacterInstance[],
+		battle: Battle.Battle
 	){
 		switch(action.action_type){
 			case ObjectActionTypeEnum.Attack:
 				if(targets.length >= 1){
 					const target = targets[0];
-					const damage = this.calcRandomValue(action.low_value, action.high_value);
+					//const damage = this.calcRandomValue(action.low_value, action.high_value);
+					const damage = this.battle_object.getDamage();
 					target.takeDamage(damage);
-
+					battle.addEvent(user, action.action_type, damage);
 				}
 				break;
 			case ObjectActionTypeEnum.UserBuffAdd:
@@ -581,12 +623,15 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					console.log("object action buff cannot be undefined");
 					return;
 				}
-				user.addBuff(action.buff, action.low_value);
+				const value = action.low_value
+				user.addBuff(action.buff, value);
 				console.log("adding buff");
+				battle.addEvent(user, this, action.action_type, value);
 				break;
 			case ObjectActionTypeEnum.UserHeal:
 				const heal = this.calcRandomValue(action.low_value, action.high_value);
 				user.heal(heal);
+				battle.addEvent(user, this, action.action_type, heal);
 				break;
 			case ObjectActionTypeEnum.TargetBuff:
 				if(action.buff == undefined){
@@ -597,6 +642,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					const target = targets[0];
 					const buff_amount = this.calcRandomValue(action.low_value, action.high_value);
 					target.addBuff(action.buff, buff_amount);
+					battle.addEvent(user, this, action.action_type, buff_amount, target);
 				}
 				break;
 			case ObjectActionTypeEnum.UserBuffRemove:
@@ -610,36 +656,46 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					return;
 				}
 				user.addBuff(action.buff, -buff_amount);
+				battle.addEvent(user, this, action.action_type, buff_amount);
+				break;
+			case ObjectActionTypeEnum.Modifier:
+				if(action.modifier_string != undefined && action.modifier_string in this.modifiers){
+					const value = action.low_value;
+					this.modifiers[action.modifier_string as keyof BattleObjectInstanceModifiers] += value;
+					console.log(`adding modifier ${action.modifier_string}`);
+					battle.addEvent(user, this, action.action_type, value);
+				}
+				break;
 		}
 		if(action.sub_action != undefined){
 			const condition = action.sub_action.condition;
 			if(this.testSubActionCondition(condition, user)){
 				for(const sub_action of action.sub_action.actions){
 					console.log("running sub action");
-					this.runAction(sub_action, user, targets);
+					this.runAction(sub_action, user, targets, battle);
 				}
 			}
 		}
 	}
-	runActionsWithoutTime(){
-		this.runActionsWithTime(0);
+	runActionsWithoutTime(owner_instance: Character.BattleCharacterInstance, battle: Battle.Battle){
+		this.runActionsWithTime(0, owner_instance, battle);
 		//this.battle_object.testCondition()
 	}
-	runActionsWithTime(dt: Float){
+	runActionsWithTime(dt: Float, owner_instance: Character.BattleCharacterInstance, battle: Battle.Battle){
 		//console.log("running");
 		if(this.owner == undefined){
 			return undefined;
 		}
 		for(const effect of this.action_instances){
-			const condition = this.testActionInstanceCondition(effect, this.owner, dt);
+			const condition = this.testActionInstanceCondition(effect, owner_instance, dt);
 			if(condition){
 				//run effects
 				for(const action of effect.trigger_action.actions){
 					const targets = [];
-					if(this.owner.target != undefined){
-						targets.push(this.owner.target);
+					if(owner_instance.target != undefined){
+						targets.push(owner_instance.target);
 					}
-					this.runAction(action, this.owner, targets);
+					this.runAction(action, owner_instance, targets, battle);
 					this.num_triggers++;
 					this.transform_animator.reset();
 					this.transform_animator.play();
@@ -647,13 +703,11 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 			}
 		}
 	}
-	startOfBattle(){
-		this.runActionsWithoutTime();
+	startOfBattle(owner_instance: Character.BattleCharacterInstance, battle: Battle.Battle){
+		this.runActionsWithoutTime(owner_instance, battle);
 	}
-	update(dt: Float){
-		console.log("np");
+	update(dt: Float, owner_instance: Character.BattleCharacterInstance, battle: Battle.Battle){
 		if(!this.isPlaced()){
-			console.log("np");
 			return;
 		}
 		const fin = this.transform_animator.update(dt);
@@ -661,7 +715,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 			this.transform_animator.reset();
 			this.transform_animator.pause();
 		}
-		this.runActionsWithTime(dt);
+		this.runActionsWithTime(dt, owner_instance, battle);
 		//Testing other trigger
 		/*
 		this.cooldown_timer += dt;
@@ -698,6 +752,10 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 	}
 	getId(): Int32{
 		return this.id;
+	}
+	//override for weapons
+	getDamage(): Int32{
+		return 0;
 	}
 	draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, 
 		colour_collection: WebGL.Colour.ColourRGBCollection

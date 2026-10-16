@@ -300,11 +300,14 @@ class DumpZone extends WebGL.Interface.InterfaceElement.InterfaceElement{
 
 
 export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.InterfaceElement{
-	character_buffs: Character.BattleBuffCollection;
+	character_buffs: Character.BattleBuffCollection | undefined;
 
-	constructor(x: Int32, y: Int32, width: Int32, height: Int32, buffs: Character.BattleBuffCollection){
+	constructor(x: Int32, y: Int32, width: Int32, height: Int32, buffs?: Character.BattleBuffCollection){
 		super(x, y, width, height);
 		this.character_buffs = buffs;
+	}
+	setCharacterInstance(char_inst: Character.BattleCharacterInstance){
+		this.character_buffs = char_inst.buffs;
 	}
 	draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
 		colour_shader: WebGL.Shader.MVPColourProgram,
@@ -313,7 +316,7 @@ export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.Int
 		//background
 		//
 		this.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.white());
-
+		if(this.character_buffs == undefined) return;
 		//buffs values
 		let x = this.x;
 		for(const [id, value] of this.character_buffs.buffs){
@@ -381,7 +384,7 @@ export class BattleEngine{
 		this.player_grid = new BattleGrid.BattleGrid(10, 10, 10, 10);
 		this.player = new Character.BattleCharacter(10, this.player_grid);
 
-		this.player_buff_interface = new CharacterBuffInterface(10, 400, 400, 80, this.player.buffs); //todo
+		this.player_buff_interface = new CharacterBuffInterface(10, 400, 400, 80); //todo
 
 		this.enemy_grid = new BattleGrid.BattleGrid(720, 10, 10, 10);
 		this.enemy = Character.EnemyCharacter.createBaseEnemy(this.enemy_grid, this.object_instances);
@@ -588,7 +591,12 @@ export class BattleEngine{
 		const y = true_coord.y - (object.height*0.5);
 		return {x: Math.round(x), y: Math.round(y)};
 	}
+	battleEnd(){
+		this.state = BattleStateEnum.Setup;
+		this.test_battle.reset();
+	}
 
+	/*
 	resetEnemy(){
 		this.state = BattleStateEnum.Setup;
 		this.enemy.reset();
@@ -603,7 +611,7 @@ export class BattleEngine{
 			return true;
 		}
 		return false;
-	}
+	}*/
 	
 	update(dt: Float){
 		if(this.state == BattleStateEnum.Battle){
@@ -629,7 +637,11 @@ export class BattleEngine{
 			}
 			this.enemy.update(dt, this.object_instances);*/
 
-			this.test_battle.update(dt);
+			const outcome = this.test_battle.update(dt);
+			if(outcome != Battle.BattleOutcomeEnum.Continue){
+				console.log("battle end");
+				this.battleEnd();
+			}
 		}
 
 	}

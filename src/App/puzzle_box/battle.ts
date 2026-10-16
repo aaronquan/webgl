@@ -10,9 +10,11 @@ type Int32 = number;
 
 export type BattleEvent = {
   time_stamp: Float,
-  character: Character.BattleCharacter,
+  character: Character.BattleCharacterInstance,
+  object: BattleObject.BattleObjectInstance,
   type: BattleObject.ObjectActionType,
-  value: Int32
+  value: Int32,
+  target?: Character.BattleCharacterInstance
 }
 
 
@@ -29,6 +31,15 @@ type BuffReachedTrigger = {
   item_id: Int32;
 }
 
+export const BattleOutcomeEnum = {
+  Continue: 0,
+  EnemyDefeated: 1,
+  PlayerDefeated: 2
+
+} as const;
+
+type BattleOutcome = (typeof BattleOutcomeEnum)[keyof typeof BattleOutcomeEnum];
+
 export class Battle{
   left_character: Character.BattleCharacterInstance;
   right_character: Character.BattleCharacterInstance;
@@ -38,6 +49,8 @@ export class Battle{
   events: BattleEvent[];
 
   battle_time: Float;
+
+
 
   //log: string[];
 
@@ -49,20 +62,61 @@ export class Battle{
     this.events = [];
     this.battle_time = 0;
   }
+  reset(){
+    console.log(this.events);
+    for(const ev of this.events){
+      console.log(this.eventToString(ev));
+    }
+    this.left_character.resetAll(this.objects);
+    this.right_character.resetAll(this.objects);
+    this.battle_time = 0;
+    this.events = [];
+    //this.left_character.resetObjects(this.objects);
+    //this.right_character.resetObjects(this.objects);
+  }
+  eventTypeString(type: BattleObject.ObjectActionType): string{
+    switch(type){
+      case BattleObject.ObjectActionTypeEnum.Attack:
+        break;
+    }
+    return "None";
+  }
+  eventToString(event: BattleEvent){
+    let s = `${event.time_stamp.toFixed(0)}:`;
+    switch(event.type){
+      case BattleObject.ObjectActionTypeEnum.Attack:
+        s += ` Attack hits for ${event.value}`;
+    }
+    return s;
+  }
   startOfBattle(){
     this.left_character.setTarget(this.right_character);
     this.right_character.setTarget(this.left_character);
-    this.left_character.startOfBattle(this.objects);
-    this.right_character.startOfBattle(this.objects);
+    this.left_character.startOfBattle(this.objects, this);
+    this.right_character.startOfBattle(this.objects, this);
   }
-  update(dt: Float){
+  update(dt: Float): BattleOutcome{
     //play the battle out in time
-    console.log("battle update");
     this.battle_time += dt;
-    this.left_character.update(dt, this.objects, this.events);
+    this.left_character.update(dt, this.objects, this);
+    if(this.right_character.isDefeated()){
+      console.log("dead")
+      return BattleOutcomeEnum.EnemyDefeated;
+    }
+    this.right_character.update(dt, this.objects, this);
+    if(this.left_character.isDefeated()){
+      console.log("self defeat");
+      return BattleOutcomeEnum.PlayerDefeated;
+    }
+
+    return BattleOutcomeEnum.Continue
+  }
+  addEvent(char: Character.BattleCharacterInstance, object: BattleObject.BattleObjectInstance, type: BattleObject.ObjectActionType,
+  value: Int32, target?: Character.BattleCharacterInstance){
+    this.events.push({time_stamp: this.battle_time, object, character: char, type, value, target});
   }
 
-  //simulate battle 
+  //simulate battle to complete
   // object order is left first the right with grids from left to right
   preSimulateBattle(){
     const order = this.left_character.getGrid().getObjectOrder();
