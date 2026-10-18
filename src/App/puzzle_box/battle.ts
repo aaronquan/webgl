@@ -14,6 +14,7 @@ export type BattleEvent = {
   object: BattleObject.BattleObjectInstance,
   type: BattleObject.ObjectActionType,
   value: Int32,
+  secondary_value?: Int32
   target?: Character.BattleCharacterInstance
 }
 
@@ -85,7 +86,16 @@ export class Battle{
     let s = `${event.time_stamp.toFixed(0)}:`;
     switch(event.type){
       case BattleObject.ObjectActionTypeEnum.Attack:
-        s += ` Attack hits for ${event.value}`;
+        s += ` Attack ${event.object.battle_object.name} hits for ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.UserHeal:
+        s += ` ${event.object.battle_object.name} Heals ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.TargetBuff:
+        s += ` ${event.object.battle_object.name} increase enemy buff ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.UserBuffAdd:
+        s += ` ${event.object.battle_object.name} increase self buff ${event.value}`;
     }
     return s;
   }
@@ -112,8 +122,8 @@ export class Battle{
     return BattleOutcomeEnum.Continue
   }
   addEvent(char: Character.BattleCharacterInstance, object: BattleObject.BattleObjectInstance, type: BattleObject.ObjectActionType,
-  value: Int32, target?: Character.BattleCharacterInstance){
-    this.events.push({time_stamp: this.battle_time, object, character: char, type, value, target});
+  value: Int32, target?: Character.BattleCharacterInstance, secondary_value?: Int32){
+    this.events.push({time_stamp: this.battle_time, object, character: char, type, value, target, secondary_value});
   }
 
   //simulate battle to complete

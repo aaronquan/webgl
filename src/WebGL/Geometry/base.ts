@@ -1,4 +1,4 @@
-import * as Interface from "./../Interface/interface";
+//import * as Interface from "./../Interface/interface";
 
 type Int32 = number;
 type Float = number;

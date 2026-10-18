@@ -1,6 +1,8 @@
 import * as Grid from "./generic";
 import * as PQ from "@datastructures-js/priority-queue";
-import * as WebGL from "./../globals";
+//import * as WebGL from "./../globals";
+import * as Utils from "./../Util/utils";
+import * as Geometry from "./../Geometry/geometry";
 
 type Int32 = number;
 type Float = number;
@@ -115,7 +117,7 @@ export class GridAlgorithms{
 			return positions; 
 		}
 		//search for limit index
-		const find_index = WebGL.Utils.Array.binarySearchLowerBound(GridAlgorithms.positions_at_distance, (e:PositionsAtDistance) => limit_squared-e.distance_squared);
+		const find_index = Utils.Array.binarySearchLowerBound(GridAlgorithms.positions_at_distance, (e:PositionsAtDistance) => limit_squared-e.distance_squared);
 		//console.log(find_index);
 		let positions: Coordinate[] = [];
 		for(let i = 0; i < find_index; i++){
@@ -128,7 +130,7 @@ export class GridAlgorithms{
 }
 
 //area of a grid
-export class GridRectArea extends WebGL.Geometry.Base.Rect{
+export class GridRectArea extends Geometry.Base.Rect{
 	
 	
 	randomCoordinate(): Coordinate{

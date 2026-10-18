@@ -597,14 +597,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 		const rand = Math.floor(Math.random()*(hi-low+1));
 		return rand + low;
 	}
-	userActionToString(action: ObjectAction, user: Character.BattleCharacter): string{
-		const str = "";
-		switch(action.action_type){
-			case ObjectActionTypeEnum.Attack:
 
-		}
-		return str;
-	}
 	runAction(action: ObjectAction, user: Character.BattleCharacterInstance, targets: Character.BattleCharacterInstance[],
 		battle: Battle.Battle
 	){
@@ -626,7 +619,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 				const value = action.low_value
 				user.addBuff(action.buff, value);
 				console.log("adding buff");
-				battle.addEvent(user, this, action.action_type, value);
+				battle.addEvent(user, this, action.action_type, value, undefined, action.buff);
 				break;
 			case ObjectActionTypeEnum.UserHeal:
 				const heal = this.calcRandomValue(action.low_value, action.high_value);
@@ -642,7 +635,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					const target = targets[0];
 					const buff_amount = this.calcRandomValue(action.low_value, action.high_value);
 					target.addBuff(action.buff, buff_amount);
-					battle.addEvent(user, this, action.action_type, buff_amount, target);
+					battle.addEvent(user, this, action.action_type, buff_amount, target, action.buff);
 				}
 				break;
 			case ObjectActionTypeEnum.UserBuffRemove:
@@ -656,7 +649,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					return;
 				}
 				user.addBuff(action.buff, -buff_amount);
-				battle.addEvent(user, this, action.action_type, buff_amount);
+				battle.addEvent(user, this, action.action_type, buff_amount, undefined, action.buff);
 				break;
 			case ObjectActionTypeEnum.Modifier:
 				if(action.modifier_string != undefined && action.modifier_string in this.modifiers){
