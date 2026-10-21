@@ -17,6 +17,7 @@ import SortedArray = WebGL.Utils.Array.SortedArray;
 
 class BattleEngineControls{
 	start_battle: WebGL.Interface.Button.BasicButton;
+	reset_battle: WebGL.Interface.Button.BasicButton;
 	constructor(x: Int32, y: Int32){
 		const button_width = 80;
 		const button_height = 30;
@@ -25,18 +26,28 @@ class BattleEngineControls{
 		this.start_battle.text = "Start";
 		this.start_battle.text_size = 15;
 
+		this.reset_battle = new Button.BasicButton(x+button_width+10, y, button_width, button_height);
+		this.reset_battle.text = "Reset";
+		this.reset_battle.text_size = 15;
+
 	}
 	setStartBattleFunction(f: () => void){
 		this.start_battle.onPressed = f;
 	}
+	setResetBattleFunction(f: () => void){
+		this.reset_battle.onPressed = f;
+	}
 	onMouseMove(point: Point2D){
 		this.start_battle.onMouseMove(point);
+		this.reset_battle.onMouseMove(point);
 	}
 	onMouseDown(point: Point2D){
 		this.start_battle.onMouseDown();
+		this.reset_battle.onMouseDown();
 	}
 	onMouseUp(point: Point2D){
 		this.start_battle.onMouseUp();
+		this.reset_battle.onMouseUp();
 	}
 
 	draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
@@ -45,6 +56,7 @@ class BattleEngineControls{
 
 	){
 		this.start_battle.draw(vp, colour_shader, text_drawer);
+		this.reset_battle.draw(vp, colour_shader, text_drawer);
 	}
 }
 
@@ -332,6 +344,34 @@ export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.Int
 	}
 }
 
+class LogInterface extends WebGL.Interface.InternalWindow.VerticalStrollInternalWindow{
+	events: Battle.BattleEvents;
+	constructor(events: Battle.BattleEvents){
+		super(100, 100, 800, 200, 800, 400, 12);
+		this.can_resize = true;
+		this.events = events;
+	}
+
+	drawInterface(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram,
+		text_drawer: WebGL.TextDrawer
+	){
+		super.draw(vp, colour_shader);
+		this.enableScissors();
+		const x = this.contentOffsetX();
+		let y = this.contentOffsetY();
+		const size = 10;
+		this.events.forEachFn((event) => {
+			text_drawer.drawText(vp, x, y, Battle.BattleEvents.eventToString(event), size);
+			y += size+1;
+		});
+		this.disableScissors();
+	}
+}
+
+
+export class ObjectStatInterface{
+	//todo
+}
 
 export class BattleEngine{
 	//battle_grid: BattleGrid;
@@ -367,6 +407,7 @@ export class BattleEngine{
 	test_battle: Battle.Battle;
 
 	dump_zone: DumpZone;
+	log_interface: LogInterface;
 	constructor(){
 		//this.battle_grid = new BattleGrid(50, 50, 14, 14);
 		this.global_mouse = new Point2D(0, 0);
@@ -377,17 +418,18 @@ export class BattleEngine{
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.BandAid.name)!);
 		//this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.Hook.name)!);
 		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.HealingPack.name)!);
+		this.battle_object_generators.addObject(BObject.BattleObjects.objects.get(BObject.MagicWand.name)!);
 
 		this.object_instances = new BObject.BattleObjectInstanceCollection();
 
 		//this.shapes = this.generateObjectShapes();
 		this.player_grid = new BattleGrid.BattleGrid(10, 10, 10, 10);
-		this.player = new Character.BattleCharacter(10, this.player_grid);
+		this.player = new Character.BattleCharacter(10, "Player", this.player_grid);
 
 		this.player_buff_interface = new CharacterBuffInterface(10, 400, 400, 80); //todo
 
 		this.enemy_grid = new BattleGrid.BattleGrid(720, 10, 10, 10);
-		this.enemy = Character.EnemyCharacter.createBaseEnemy(this.enemy_grid, this.object_instances);
+		this.enemy = Character.EnemyCharacter.createBaseEnemy(this.enemy_grid, "BaseEnemy", this.object_instances);
 
 
 
@@ -434,6 +476,8 @@ export class BattleEngine{
 		this.dump_zone = new DumpZone(int_x, 150, 400, 300);
 
 		this.test_battle = new Battle.Battle(this.player, this.enemy, this.object_instances);
+
+		this.log_interface = new LogInterface(this.test_battle.events);
 		//this.test_battle.preSimulateBattle();
 	}
 
@@ -447,7 +491,11 @@ export class BattleEngine{
 			}else{
 				console.log("Already battling");
 			}
-		})
+		});
+		this.controls.setResetBattleFunction(() => {
+			this.state = BattleStateEnum.Setup;
+			this.test_battle.reset();
+		});
 	}
 
 	rotateSelected(clockwise: boolean=true){
@@ -477,10 +525,14 @@ export class BattleEngine{
 	}
 
 	onScrollWheel(ev: WheelEvent){
-		if(ev.deltaY > 0){
-			this.rotateSelected();
+		if(this.log_interface.isInside(this.global_mouse)){
+			this.log_interface.onScrollWheel(ev);
 		}else{
-			this.rotateSelected(false);
+			if(ev.deltaY > 0){
+				this.rotateSelected();
+			}else{
+				this.rotateSelected(false);
+			}
 		}
 	}
 	onMouseMove(point: Point2D){
@@ -499,6 +551,7 @@ export class BattleEngine{
 				instance.freeform_placement = point;
 			}
 		}
+		this.log_interface.onMouseMove(point);
 	}
 
 	onMouseDown(point: Point2D){
@@ -536,6 +589,8 @@ export class BattleEngine{
 			this.dragged_object = dump_id;
 			this.dump_zone.removeObject(dump_id);
 		}
+
+		this.log_interface.onMouseDown(point);
 	}
 	onMouseUp(point: Point2D){
 		this.controls.onMouseUp(point);
@@ -584,6 +639,7 @@ export class BattleEngine{
 
 			this.dragged_object = undefined;
 		}
+		this.log_interface.onMouseUp();
 	}
 
 	getInstanceGridCoord(true_coord: WebGL.Geometry.Base.Point2D, object: BObject.BattleObjectInstance): WebGL.Grid.Generic.Coordinate{
@@ -593,7 +649,8 @@ export class BattleEngine{
 	}
 	battleEnd(){
 		this.state = BattleStateEnum.Setup;
-		this.test_battle.reset();
+		this.test_battle.resetObjects();
+		//this.test_battle.reset();
 	}
 
 	/*

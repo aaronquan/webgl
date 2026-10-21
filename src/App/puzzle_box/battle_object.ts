@@ -656,7 +656,7 @@ export class BattleObjectInstance extends Shape.GridShapeInstance{
 					const value = action.low_value;
 					this.modifiers[action.modifier_string as keyof BattleObjectInstanceModifiers] += value;
 					console.log(`adding modifier ${action.modifier_string}`);
-					battle.addEvent(user, this, action.action_type, value);
+					battle.addEvent(user, this, action.action_type, value, undefined, undefined, action.modifier_string);
 				}
 				break;
 		}

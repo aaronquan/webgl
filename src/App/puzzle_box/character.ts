@@ -22,8 +22,10 @@ export type BuffChange = {
 export class Character{
 	//current_health: Int32;
 	max_health: Int32;
-	constructor(mh: Int32){
+	name: string;
+	constructor(mh: Int32, name: string){
 		this.max_health = mh;
+		this.name = name;
 		//this.current_health = this.max_health;
 	}
 	/*
@@ -129,6 +131,7 @@ export class BattleCharacterInstance{
 		return this.buffs.hasBuffsOfType(buff, amount);
 	}
 	resetAll(obj_map: BattleObject.BattleObjectInstanceCollection){
+		console.log("resetting character")
 		this.resetObjects(obj_map);
 		this.current_health = this.max_health;
 		this.character_tick_time = 0;
@@ -192,8 +195,8 @@ export class BattleCharacter extends Character{
 	//battle_time: Float;
 	//character_tick_time: Float;
 
-	constructor(mh: Int32, grid: BattleGrid.BattleGrid=new BattleGrid.BattleGrid(0, 0, 10, 10)){
-		super(mh);
+	constructor(mh: Int32, name: string, grid: BattleGrid.BattleGrid=new BattleGrid.BattleGrid(0, 0, 10, 10)){
+		super(mh, name);
 		this.held_object_ids = new Set();
 		this.battle_grid = grid;
 
@@ -279,8 +282,8 @@ export class BattleCharacter extends Character{
 
 //has grid (probably add grid to battle character)
 export class EnemyCharacter extends BattleCharacter{
-	static createBaseEnemy(enemy_grid: BattleGrid.BattleGrid, objects: BattleObject.BattleObjectInstanceCollection): EnemyCharacter{
-		const enemy = new EnemyCharacter(20, enemy_grid);
+	static createBaseEnemy(enemy_grid: BattleGrid.BattleGrid, name: string, objects: BattleObject.BattleObjectInstanceCollection): EnemyCharacter{
+		const enemy = new EnemyCharacter(20, name, enemy_grid);
 		const ws = objects.addObjectFromString(BattleObject.WoodenSword.name)!;
 		console.log(ws);
 		enemy.addObjectToGrid(3,3, ws);

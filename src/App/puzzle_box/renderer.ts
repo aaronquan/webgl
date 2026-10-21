@@ -241,6 +241,9 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
   
     // will need updating as dump zone is deved
+
+
+    be.log_interface.drawInterface(this.orthographic, this.colour_shader, this.text_drawer);
   }
 
   drawBattleGrid(bg: BattleGrid.BattleGrid){

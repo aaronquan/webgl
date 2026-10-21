@@ -14,7 +14,8 @@ export type BattleEvent = {
   object: BattleObject.BattleObjectInstance,
   type: BattleObject.ObjectActionType,
   value: Int32,
-  secondary_value?: Int32
+  secondary_value?: Int32,
+  additional_name?: string,
   target?: Character.BattleCharacterInstance
 }
 
@@ -41,13 +42,63 @@ export const BattleOutcomeEnum = {
 
 type BattleOutcome = (typeof BattleOutcomeEnum)[keyof typeof BattleOutcomeEnum];
 
+export class BattleEvents{
+  events: BattleEvent[];
+  constructor(){
+    this.events = [];
+  }
+  clear(){
+    this.events = [];
+  }
+  forEachFn(f: (e: BattleEvent)=>void){
+    for(const ev of this.events){
+      f(ev);
+    }
+  }
+  printEvents(){
+    this.forEachFn((e) => {
+      console.log(BattleEvents.eventToString(e));
+    })
+  }
+  addEvent(char: Character.BattleCharacterInstance, time_stamp: Int32,  object: BattleObject.BattleObjectInstance, type: BattleObject.ObjectActionType,
+  value: Int32, target?: Character.BattleCharacterInstance, secondary_value?: Int32, additional_name?: string){
+    this.events.push({time_stamp, object, character: char, type, value, target, secondary_value, additional_name});
+  }
+  static eventToString(event: BattleEvent){
+    let s = `${event.time_stamp.toFixed(0)}: ${event.character.character.name}`;
+    const buff = Character.BattleBuffCollection.buffToString(event.secondary_value! as Character.BattleBuff);
+    switch(event.type){
+      case BattleObject.ObjectActionTypeEnum.Attack:
+        s += ` Attack ${event.object.battle_object.name} hits for ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.UserHeal:
+        s += ` ${event.object.battle_object.name} Heals ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.TargetBuff:
+        s += ` ${event.object.battle_object.name} increase enemy buff ${buff} by ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.UserBuffAdd:
+        s += ` ${event.object.battle_object.name} increase self buff ${buff} by ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.UserBuffRemove:
+        s += ` ${event.object.battle_object.name} remove self buff ${buff} by ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.Modifier:
+        s += ` Add modifier ${event.additional_name} to ${event.object.battle_object.name} by ${event.value}`;
+
+    }
+    return s;
+  }
+}
+
 export class Battle{
   left_character: Character.BattleCharacterInstance;
   right_character: Character.BattleCharacterInstance;
 
   objects: BattleObject.BattleObjectInstanceCollection;
 
-  events: BattleEvent[];
+  //events: BattleEvent[];
+  events: BattleEvents;
 
   battle_time: Float;
 
@@ -60,30 +111,26 @@ export class Battle{
     this.left_character = new Character.BattleCharacterInstance(lc);
     this.right_character = new Character.BattleCharacterInstance(rc);
     this.objects = objs;
-    this.events = [];
+    this.events = new BattleEvents();
     this.battle_time = 0;
   }
   reset(){
-    console.log(this.events);
-    for(const ev of this.events){
-      console.log(this.eventToString(ev));
-    }
+    this.events.printEvents();
     this.left_character.resetAll(this.objects);
     this.right_character.resetAll(this.objects);
     this.battle_time = 0;
-    this.events = [];
+    this.events.clear(); // todo change this
     //this.left_character.resetObjects(this.objects);
     //this.right_character.resetObjects(this.objects);
   }
-  eventTypeString(type: BattleObject.ObjectActionType): string{
-    switch(type){
-      case BattleObject.ObjectActionTypeEnum.Attack:
-        break;
-    }
-    return "None";
+  resetObjects(){
+    this.left_character.resetObjects(this.objects);
+    this.right_character.resetObjects(this.objects);
   }
-  eventToString(event: BattleEvent){
-    let s = `${event.time_stamp.toFixed(0)}:`;
+  /*
+  static eventToString(event: BattleEvent){
+    let s = `${event.time_stamp.toFixed(0)}: ${event.character.character.name}`;
+    const buff = Character.BattleBuffCollection.buffToString(event.secondary_value! as Character.BattleBuff);
     switch(event.type){
       case BattleObject.ObjectActionTypeEnum.Attack:
         s += ` Attack ${event.object.battle_object.name} hits for ${event.value}`;
@@ -92,13 +139,18 @@ export class Battle{
         s += ` ${event.object.battle_object.name} Heals ${event.value}`;
         break;
       case BattleObject.ObjectActionTypeEnum.TargetBuff:
-        s += ` ${event.object.battle_object.name} increase enemy buff ${event.value}`;
+        s += ` ${event.object.battle_object.name} increase enemy buff ${buff} by ${event.value}`;
         break;
       case BattleObject.ObjectActionTypeEnum.UserBuffAdd:
-        s += ` ${event.object.battle_object.name} increase self buff ${event.value}`;
+        s += ` ${event.object.battle_object.name} increase self buff ${buff} by ${event.value}`;
+        break;
+      case BattleObject.ObjectActionTypeEnum.UserBuffRemove:
+        s += ` ${event.object.battle_object.name} remove self buff ${buff} by ${event.value}`;
+        break;
+
     }
     return s;
-  }
+  }*/
   startOfBattle(){
     this.left_character.setTarget(this.right_character);
     this.right_character.setTarget(this.left_character);
@@ -122,8 +174,8 @@ export class Battle{
     return BattleOutcomeEnum.Continue
   }
   addEvent(char: Character.BattleCharacterInstance, object: BattleObject.BattleObjectInstance, type: BattleObject.ObjectActionType,
-  value: Int32, target?: Character.BattleCharacterInstance, secondary_value?: Int32){
-    this.events.push({time_stamp: this.battle_time, object, character: char, type, value, target, secondary_value});
+  value: Int32, target?: Character.BattleCharacterInstance, secondary_value?: Int32, additional_name?: string){
+    this.events.addEvent(char, this.battle_time, object, type ,value, target, secondary_value, additional_name);
   }
 
   //simulate battle to complete

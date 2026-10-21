@@ -95,7 +95,7 @@ export class HorizontalScrollBar extends ScrollBar{
     }
   }
 
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: WebGL.Geometry.Base.Point2D){
     if(this.isInside(point)){
       this.dragging = true;
       this.bar_hovering = true;
@@ -105,7 +105,7 @@ export class HorizontalScrollBar extends ScrollBar{
   onMouseUp(){
     this.dragging = false;
   }
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: WebGL.Geometry.Base.Point2D){
     this.bar_hovering = this.isInsideBar(point);
     if(this.dragging){
       this.setScroll(point.x);
@@ -152,7 +152,7 @@ export class VerticalScrollBar extends ScrollBar{
     const diff = this.height-this.bar_height;
     return diff*this.value;
   }
-  isInsideBar(point: WebGL.Matrix.Point2D){
+  isInsideBar(point: WebGL.Geometry.Base.Point2D){
     const offset_y = this.barOffsetY();
     const in_x = this.x < point.x && point.x < this.x + this.width;
     const in_y = this.y + offset_y < point.y && point.y < this.y + offset_y + this.bar_height;
@@ -183,7 +183,7 @@ export class VerticalScrollBar extends ScrollBar{
     }
   }
 
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: WebGL.Geometry.Base.Point2D){
     if(this.isInside(point)){
       this.dragging = true;
       this.bar_hovering = true;
@@ -193,7 +193,7 @@ export class VerticalScrollBar extends ScrollBar{
   onMouseUp(){
     this.dragging = false;
   }
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: WebGL.Geometry.Base.Point2D){
     this.bar_hovering = this.isInsideBar(point);
     if(this.dragging){
       this.setScrollFromY(point.y);

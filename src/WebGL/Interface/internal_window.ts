@@ -349,14 +349,14 @@ export class HorizontalScrollInternalWindow extends InternalWindow{
   contentOffsetY(): Int32{
     return this.getInternalY();
   }
-  onMouseMove(global_position: WebGL.Matrix.Point2D){
+  onMouseMove(global_position: WebGL.Geometry.Base.Point2D){
     super.onMouseMove(global_position);
     this.scroll_bar.x = this.x;
     this.scroll_bar.y = this.scrollBarY();
     this.scroll_bar.onMouseMove(global_position);
     this.scroll_bar.setWidth(this.width);
   }
-  onMouseDown(global_position: WebGL.Matrix.Point2D){
+  onMouseDown(global_position: WebGL.Geometry.Base.Point2D){
     super.onMouseDown(global_position);
     if(!this.isHoveringSides()){
       this.scroll_bar.onMouseDown(global_position);
@@ -404,7 +404,7 @@ export class FullScrollInternalWindow extends InternalWindow{
   contentOffsetY(): Int32{
     return this.getInternalY() + this.vertical_scroll_bar.windowOffsetY();
   }
-  onMouseMove(global_position: WebGL.Matrix.Point2D){
+  onMouseMove(global_position: WebGL.Geometry.Base.Point2D){
     super.onMouseMove(global_position);
     this.horizontal_scroll_bar.x = this.x;
     this.horizontal_scroll_bar.y = this.getInternalY() + this.height;
@@ -416,7 +416,7 @@ export class FullScrollInternalWindow extends InternalWindow{
     this.vertical_scroll_bar.onMouseMove(global_position);
     this.vertical_scroll_bar.setHeight(this.height);
   }
-  onMouseDown(global_position: WebGL.Matrix.Point2D){
+  onMouseDown(global_position: WebGL.Geometry.Base.Point2D){
     super.onMouseDown(global_position);
     this.horizontal_scroll_bar.onMouseDown(global_position);
     this.vertical_scroll_bar.onMouseDown(global_position);
@@ -480,14 +480,14 @@ export class VerticalStrollInternalWindow extends InternalWindow{
   contentOffsetX(): Int32{
     return this.x;
   }
-  onMouseMove(global_position: WebGL.Matrix.Point2D){
+  onMouseMove(global_position: WebGL.Geometry.Base.Point2D){
     super.onMouseMove(global_position);
     this.scroll_bar.x = this.scrollBarX();
     this.scroll_bar.y = this.getInternalY();
     this.scroll_bar.onMouseMove(global_position);
     this.scroll_bar.setHeight(this.height);
   }
-  onMouseDown(global_position: WebGL.Matrix.Point2D){
+  onMouseDown(global_position: WebGL.Geometry.Base.Point2D){
     super.onMouseDown(global_position);
     this.scroll_bar.onMouseDown(global_position);
   }
