@@ -21,3 +21,16 @@ test('binary bound search tests', () => {
   expect(ArrayUtils.binarySearchUpperBound(to_search, (n: number) => 10-n)).toBe(5);
   expect(ArrayUtils.binarySearchLowerBound(to_search, (n: number) => -n)).toBe(1);
 });
+
+test("circular array", () => {
+  const arr = [1,4,8];
+
+  const c_arr = new ArrayUtils.CircularArray(arr);
+
+  expect(c_arr.get(1)).toBe(4);
+  expect(c_arr.get(4)).toBe(4);
+  expect(c_arr.get(-2)).toBe(4);
+
+  c_arr.push(16);
+  expect(c_arr.get(4)).toBe(1);
+});

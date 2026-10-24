@@ -91,9 +91,6 @@ export function randomPick<T>(arr: T[]): T{
   return arr[p];
 }
 
-function testBinarySearch(){
-
-}
 
 export class SortedArray<T>{
   private array: T[];
@@ -157,4 +154,30 @@ export class SortedArray<T>{
     }
     return undefined;
   }
+}
+
+
+export class CircularArray<T>{
+  private array: T[];
+  constructor(arr: T[]=[]){
+    this.array = arr;
+  }
+
+  length(){
+    return this.array.length;
+  }
+
+  push(e: T){
+    this.array.push(e);
+  }
+
+  get(i: number): T{
+    const count = this.array.length;
+    let index = i % count;
+    if(index < 0){
+      index = count + index;
+    }
+    return this.array[index];
+  }
+
 }
