@@ -55,9 +55,9 @@ if(test_canvas2d){
   const card_engine = new Card.CardEngine(canvas.width, canvas.height);
   const card_renderer = new Card.CardRenderer(canvas.width, canvas.height);
   //const app = ResourceApp.newApp(canvas.width, canvas.height);
-  const app = newPuzzleApp(canvas.width, canvas.height);
+  //const app = newPuzzleApp(canvas.width, canvas.height);
 
-  //const app = newITApp(canvas.width, canvas.height);
+  const app = newITApp(canvas.width, canvas.height);
 
   app.loadResources(() => {
     console.log("running app");

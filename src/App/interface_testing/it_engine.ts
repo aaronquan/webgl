@@ -114,6 +114,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
   test_triangle: WebGL.Geometry.Base.Point2D[];
   hover_hex: WebGL.Grid.Generic.Coordinate | undefined;
 
+  graph_test: ExampleGraph;
+
   constructor(){
     super();
     this.global_mouse = new Point2D(0, 0);
@@ -160,6 +162,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
     this.vector = new WebGL.Geometry.Base.Vector(1, Math.sqrt(3));
     this.test_triangle = [];
+
+    this.graph_test = new ExampleGraph();
   }
   protected handleMouseMove(ev: MouseEvent): void {
     this.global_mouse = new Point2D(ev.clientX, ev.clientY);
@@ -226,5 +230,44 @@ class ExampleVerticalScrollWindow extends Window.VerticalStrollInternalWindow{
       WebGL.WebGL.drawColourRect(vp, colour_shader, x+10, y+10, 10, 10, WebGL.Colour.ColourUtils.red());
       this.disableScissors();
     }
+  }
+}
+
+
+class ExampleGraph extends WebGL.Interface.InterfaceElement.InterfaceElement {
+  equation: WebGL.Geometry.Equations.LineABC;
+  saw: WebGL.Geometry.Waves.Sawtooth;
+  sine: WebGL.Geometry.Waves.Sine;
+  square: WebGL.Geometry.Waves.Square;
+  tri: WebGL.Geometry.Waves.Triangle;
+  combined: WebGL.Geometry.Waves.CombinedWave;
+  draw_graph: WebGL.Geometry.Graph.DrawGraph;
+  constructor(){
+    super(400, 50, 400, 400);
+    this.equation = new WebGL.Geometry.Equations.LineABC(2, 1.2, 3.1);
+    this.draw_graph = new WebGL.Geometry.Graph.DrawGraph(this.x, this.y, this.width, this.height, -10, -10, 20, 20);
+    this.saw = new WebGL.Geometry.Waves.Sawtooth(0.25, 1, 0);
+    this.sine = new WebGL.Geometry.Waves.Sine(2, 2, 0.5);
+    this.square = new WebGL.Geometry.Waves.Square(0.5, 1,8);
+    this.tri = new WebGL.Geometry.Waves.Triangle(0.5, 1,0.1);
+    this.combined = new WebGL.Geometry.Waves.CombinedWave();
+    this.combined.addWave(this.sine);
+    //this.combined.addWave(this.saw);
+    this.combined.addWave(this.square);
+  }
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram,
+    circle_shader: WebGL.Shader.MVPCircleOnlyProgram
+  ){
+    super.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.green());
+
+    this.draw_graph.drawGraphGrid(vp, colour_shader, circle_shader);
+    //this.draw_graph.drawLineEquation(vp, this.equation, 2, colour_shader, WebGL.Colour.ColourUtils.blue());
+    //this.draw_graph.drawSine(vp, this.sine, 2, colour_shader, WebGL.Colour.ColourUtils.blue());
+    //this.draw_graph.drawSaw(vp, this.saw, 2, colour_shader, WebGL.Colour.ColourUtils.blue());
+    this.draw_graph.drawSquare(vp, this.square, 2, colour_shader, WebGL.Colour.ColourUtils.pink());
+    this.draw_graph.drawTriangle(vp, this.tri, 2, colour_shader, WebGL.Colour.ColourUtils.blue());
+    //this.draw_graph.drawSquareTest(vp, this.square, 2, colour_shader, WebGL.Colour.ColourUtils.blue());
+    //this.draw_graph.drawSawTest(vp, this.saw, 2, colour_shader, WebGL.Colour.ColourUtils.cyan());
+    this.draw_graph.drawCombinedWave(vp, this.combined, 2, colour_shader, WebGL.Colour.ColourUtils.red(), 12);
   }
 }

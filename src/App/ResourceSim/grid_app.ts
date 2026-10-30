@@ -14,7 +14,7 @@ import * as Resource from "./resource";
 import * as Car from "./car";
 import * as NodeGraph from "./node_graph"
 
-import * as ArrayUtils from "../../utils/array";
+//import * as ArrayUtils from "../../utils/array";
 import * as NumberUtils from "../../utils/numbers";
 
 import * as Texts from "./texts";
@@ -638,7 +638,7 @@ export class WallEngine extends App.BaseEngine{
   }
   createKeyNodes(){
     this.nodes = [];
-    const rand_arr = ArrayUtils.random0ToN(this.key_positions.length);
+    const rand_arr = WebGL.Utils.Array.random0ToN(this.key_positions.length);
     //console.log(rand_arr);
     const res_node = new Node.ResourceGeneratorNode();
     const tile = this.grid.getTileFromPosition(this.key_positions[rand_arr[0]])!;
@@ -905,7 +905,7 @@ export class WallEngine extends App.BaseEngine{
       this.highlighted_positions = Grid.GridAlgorithms.positionsWithin2Ranges(20,36).map((p) => new Grid.GridPosition(pos.x+p.x, pos.y+p.y));
       this.highlighted_positions = filterPositionsTooClose(this.highlighted_positions, new Grid.GridPosition(0, 0), 3);
     }else{
-      this.highlighted_positions = ArrayUtils.flatten(Grid.GridPosition.allPositionsDistanceAway(pos, 6));
+      this.highlighted_positions = WebGL.Utils.Array.flatten(Grid.GridPosition.allPositionsDistanceAway(pos, 6));
       this.highlighted_positions = Grid.GridPosition.filterInsideGrid(this.highlighted_positions, this.rect_grid);
       this.highlighted_positions = filterPositionsTooClose(this.highlighted_positions, new Grid.GridPosition(0, 0), 3);
     }

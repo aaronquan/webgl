@@ -1,7 +1,7 @@
 import * as WebGL from './../../WebGL/globals';
 import * as Grid from './grid';
 import * as Node from './nodes';
-import * as ArrayUtil from './../../utils/array';
+//import * as WebGL.Utils.Array from './../../utils/array';
 import { PriorityQueue } from '@datastructures-js/priority-queue';
 
 type Int32 = number;
@@ -25,7 +25,7 @@ export class RoadConnection{
   static reversePath(path: Grid.GridPosition[], end: Grid.GridPosition): Grid.GridPosition[]{
     const new_path = [...path];
     new_path.pop();
-    ArrayUtil.reverse(new_path);
+    WebGL.Utils.Array.reverse(new_path);
     new_path.push(end);
     return new_path;
   }
@@ -181,7 +181,7 @@ export class RoadGraph{
 
           const backwards = [...connection];
           backwards.pop();
-          ArrayUtil.reverse(backwards);
+          WebGL.Utils.Array.reverse(backwards);
           backwards.push(current_road_node.position.copy());
           const road_connection = new RoadConnection(backwards, connected_index, current_road_node_index);
 
@@ -219,7 +219,7 @@ export class RoadGraph{
 
           const backwards = [...connection];
           backwards.pop();
-          ArrayUtil.reverse(backwards);
+          WebGL.Utils.Array.reverse(backwards);
           backwards.push(current_road_node.position.copy());
           const road_connection = new RoadConnection(backwards, connected_index, current_road_node_index);
           //connected_node.connections.set(current_road_node_index, road_connection);
@@ -434,7 +434,7 @@ export class RoadGraph{
           id = backtrack_map[id]!.from;
           t++;
         }
-        ArrayUtil.reverse(connections);
+        WebGL.Utils.Array.reverse(connections);
         console.log(connections);
         return {connections, starting_position};
       }

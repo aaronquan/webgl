@@ -10,13 +10,13 @@ import TransformSequenceAnimator2D = WebGL.Animator.TransformSequenceAnimator2D;
 type Float = number;
 type Int32 = number;
 
-const ObjectTypeEnum = {
+export const ObjectTypeEnum = {
 	Weapon: 0,
 	Accessory: 1,
 	Apparel: 2
 } as const;
 
-type ObjectType = (typeof ObjectTypeEnum)[keyof typeof ObjectTypeEnum];
+export type ObjectType = (typeof ObjectTypeEnum)[keyof typeof ObjectTypeEnum];
 
 export const TriggerTypeEnum = {
 	Start: 0,
@@ -315,7 +315,7 @@ export class BattleObject{
 	}
 }
 
-class HealingObject extends BattleObject{
+export class HealingObject extends BattleObject{
 	heal_amount: Int32;
 	constructor(shape: Shape.GridShape, name: string, cd: Float, ha: Int32, colour: string){
 		super(shape, name, cd, ObjectTypeEnum.Accessory, colour);
@@ -327,7 +327,7 @@ class HealingObject extends BattleObject{
 	}
 }
 
-class WeaponObject extends BattleObject{
+export class WeaponObject extends BattleObject{
 	damage_low: Int32;
 	damage_hi: Int32;
 	constructor(shape: Shape.GridShape, name: string, cd: Float, dl: Int32, dh: Int32, colour: string){

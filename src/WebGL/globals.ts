@@ -153,9 +153,10 @@ export class WebGL{
 
 //can only draw rects
 export class BasicModel{
-  static colour_shader: Shader.MVPColourProgram;
+  static colour_shader: Shader.MVPColourProgram | undefined;
 
   static init(){
+    if(this.colour_shader != undefined) return;
     this.colour_shader = new Shader.MVPColourProgram();
   }
 
@@ -172,7 +173,8 @@ export class BasicModel{
     }
   }
   draw(p: Matrix.TransformationMatrix3x3){
-    const shader = BasicModel.colour_shader;
+    BasicModel.init();
+    const shader = BasicModel.colour_shader!;
     shader.use();
     for(const model of this.parts){
       shader.setMvp(p.multiplyCopy(model.transformation));
@@ -181,7 +183,8 @@ export class BasicModel{
     }
   }
   static drawItem(vp: Matrix.TransformationMatrix3x3, item: BasicModelItem2D){
-    const shader = BasicModel.colour_shader;
+    BasicModel.init();
+    const shader = BasicModel.colour_shader!;
     shader.use();
     shader.setColour(item.colour.red, item.colour.green, item.colour.blue);
     shader.setMvp(vp.multiplyCopy(item.transformation));

@@ -11,7 +11,7 @@ type Float = number;
 export interface Equation{
   getY:(x: Float) => Float | undefined;
 	serialise: () => string;
-
+  //deserialise: (s: string) => Equation; // use global deserialiseEquation function
 }
 
 export const EquationTypeEnum = {
@@ -58,6 +58,18 @@ export function deserialiseEquation(s: string): EquationOfType{
   return eq;
 }
 
+export function getEquationFromEquationOfType(e: EquationOfType): Equation{
+  switch(e.type){
+    case EquationTypeEnum.LineEquation:
+      return e.line!;
+    case EquationTypeEnum.LineSegment:
+      return e.line_segment!;
+    case EquationTypeEnum.Quadratic:
+      return e.quadratic!;
+    case EquationTypeEnum.Sine:
+      return e.sine!;
+  }
+}
 
 interface LineEquation extends Equation{
   getX: (y:Float) => Float | undefined;
@@ -451,6 +463,9 @@ export class Quadratic{
     console.log(cy);
 
     return testQuad; // return somthing else
+  }
+  isUpFacing(): boolean{
+    return this.a > 0;
   }
   serialise(): string{
     return `qd,${this.a},${this.b},${this.c}`;

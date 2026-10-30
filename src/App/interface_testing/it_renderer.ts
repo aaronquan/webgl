@@ -106,6 +106,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
         engine.hover_hex.y, this.colours.getColour("pink")!
       );
     }
+
+    engine.graph_test.draw(this.orthographic, this.colour_shader, this.circle_shader);
     /*
     engine.tri_grid.drawOutline(this.orthographic, this.colour_shader, this.colours.getColour("blue")!, 2);
 

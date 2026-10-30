@@ -1,6 +1,5 @@
 import * as WebGL from "./../../WebGL/globals"
-//import * as Matrix from "../../WebGL/Matrix/matrix";
-import * as ArrayUtils from "../../utils/array";
+
 import * as Node from "./nodes";
 import * as PQ from "@datastructures-js/priority-queue"
 
@@ -843,7 +842,7 @@ export class WallGrid{
             last = last_position[pl.y][pl.x]!;
           }
           path.push(start);
-          ArrayUtils.reverse(path);
+          WebGL.Utils.Array.reverse(path);
           return path;
           //backtrack
         }
@@ -1028,7 +1027,7 @@ export class GridAlgorithms{
       return positions; 
     }
     //search for limit index
-    const find_index = ArrayUtils.binarySearchLowerBound(GridAlgorithms.positionsAtDistance, (e:PositionsAtDistance) => limit_squared-e.distance_squared);
+    const find_index = WebGL.Utils.Array.binarySearchLowerBound(GridAlgorithms.positionsAtDistance, (e:PositionsAtDistance) => limit_squared-e.distance_squared);
     //console.log(find_index);
     let positions: GridPosition[] = [];
     for(let i = 0; i < find_index; i++){
@@ -1047,10 +1046,10 @@ export class GridAlgorithms{
     if(greatest_distance == undefined || greatest_distance < upper_range_squared){
       GridAlgorithms.generatePositionsAtDistance(upper_range_squared);
     }
-    const hi_index = ArrayUtils.binarySearchLowerBound(GridAlgorithms.positionsAtDistance, 
+    const hi_index = WebGL.Utils.Array.binarySearchLowerBound(GridAlgorithms.positionsAtDistance, 
       (e:PositionsAtDistance) => upper_range_squared-e.distance_squared
     );
-    const lo_index = ArrayUtils.binarySearchUpperBound(GridAlgorithms.positionsAtDistance, 
+    const lo_index = WebGL.Utils.Array.binarySearchUpperBound(GridAlgorithms.positionsAtDistance, 
       (e:PositionsAtDistance) => lower_range_squared-e.distance_squared
     );
     let positions: GridPosition[] = [];

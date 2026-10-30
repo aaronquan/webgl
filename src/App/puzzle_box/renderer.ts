@@ -244,6 +244,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
 
     be.log_interface.drawInterface(this.orthographic, this.colour_shader, this.text_drawer);
+    be.object_interface.draw(this.orthographic, this.colour_shader, this.text_drawer);
   }
 
   drawBattleGrid(bg: BattleGrid.BattleGrid){
