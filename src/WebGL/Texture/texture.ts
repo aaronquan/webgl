@@ -260,7 +260,7 @@ interface FontSheetShader{
   setY: (y: Int32) => void;
 }
 
-export class CustomFont{
+export class SpriteSheetFont{
   coord_to_sheet_position: Map<Char, SpriteSheetPosition>
   font_sheet: Texture;
   font_name: string;
@@ -278,10 +278,6 @@ export class CustomFont{
     this.coord_to_sheet_position = new Map();
     this.width = 0;
     this.height = 0;
-    //test font settings
-    //this.coord_to_sheet_position.set("a", {x: 0, y: 0});
-    //this.coord_to_sheet_position.set("b", {x: 1, y: 0});
-    //this.coord_to_sheet_position.set("c", {x: 2, y: 0});
   }
   active(id: Int32){
     this.font_sheet.active(id);
@@ -325,6 +321,28 @@ export class CustomFont{
       shader.setX(coord.x);
       shader.setY(coord.y);
     }
+  }
+  drawText(vp: WebGL.Matrix.TransformationMatrix3x3,
+    texture_shader: WebGL.Shader.MVPSpriteSheetColourProgram,
+    x: Int32, y: Int32, size: Int32,
+    text: string,
+    colour: WebGL.Colour.ColourRGB=WebGL.Colour.ColourUtils.white()
+  ){
+    texture_shader.use();
+    texture_shader.setColourFromColourRGB(colour);
+    this.active(0);
+    texture_shader.setTextureId(0);
+    const scale = WebGL.Matrix.TransformationMatrix3x3.scale(size, size);
+    WebGL.WebGL.enableBlend();
+    for(let i = 0; i < text.length; i++){
+      if(text[i] == ' ') continue;
+      const tr = WebGL.Matrix.TransformationMatrix3x3.translate(x+size*i,y);
+      const matrix = vp.multiplyCopy(tr.multiplyCopy(scale));
+      texture_shader.setMvp(matrix);
+      this.setChar(texture_shader, text[i]);
+      WebGL.Shapes.Quad.drawRelative();
+    }
+    WebGL.WebGL.disableBlend();
   }
 }
 

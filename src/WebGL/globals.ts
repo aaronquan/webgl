@@ -257,10 +257,10 @@ export function loadTextureTest(){
 }
 
 export class FontLoader{
-  private fonts: Map<string, Texture.CustomFont>;
+  private fonts: Map<string, Texture.SpriteSheetFont>;
   loaded: Int32;
   loading: boolean; // prevention measure for loading while another load is active
-  to_load: Texture.CustomFont[];
+  to_load: Texture.SpriteSheetFont[];
   finished_loading: Int32;
   constructor(){
     this.fonts = new Map();
@@ -271,7 +271,7 @@ export class FontLoader{
   }
   addFont(name: string): boolean{
     if(this.loading) return false;
-    const font = new Texture.CustomFont(name);
+    const font = new Texture.SpriteSheetFont(name);
     this.fonts.set(name, font);
     return true;
   }
@@ -312,21 +312,39 @@ export class FontLoader{
       }
     }
   }
-  getFont(name: string): Texture.CustomFont | undefined{
+  getFont(name: string): Texture.SpriteSheetFont | undefined{
     return this.fonts.get(name);
   }
 }
 
+const TextDrawerFontTypeEnum = {
+  None: 0,
+  SpriteSheet: 1,
+  Canvas2D: 2
+} as const;
+
+type TextDrawerFontType = (typeof TextDrawerFontTypeEnum)[keyof typeof TextDrawerFontTypeEnum];
+
 export class TextDrawer{
   sprite_sheet_shader: Shader.MVPSpriteSheetProgram;
   colour_sheet_shader: Shader.MVPSpriteSheetColourProgram;
-  font?: Texture.CustomFont;
+
+  font_type: TextDrawerFontType;
+  
+  font?: Texture.SpriteSheetFont;
+  canvas2d_font?: Texture.Canvas2DFont;
   constructor(){
     this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
     this.colour_sheet_shader = new Shader.MVPSpriteSheetColourProgram();
+    this.font_type = TextDrawerFontTypeEnum.None;
   }
-  setFont(font: Texture.CustomFont){
+  setFont(font: Texture.SpriteSheetFont){
     this.font = font;
+    this.font_type = TextDrawerFontTypeEnum.SpriteSheet;
+  }
+  setCustom2DFont(font: Texture.Canvas2DFont){
+    this.canvas2d_font = font;
+    this.font_type = TextDrawerFontTypeEnum.Canvas2D;
   }
   loadFont(onLoaded:()=>void=()=>{}){
   }
@@ -338,9 +356,7 @@ export class TextDrawer{
       this.font.active(0);
       this.colour_sheet_shader.setTextureId(0);
       const scale = Matrix.TransformationMatrix3x3.scale(size, size);
-      const gl = WebGL.gl!;
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      WebGL.enableBlend();
       for(let i = 0; i < text.length; i++){
         if(text[i] == ' ') continue;
         const tr = Matrix.TransformationMatrix3x3.translate(size*i,0);
@@ -349,8 +365,7 @@ export class TextDrawer{
         this.font.setChar(this.colour_sheet_shader, text[i]);
         Shapes.Quad.drawRelative();
       }
-
-      gl.disable(gl.BLEND);
+      WebGL.disableBlend();
     }
 
   }
