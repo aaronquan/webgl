@@ -117,20 +117,28 @@ export class App<E extends IEngine>{
 }
 
 
+
 //includes text
 export class SimpleAppRenderer<E extends BaseEngine> implements IEngineRenderer<E>{
   fonts: WebGLGlobals.FontLoader;
   text_drawer: WebGLGlobals.TextDrawer;
   orthographic: WebGLGlobals.Matrix.TransformationMatrix3x3;
   font_names: string[];
+  canvas2d_fonts: WebGLGlobals.Texture.Canvas2DFontType[];
   constructor(w: Int32, h: Int32){
     this.fonts = new WebGLGlobals.FontLoader();
     this.text_drawer = new WebGLGlobals.TextDrawer();
     this.orthographic = WebGLGlobals.Matrix.TransformationMatrix3x3.orthographic(0, w, h, 0);
     this.font_names = [];
+    this.canvas2d_fonts = [];
   }
   loadTextures(onLoad: VoidFunction=EmptyFunction){
     console.log("loading textures");
+
+    for(const cf of this.canvas2d_fonts){
+      this.fonts.loadCanvas2DFont(cf.style, cf.size, cf.alias);
+    }
+
     for(const fn of this.font_names){
       this.fonts.addFont(fn);
     }

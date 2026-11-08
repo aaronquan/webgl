@@ -344,6 +344,11 @@ export class SpriteSheetFont{
     }
     WebGL.WebGL.disableBlend();
   }
+
+  //todo
+  drawTextModel(){
+
+  }
 }
 
 class FontGlyph extends CanvasTexture{
@@ -386,6 +391,12 @@ class GlyphCollection implements TextureCollection{
   }
 }
 
+export type Canvas2DFontType = {
+  style: string;
+  size: Int32;
+  alias: string;
+}
+
 export class Canvas2DFont{
   font_style: string;
   font_size: Int32;
@@ -408,6 +419,12 @@ export class Canvas2DFont{
       Canvas2DFont.canvas = new OffscreenCanvas(500, 500);
       Canvas2DFont.canvas_loaded = true;
     }
+  }
+  static stringFromFontType(ft: Canvas2DFontType){
+    return `${ft.style} ${ft.size.toString()}`;
+  }
+  toString(){
+    return `${this.font_style} ${this.font_size.toString()}`;
   }
   loadTextures(){
     if(this.loaded){

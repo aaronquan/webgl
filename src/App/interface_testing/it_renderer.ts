@@ -25,6 +25,7 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.canvas_width = w;
     this.canvas_height = h;
     this.font_names.push("font16-Sheet.png");
+    this.canvas2d_fonts.push({style: "", size: 10, alias: "test"});
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.circle_shader = new WebGL.Shader.MVPCircleOnlyProgram();
     this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
@@ -133,6 +134,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.hexagonp_shader.setMvp(this.orthographic.multiplyCopy(hm));
     WebGL.Shapes.Quad.drawRelative();
     */
+
+    this.text_drawer.drawTextColour(this.orthographic, 40, 500, "test", 20, this.colours.getColour("red")!);
   }
 
   drawLinesFromPoints(points: Point2D[]){

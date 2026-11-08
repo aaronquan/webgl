@@ -262,12 +262,22 @@ export class FontLoader{
   loading: boolean; // prevention measure for loading while another load is active
   to_load: Texture.SpriteSheetFont[];
   finished_loading: Int32;
+
+  canvas2d_fonts: Map<string, Texture.Canvas2DFont>;
   constructor(){
     this.fonts = new Map();
+    this.canvas2d_fonts = new Map();
     this.loaded = 0;
     this.loading = false;
     this.to_load = [];
     this.finished_loading = 0;
+  }
+  loadCanvas2DFont(font_style: string, size: Int32, alias: string){
+    const tex = new Texture.Canvas2DFont(font_style, size);
+    const font_name = tex.toString();
+    this.canvas2d_fonts.set(alias, tex);
+    tex.loadTextures();
+    console.log(`loading font ${font_name} with alias ${alias}`);
   }
   addFont(name: string): boolean{
     if(this.loading) return false;
@@ -315,6 +325,9 @@ export class FontLoader{
   getFont(name: string): Texture.SpriteSheetFont | undefined{
     return this.fonts.get(name);
   }
+  getCanvasFont(canvas_font_key: string): Texture.Canvas2DFont | undefined{
+    return this.canvas2d_fonts.get(canvas_font_key);
+  }
 }
 
 const TextDrawerFontTypeEnum = {
@@ -326,8 +339,10 @@ const TextDrawerFontTypeEnum = {
 type TextDrawerFontType = (typeof TextDrawerFontTypeEnum)[keyof typeof TextDrawerFontTypeEnum];
 
 export class TextDrawer{
-  sprite_sheet_shader: Shader.MVPSpriteSheetProgram;
+  sprite_sheet_shader: Shader.MVPSpriteSheetProgram; // can possibly remove
   colour_sheet_shader: Shader.MVPSpriteSheetColourProgram;
+
+  texture_colour_shader: Shader.MVPTextureColourProgram;
 
   font_type: TextDrawerFontType;
   
@@ -336,6 +351,7 @@ export class TextDrawer{
   constructor(){
     this.sprite_sheet_shader = new Shader.MVPSpriteSheetProgram();
     this.colour_sheet_shader = new Shader.MVPSpriteSheetColourProgram();
+    this.texture_colour_shader = new Shader.MVPTextureColourProgram();
     this.font_type = TextDrawerFontTypeEnum.None;
   }
   setFont(font: Texture.SpriteSheetFont){
@@ -347,6 +363,10 @@ export class TextDrawer{
     this.font_type = TextDrawerFontTypeEnum.Canvas2D;
   }
   loadFont(onLoaded:()=>void=()=>{}){
+  }
+
+  drawCanvas2DFont(mat: Matrix.TransformationMatrix3x3, text: string, colour: Colour.ColourRGB){
+    
   }
 
   drawTextModelColour(mat: Matrix.TransformationMatrix3x3, text: string, size: Float, colour: Colour.ColourRGB){
@@ -369,7 +389,18 @@ export class TextDrawer{
     }
 
   }
-  drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float){
+  drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float=12){
+    switch(this.font_type){
+      case TextDrawerFontTypeEnum.Canvas2D:
+        this.canvas2d_font?.drawText(vp, this.texture_colour_shader, x, y, text);
+        break;
+      case TextDrawerFontTypeEnum.SpriteSheet:
+        if(this.font == undefined) return;
+        this.font?.drawText(vp, this.colour_sheet_shader, x, y, size, text);
+        break;
+    }
+
+    /*
     if(this.font){
       //console.log(this.font);
       const gl = WebGL.gl!;
@@ -391,7 +422,7 @@ export class TextDrawer{
       gl.disable(gl.BLEND);
     }else{
       console.log("TextDrawer: No font set");
-    }
+    }*/
   }
   drawTextModel(mat: Matrix.TransformationMatrix3x3, text: string, size: Float){
     if(this.font){
