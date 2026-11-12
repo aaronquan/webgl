@@ -741,8 +741,8 @@ class SimSideInterface{
   }
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, text_drawer: WebGL.TextDrawer){
 
-    text_drawer.drawText(vp, this.x, this.y+20, this.text1, 15);
-    text_drawer.drawText(vp, this.x, this.y+40, this.text2, 15);
+    text_drawer.drawText(vp, this.x, this.y+20, this.text1, WebGL.Colour.ColourUtils.black(), 15);
+    text_drawer.drawText(vp, this.x, this.y+40, this.text2, WebGL.Colour.ColourUtils.black(), 15);
 
     this.toggle_buttons.draw(vp, colour_shader, text_drawer);
     this.buttons.draw(vp, colour_shader, text_drawer);

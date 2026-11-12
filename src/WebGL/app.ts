@@ -136,6 +136,7 @@ export class SimpleAppRenderer<E extends BaseEngine> implements IEngineRenderer<
     console.log("loading textures");
 
     for(const cf of this.canvas2d_fonts){
+      console.log(cf);
       this.fonts.loadCanvas2DFont(cf.style, cf.size, cf.alias);
     }
 

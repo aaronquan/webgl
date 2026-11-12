@@ -140,7 +140,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     }
     const hovered_shape_id = engine.getHoveredShapeId();
     if(hovered_shape_id != undefined){
-      this.text_drawer.drawText(this.orthographic, 50, 50, hovered_shape_id.toString(), 15);
+      this.text_drawer.drawText(this.orthographic, 50, 50, hovered_shape_id.toString(), this.colours.getColour("white")!, 15);
     }
   }
   drawTetrisApp(te: TetrisEngine){

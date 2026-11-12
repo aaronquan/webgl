@@ -25,7 +25,7 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.canvas_width = w;
     this.canvas_height = h;
     this.font_names.push("font16-Sheet.png");
-    this.canvas2d_fonts.push({style: "", size: 10, alias: "test"});
+    this.canvas2d_fonts.push({style: "", size: 25, alias: "test"});
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.circle_shader = new WebGL.Shader.MVPCircleOnlyProgram();
     this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
@@ -73,6 +73,7 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     const hex1 = new WebGL.Grid.Hexagon.Hexagon(1, 1, 0);
     const hex_pts = hex1.toPoints(0, 50);
     hex_pts.push(hex_pts[0]);
+
     
     //this.drawLinesFromPoints(hex_pts);
 
@@ -109,31 +110,12 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     }
 
     engine.graph_test.draw(this.orthographic, this.colour_shader, this.circle_shader);
-    /*
-    engine.tri_grid.drawOutline(this.orthographic, this.colour_shader, this.colours.getColour("blue")!, 2);
-
-    if(engine.test_triangle.length >= 3){
-      this.simple_shader.use();
-      this.simple_shader.setColourFromColourRGB(this.colours.getColour("blue")!);
-      //WebGL.Shapes.Triangle
-      
-      WebGL.Shapes.Triangle.drawGlobal(
-        engine.test_triangle[0],
-        engine.test_triangle[1],
-        engine.test_triangle[2],
-        this.canvas_width, this.canvas_height
-      );
-    }*/
-
-
-
-    /*
-    this.hexagonp_shader.use();
-    hm = WebGL.WebGL.rectangleModel(450, 250, 20, 20);
-    this.hexagonp_shader.setColourFromColourRGB(WebGL.Colour.ColourUtils.pink());
-    this.hexagonp_shader.setMvp(this.orthographic.multiplyCopy(hm));
-    WebGL.Shapes.Quad.drawRelative();
-    */
+    
+    const test_font = this.fonts.getCanvasFont("test");
+    if(test_font != undefined){
+      this.text_drawer.setCustom2DFont(test_font);
+      this.text_drawer.drawText(this.orthographic, 300, 300, "hi", this.colours.getColour("blue")!);
+    }
 
     this.text_drawer.drawTextColour(this.orthographic, 40, 500, "test", 20, this.colours.getColour("red")!);
   }

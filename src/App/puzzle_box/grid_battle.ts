@@ -337,7 +337,7 @@ export class CharacterBuffInterface extends WebGL.Interface.InterfaceElement.Int
 			const text = `${char} ${value.toString()}`;
 			const tsize = 12;
 			const text_width = text_drawer.getTextWidth(text, tsize);
-			text_drawer.drawText(vp, x, this.y, text, tsize);
+			text_drawer.drawText(vp, x, this.y, text, WebGL.Colour.ColourUtils.black(), tsize);
 			//exchange with x inc
 			x += text_width;
 		}
@@ -361,7 +361,7 @@ class LogInterface extends WebGL.Interface.InternalWindow.VerticalStrollInternal
 		let y = this.contentOffsetY();
 		const size = 10;
 		this.events.forEachFn((event) => {
-			text_drawer.drawText(vp, x, y, Battle.BattleEvents.eventToString(event), size);
+			text_drawer.drawText(vp, x, y, Battle.BattleEvents.eventToString(event), WebGL.Colour.ColourUtils.black(), size);
 			y += size+1;
 		});
 		this.disableScissors();
@@ -401,7 +401,7 @@ export class ObjectStatInterface extends WebGL.Interface.InterfaceElement.Interf
 		if(this.visible){
 			this.drawBackground(vp, colour_shader, WebGL.Colour.ColourUtils.white());
 			if(this.object != undefined){
-				text_drawer.drawText(vp, this.x, this.y, this.object.name, 10);
+				text_drawer.drawText(vp, this.x, this.y, this.object.name, WebGL.Colour.ColourUtils.black(), 10);
 				//todo
 				switch(this.object.object_type){
 					case BattleObject.ObjectTypeEnum.Weapon:

@@ -389,14 +389,13 @@ export class TextDrawer{
     }
 
   }
-  drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float=12){
+  drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, colour: Colour.ColourRGB, size: Float=12){
     switch(this.font_type){
       case TextDrawerFontTypeEnum.Canvas2D:
-        this.canvas2d_font?.drawText(vp, this.texture_colour_shader, x, y, text);
+        this.canvas2d_font?.drawText(vp, this.texture_colour_shader, x, y, text, colour);
         break;
       case TextDrawerFontTypeEnum.SpriteSheet:
-        if(this.font == undefined) return;
-        this.font?.drawText(vp, this.colour_sheet_shader, x, y, size, text);
+        this.font?.drawText(vp, this.colour_sheet_shader, x, y, size, text, colour);
         break;
     }
 
@@ -424,7 +423,19 @@ export class TextDrawer{
       console.log("TextDrawer: No font set");
     }*/
   }
-  drawTextModel(mat: Matrix.TransformationMatrix3x3, text: string, size: Float){
+
+  //todo: needs testing
+  drawTextModel(mat: Matrix.TransformationMatrix3x3, text: string, colour: Colour.ColourRGB, size: Float=12){
+    switch(this.font_type){
+      case TextDrawerFontTypeEnum.Canvas2D:
+        this.canvas2d_font?.drawTextModel(mat, this.texture_colour_shader, text, colour);
+        break;
+      case TextDrawerFontTypeEnum.SpriteSheet:
+        this.font?.drawTextModel(mat, this.colour_sheet_shader, size, text, colour);
+        break;
+    }
+
+    /*
     if(this.font){
       const gl = WebGL.gl!;
       this.sprite_sheet_shader.use();
@@ -444,6 +455,7 @@ export class TextDrawer{
       }
       gl.disable(gl.BLEND);
     }
+      */
   }
   drawTextColour(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float, colour: Colour.ColourRGB){
     if(this.font){

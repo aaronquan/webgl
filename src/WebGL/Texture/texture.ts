@@ -345,9 +345,26 @@ export class SpriteSheetFont{
     WebGL.WebGL.disableBlend();
   }
 
-  //todo
-  drawTextModel(){
-
+  drawTextModel(mat: WebGL.Matrix.TransformationMatrix3x3,
+    texture_shader: WebGL.Shader.MVPSpriteSheetColourProgram, size: Int32,
+    text: string,
+    colour: WebGL.Colour.ColourRGB=WebGL.Colour.ColourUtils.white()
+  ){
+    texture_shader.use();
+    texture_shader.setColourFromColourRGB(colour);
+    this.active(0);
+    texture_shader.setTextureId(0);
+    const scale = WebGL.Matrix.TransformationMatrix3x3.scale(size, size);
+    WebGL.WebGL.enableBlend();
+    for(let i = 0; i < text.length; i++){
+      if(text[i] == ' ') continue;
+      const tr = WebGL.Matrix.TransformationMatrix3x3.translate(size*i,0);
+      const matrix = mat.multiplyCopy(tr.multiplyCopy(scale));
+      texture_shader.setMvp(matrix);
+      this.setChar(texture_shader, text[i]);
+      WebGL.Shapes.Quad.drawRelative();
+    }
+    WebGL.WebGL.disableBlend();
   }
 }
 
@@ -433,7 +450,9 @@ export class Canvas2DFont{
     const canvas = Canvas2DFont.canvas!;
     const ctx = canvas.getContext("2d")!;
     ctx.fillStyle = "white";
-    ctx.font = `${this.font_size.toString()}px ${this.font_style}`;
+    ctx.font = `${this.font_size.toString()}px sans-serif`;
+    console.log(ctx.font);
+    console.log(this.font_size);
     ctx.textBaseline = "top"; // to draw from y at top
 
     //try adding all the alphabet
@@ -498,6 +517,30 @@ export class Canvas2DFont{
       const dims = this.collection.getDimensions(ch)!;
       const model = WebGL.WebGL.rectangleModel(dx, y, dims.width, dims.height);
       texture_shader.setMvp(vp.multiplyCopy(model));
+      WebGL.Shapes.Quad.drawRelative();
+      dx += this.collection.getCharWidth(ch)!;
+    }
+    WebGL.WebGL.disableBlend();
+  }
+  drawTextModel(mat: WebGL.Matrix.TransformationMatrix3x3,
+    texture_shader: WebGL.Shader.MVPTextureColourProgram,
+    text: string,
+    colour: WebGL.Colour.ColourRGB=WebGL.Colour.ColourUtils.white()
+  ){
+    texture_shader.use();
+    texture_shader.setTextureId(0);
+    texture_shader.setColourFromColourRGB(colour);
+    WebGL.WebGL.enableBlend();
+    let dx = 0;
+    for(const ch of text){
+      if(!this.collection.has(ch)){
+        continue;
+      }
+      this.collection.active(ch, 0);
+      const dims = this.collection.getDimensions(ch)!;
+      const model = WebGL.WebGL.rectangleModel(0, 0, dims.width, dims.height);
+
+      texture_shader.setMvp(mat.multiplyCopy(model));
       WebGL.Shapes.Quad.drawRelative();
       dx += this.collection.getCharWidth(ch)!;
     }
