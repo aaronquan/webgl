@@ -146,6 +146,11 @@ export class GenericGrid2DInterface<G extends Grid>{
     const y = this.y + coord.y*this.cell_size + this.cell_size*0.5;
     return new WebGL.Matrix.Point2D(x, y);
   }
+  getCellModel(coord: Coordinate): WebGL.Matrix.TransformationMatrix3x3{
+    const x = this.x + coord.x * this.cell_size;
+    const y = this.y + coord.y * this.cell_size;
+    return WebGL.WebGL.rectangleModel(x, y, this.cell_size, this.cell_size);
+  }
   generateModel(line_thickness: Int32, colour: WebGL.Colour.ColourRGB=WebGL.Colour.ColourUtils.white()): WebGL.BasicModel{
     const ht = line_thickness*0.5;
     const model = new WebGL.BasicModel();
