@@ -1,10 +1,11 @@
 import * as WebGL from "./../globals";
 import * as Geometry from "./../Geometry/base";
+import { colour } from "../Shaders/Fragment/Source/fragment_source";
 
 type Int32 = number;
 type Float = number;
 
-import Point2D = WebGL.Geometry.Base.Point2D;
+type Point2D = WebGL.Geometry.Base.Point2D | WebGL.Matrix.Point2D;
 
 export class InterfaceElement{
   x: Int32;

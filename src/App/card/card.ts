@@ -114,7 +114,7 @@ class BasicButton{
       this.onPressedOut();
     }
   }
-  updateMouse(point: Point){
+  updateMouse(point: WebGLGlobals.Geometry.Base.Point2D){
     if(this.isInside(point.x, point.y)){
       if(this.state == ButtonStateEnum.Off){
         this.state = ButtonStateEnum.Hovered;
@@ -144,7 +144,7 @@ class BasicButton{
       const text_width = this.text_size*this.text.length;
       const tx = this.x + (this.width/2) - (text_width/2);
       const ty = this.y + (this.height/2) - (this.text_size/2);
-      text_drawer.drawTextColour(vp, tx, ty, this.text, this.text_size, this.text_colour);
+      text_drawer.drawText(vp, tx, ty, this.text, this.text_colour, this.text_size);
     }
   }
 }
@@ -157,7 +157,7 @@ class ButtonSet{
   addButton(b: BasicButton){
     this.buttons.push(b);
   }
-  updateMouse(pt: Point){
+  updateMouse(pt: WebGLGlobals.Geometry.Base.Point2D){
     for(const button of this.buttons){
       button.updateMouse(pt);
     }
@@ -275,7 +275,7 @@ class SimpleCardModel{
     
     const text_model = model_matrix.multiplyCopy(this.text_matrix);
     const text_matrix = vp.multiplyCopy(text_model);
-    text_drawer.drawTextModelColour(text_matrix, card.toString(), 1, WebGLGlobals.Colour.ColourUtils.yellow());
+    text_drawer.drawTextModel(text_matrix, card.toString(), WebGLGlobals.Colour.ColourUtils.yellow(), 1);
   }
   isInside(x: Float, y: Float): boolean{
     const half_width = this.width*0.5;
@@ -298,7 +298,7 @@ class VisualCard{
   translate(x: Int32, y: Int32){
     this.transformation_matrix.translate(x, y);
   }
-  checkMouse(mouse_point: WebGLGlobals.Matrix.Point2D){
+  checkMouse(mouse_point: WebGLGlobals.Geometry.Base.Point2D){
     const inverse = this.transformation_matrix.copy();
     inverse.invert();
 
@@ -448,7 +448,7 @@ export class CardEngine extends App.BaseEngine{
 
   buttons: ButtonSet;
 
-  mouse_point: Point;
+  mouse_point: WebGLGlobals.Geometry.Base.Point2D;
   updated_mouse: boolean;
 
   rotation: Float;
@@ -520,7 +520,7 @@ export class CardEngine extends App.BaseEngine{
     }
     this.buttons.addButton(up);
 
-    this.mouse_point = new Matrix.Point2D();
+    this.mouse_point = new WebGLGlobals.Geometry.Base.Point2D();
     this.updated_mouse = false;
     this.deck_visuals = [];
 
@@ -590,7 +590,7 @@ export class CardEngine extends App.BaseEngine{
     this.buttons.mouseUp();
   }
   protected override handleMouseMove(ev: MouseEvent): void {
-    const mouse_point = new Matrix.Point2D(ev.offsetX, ev.offsetY);
+    const mouse_point = new WebGLGlobals.Geometry.Base.Point2D(ev.offsetX, ev.offsetY);
     if(!this.mouse_point.equals(mouse_point)){
       this.updated_mouse = true;
       this.button1.updateMouse(mouse_point);
@@ -615,7 +615,7 @@ export class CardEngine extends App.BaseEngine{
       this.deck_visuals.push(vis);
     }
   }
-  updateMouse(mp: Matrix.Point2D){
+  updateMouse(mp: WebGLGlobals.Geometry.Base.Point2D){
     this.vis_card.checkMouse(mp);
 
     for(const card of this.deck_visuals){
@@ -699,7 +699,7 @@ export class CardRenderer implements App.IEngineRenderer<CardEngine>{
     const cs = card.toString();
     //const trs = Matrix.TransformationMatrix3x3.translate(x+25, y+45);
     const fs = 15;
-    this.text_drawer.drawText(this.vp, x-fs, y-(fs/2), cs, fs);
+    this.text_drawer.drawText(this.vp, x-fs, y-(fs/2), cs, WebGLGlobals.Colour.ColourUtils.red(), fs);
     
     
   }
@@ -713,7 +713,7 @@ export class CardRenderer implements App.IEngineRenderer<CardEngine>{
     //engine.step();
     this.rotation += 0.01;
     //console.log("rendering card engine");
-    this.text_drawer.drawText(this.vp, 0, 0, "hi there", 15);
+    this.text_drawer.drawText(this.vp, 0, 0, "hi there", WebGLGlobals.Colour.ColourUtils.red(), 15);
     //const c1 = engine.cards[0];
     /*
     this.solid_shader.use();
@@ -722,7 +722,7 @@ export class CardRenderer implements App.IEngineRenderer<CardEngine>{
     this.solid_shader.setColour(0.25, 0.5, 0.75);
     Shapes.Quad.drawRelative();*/
     //console.log(this.vp);
-    this.text_drawer.drawText(this.vp, 50, 50, "hi there", 15);
+    this.text_drawer.drawText(this.vp, 50, 50, "hi there", WebGLGlobals.Colour.ColourUtils.red(), 15);
 
     /*
     this.solid_shader.use();

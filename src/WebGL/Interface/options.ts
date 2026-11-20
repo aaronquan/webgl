@@ -6,7 +6,7 @@ import * as Theme from "./theme";
 
 type Int32 = number;
 
-
+type Point2D = WebGL.Matrix.Point2D | WebGL.Geometry.Base.Point2D
 
 export class SingleSelectOptions{
   selected: Int32;
@@ -72,7 +72,7 @@ export class SingleSelectOptions{
     return divs;
   }
 
-  isInside(point: WebGL.Matrix.Point2D): boolean{
+  isInside(point: Point2D): boolean{
     return this.x < point.x && point.x < this.x + this.width && this.y < point.y && point.y < this.y+this.height;
   }
 
@@ -86,7 +86,7 @@ export class SingleSelectOptions{
 
   }
 
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: Point2D){
     if(this.isInside(point)){
       const x = point.x - this.x;
       // calculates dividors with padding on left (i.e. furtherest dividing line left)
@@ -133,7 +133,7 @@ export class SingleSelectOptions{
     for(const str of this.options){
       //draw text
       const text_width = text_drawer.getTextWidth(str, this.text_size);
-      text_drawer.drawTextColour(vp, offset, text_y, str, this.text_size, this.text_colour);
+      text_drawer.drawText(vp, offset, text_y, str, this.text_colour, this.text_size);
 
       //draw divider lines
 
@@ -228,7 +228,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
     }
     return super.isInside(point);
   }
-  isInsideOpened(point: WebGL.Matrix.Point2D): boolean{
+  isInsideOpened(point: Point2D): boolean{
     const in_x = this.x < point.x && point.x < this.x+this.width;
     const in_y = this.y < point.y && point.y < this.y+this.openHeight();
     return in_x && in_y;
@@ -333,7 +333,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
 
     //draw selected text;
     const text = this.hasOptions() ? this.options[this.selected] : DropdownOptions.no_option_text;
-    text_drawer.drawTextColour(vp, this.x+this.border_width, this.y+this.border_width, text, this.text_size, this.text_colour);
+    text_drawer.drawText(vp, this.x+this.border_width, this.y+this.border_width, text, this.text_colour, this.text_size);
 
     if(this.isOpen()){
       //draw other options
@@ -347,7 +347,7 @@ export class DropdownOptions extends InterfaceElement.InterfaceElement{
         WebGL.WebGL.drawColourRect(vp, colour_shader, this.x, y-(this.border_width*1.5), this.width, this.border_width, this.border_colour);
 
         //select text
-        text_drawer.drawTextColour(vp, this.x+this.border_width, y, opt, this.text_size, this.text_colour);
+        text_drawer.drawText(vp, this.x+this.border_width, y, opt, this.text_colour, this.text_size);
         y += this.height;
       }
     }

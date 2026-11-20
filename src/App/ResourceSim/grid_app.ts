@@ -151,7 +151,7 @@ class TestContent extends WebGL.Interface.InternalWindow.InternalContent{
     const wx = this.window.x;
     const wy = this.window.getInternalY();
 
-    text_drawer.drawText(vp, wx+40, wy+50, this.t1, 10);
+    text_drawer.drawText(vp, wx+40, wy+50, this.t1, WebGL.Colour.ColourUtils.red(), 10);
   }
 }
 
@@ -193,7 +193,7 @@ class TestFullScrollWindow extends WebGL.Interface.InternalWindow.FullScrollInte
         this.enableScissors();
         const sx = this.contentOffsetX();
         const sy = this.contentOffsetY();
-        text_drawer.drawText(vp, sx-6, sy+40, "hi", 15);
+        text_drawer.drawText(vp, sx-6, sy+40, "hi", WebGL.Colour.ColourUtils.red(), 15);
 
         this.disableScissors();
       }
@@ -205,8 +205,8 @@ export class WallEngine extends App.BaseEngine{
   rect_grid: Grid.RectGrid;
 
   mouse_over_cell: Grid.GridPosition | undefined;
-  true_mouse: Matrix.Point2D | undefined;
-  grid_true_mouse: Matrix.Point2D | undefined;
+  true_mouse: WebGL.Geometry.Base.Point2D | undefined;
+  grid_true_mouse: WebGL.Geometry.Base.Point2D | undefined;
 
   highlighted_positions: Grid.GridPosition[];
   is_circle_positions: boolean;
@@ -674,7 +674,7 @@ export class WallEngine extends App.BaseEngine{
     this.key_positions.push(new Grid.GridPosition(x, y));
   }
 
-  sideOnGrid(pos: WebGL.Matrix.Point2D | undefined): Consts.GridCellSection | undefined{
+  sideOnGrid(pos: WebGL.Geometry.Base.Point2D | WebGL.Matrix.Point2D | undefined): Consts.GridCellSection | undefined{
     if(pos != undefined){
       const dx = pos.x % 1;
       const dy = pos.y % 1;
@@ -737,7 +737,7 @@ export class WallEngine extends App.BaseEngine{
     this.true_mouse = true_mouse;
     const inv = this.view.copy();
     inv.invert();
-    this.grid_true_mouse = inv.transformPoint(true_mouse);
+    this.grid_true_mouse = inv.transformPoint(true_mouse).toGeometryPoint();
     this.grid_true_mouse.x/=this.rect_grid.size;
     this.grid_true_mouse.y/=this.rect_grid.size;
     const side = this.sideOnGrid(this.grid_true_mouse);
@@ -911,16 +911,16 @@ export class WallEngine extends App.BaseEngine{
     }
   }
 
-  getGridTruePosition(x: Float, y: Float): Matrix.Point2D{
+  getGridTruePosition(x: Float, y: Float): WebGL.Geometry.Base.Point2D{
     const inv = this.view.copy();
     inv.invert();
-    this.grid_true_mouse = inv.transformPoint(new Matrix.Point2D(x, y));
+    this.grid_true_mouse = inv.transformPoint(new Matrix.Point2D(x, y)).toGeometryPoint();
     this.grid_true_mouse.x/=this.rect_grid.size;
     this.grid_true_mouse.y/=this.rect_grid.size;
     return this.grid_true_mouse;
   }
 
-  gridPointCarCollision(grid_point: Matrix.Point2D): Int32 | undefined{
+  gridPointCarCollision(grid_point: WebGL.Geometry.Base.Point2D): Int32 | undefined{
     for(const [id, car] of this.car_collection.cars){
       const left = car.x-car.size*0.5;
       const right = car.x+car.size*0.5;
@@ -1195,7 +1195,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     }
 
     this.displayNodeSheet(engine);
-
+    const red = WebGL.Colour.ColourUtils.red();
 
     //draw buttons
     engine.buttons.draw(this.perspective, this.solid_shader, this.text_drawer);
@@ -1204,17 +1204,17 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     if(engine.true_mouse){
       //console.log(engine.true_mouse)
       const text = `x ${engine.true_mouse.x}, y ${engine.true_mouse.y}`;
-      this.text_drawer.drawText(this.vp, 40, 300, text, 15);
+      this.text_drawer.drawText(this.vp, 40, 300, text, red, 15);
     }
     if(engine.grid_true_mouse){
       const text = `x ${engine.grid_true_mouse.x.toFixed(2)}, y ${engine.grid_true_mouse.y.toFixed(2)}`;
-      this.text_drawer.drawText(this.vp, 40, 400, text, 15);
+      this.text_drawer.drawText(this.vp, 40, 400, text, red, 15);
     }
 
     if(engine.hover_grid_side != undefined){
       const text = engine.hover_grid_side === Consts.GridCellSectionEnum.Center ? "Center" 
       : Grid.DirectionUtil.toString(engine.hover_grid_side as Grid.GridDirection);
-      this.text_drawer.drawText(this.vp, 20, 700, text, 15);
+      this.text_drawer.drawText(this.vp, 20, 700, text, red, 15);
     }
 
     if(engine.hovered_car != undefined){
@@ -1224,7 +1224,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
 
     // status texts
     const graph_status_text = engine.graph_updated_status ? Texts.SimStatus.graph_is_update : Texts.SimStatus.graph_needs_update;
-    this.text_drawer.drawText(this.perspective, 0, 0, graph_status_text, 10);
+    this.text_drawer.drawText(this.perspective, 0, 0, graph_status_text, red, 10);
 
     engine.test_text_box.draw(this.perspective, this.solid_shader, this.text_drawer);
     for(const opt of engine.select_options){
@@ -1300,7 +1300,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       this.drawResource(res, rx, y, res_size);
       const str = amount.toString()
       const offset = str.length*num_size;
-      this.text_drawer.drawText(this.perspective, rx+res_size-offset, y+res_size-num_size, str, num_size);
+      this.text_drawer.drawText(this.perspective, rx+res_size-offset, y+res_size-num_size, str, WebGL.Colour.ColourUtils.red(), num_size);
       rx += res_size;
     }
   }
@@ -1312,33 +1312,7 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
       const y = engine.true_mouse.y;
       const ui_height = engine.hovered_node.drawNodeUI(this.perspective, this.solid_shader, this.text_drawer, x, y, text_size);
       this.drawResourceInventory(engine.hovered_node, x, y+ui_height, 20, 10);
-
-      /*
-      if(engine.hovered_node.type === Node.NodeTypeEnum.Resource){
-        const res_node = engine.hovered_node as Node.ResourceGeneratorNode;
-        //show resources in node //TODO
-        this.text_drawer.drawText(this.perspective, x, y+31, "Res", 15);
-        this.drawResource(res_node.resource, x, y+46);
-        this.text_drawer.drawText(this.perspective, x+15, y+46, res_node.getResourceInventory(res_node.resource).toString(), 15);
-
-      }else if(engine.hovered_node.type === Node.NodeTypeEnum.Requirement){
-        const req_node = engine.hovered_node as Node.RequirementNode;
-        this.text_drawer.drawText(this.perspective, x, y+31, "Req", 15);
-        this.drawResource(req_node.require_resource, x, y+46);
-      }*/
-
-      /*
-      this.solid_shader.use();
-      const back_model = WebGL.WebGL.rectangleModel(x, y, 70, 70);
-      this.solid_shader.setColour(0, 0, 0);
-      this.solid_shader.setMvp(this.perspective.multiplyCopy(back_model));
-      Shapes.Quad.draw();
-
-      //details
-      this.text_drawer.drawTextColour(this.perspective, x, y, engine.hovered_node.x.toFixed(0), 15, this.white);
-      this.text_drawer.drawTextColour(this.perspective, x, y+15, engine.hovered_node.y.toFixed(0), 15, this.white);*/
     }
-    //engine.
   }
   displayResourceNodeSheet(engine: WallEngine){
     if(engine.hovered_node != undefined && engine.true_mouse != undefined){
@@ -1356,19 +1330,20 @@ export class WallRenderer implements App.IEngineRenderer<WallEngine>{
     if(car.is_selected){
       car_text += " selected";
     }
-    this.text_drawer.drawText(this.perspective, 10, y, car_text, text_size);
+    const red = WebGL.Colour.ColourUtils.red();
+    this.text_drawer.drawText(this.perspective, 10, y, car_text, red, text_size);
     const x_text = `x ${car.x.toFixed(2)}`;
-    this.text_drawer.drawText(this.perspective, 10, y+text_size, x_text, text_size);
+    this.text_drawer.drawText(this.perspective, 10, y+text_size, x_text, red, text_size);
     const y_text = `y ${car.y.toFixed(2)}`;
-    this.text_drawer.drawText(this.perspective, 10, y+(text_size*2), y_text, text_size);
+    this.text_drawer.drawText(this.perspective, 10, y+(text_size*2), y_text, red, text_size);
 
     const car_node_id = car.starting_node.getId();
     const st_node_text = `Start node id ${car_node_id.toString()}`;
-    this.text_drawer.drawText(this.perspective, 10, y+(text_size*3), st_node_text, text_size);
+    this.text_drawer.drawText(this.perspective, 10, y+(text_size*3), st_node_text, red, text_size);
 
     const target_node_text = car.target_node != undefined ? 
     `Target node id ${car.target_node.getId().toString()}` : "No Target";
-    this.text_drawer.drawText(this.perspective, 10, y+(text_size*4), target_node_text, text_size);
+    this.text_drawer.drawText(this.perspective, 10, y+(text_size*4), target_node_text, red, text_size);
   }
   drawInternalWindowTest(engine: WallEngine, window: WebGL.Interface.InternalWindow.InternalContent){
     if(window.window.visible){

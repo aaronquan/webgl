@@ -3,6 +3,7 @@ import * as WebGL from "./../../WebGL/globals";
 import Button = WebGL.Interface.Button;
 import Point2D = WebGL.Geometry.Base.Point2D;
 import Window = WebGL.Interface.InternalWindow;
+import { colour } from "../../WebGL/Shaders/Fragment/Source/fragment_source";
 
 
 type Int32 = number;
@@ -95,6 +96,18 @@ export class InteractableTriangle{
   }
 }
 
+class ExampleScroll extends WebGL.Interface.ScrollInterfaceElement.ScrollInterfaceElement{
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, bg_colour: WebGL.Colour.ColourRGB){
+    super.draw(vp, colour_shader, bg_colour);
+    const x = this.contentOffsetX();
+    const y = this.contentOffsetY();
+    this.enableScissors();
+    //console.log("a");
+    WebGL.WebGL.drawColourRect(vp, colour_shader, x+10, y+10, 322, 22, WebGL.Colour.ColourUtils.red());
+    this.disableScissors();
+  }
+}
+
 export class ITEngine extends WebGL.App.BaseEngine{
   global_mouse: Point2D;
   button: Button.BasicButton;
@@ -115,6 +128,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
   hover_hex: WebGL.Grid.Generic.Coordinate | undefined;
 
   graph_test: ExampleGraph;
+
+  scroll_interface: ExampleScroll;
 
   constructor(){
     super();
@@ -164,6 +179,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.test_triangle = [];
 
     this.graph_test = new ExampleGraph();
+
+    this.scroll_interface = new ExampleScroll(80, 500, 300, 200, 500, 400);
   }
   protected handleMouseMove(ev: MouseEvent): void {
     this.global_mouse = new Point2D(ev.clientX, ev.clientY);
@@ -198,6 +215,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
     }
 
     this.hover_hex = this.hex_grid.pointToHexCoord(this.global_mouse);
+    this.scroll_interface.onMouseMove(this.global_mouse);
   }
   protected handleMouseDown(ev: MouseEvent): void {
     this.button.onMouseDown();
@@ -206,6 +224,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
     //this.hwindow.onMouseDown(this.global_mouse);
     this.windows.onMouseDown(this.global_mouse);
     this.triangle.onMouseDown(this.global_mouse);
+    this.scroll_interface.onMouseDown(this.global_mouse);
   }
   protected handleMouseUp(ev: MouseEvent): void {
     this.button.onMouseUp();
@@ -214,6 +233,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
     //this.hwindow.onMouseUp();
     this.windows.onMouseUp();
     this.triangle.onMouseUp();
+    this.scroll_interface.onMouseUp();
   }
   protected handleScrollWheel(ev: WheelEvent): void {
     //this.vwindow.onScrollWheel(ev);
@@ -248,8 +268,8 @@ class ExampleGraph extends WebGL.Interface.InterfaceElement.InterfaceElement {
     this.draw_graph = new WebGL.Geometry.Graph.DrawGraph(this.x, this.y, this.width, this.height, -10, -10, 20, 20);
     this.saw = new WebGL.Geometry.Waves.Sawtooth(0.25, 1, 0);
     this.sine = new WebGL.Geometry.Waves.Sine(2, 2, 0.5);
-    this.square = new WebGL.Geometry.Waves.Square(0.5, 1,8);
-    this.tri = new WebGL.Geometry.Waves.Triangle(0.5, 1,0.1);
+    this.square = new WebGL.Geometry.Waves.Square(0.5, 1,0);
+    this.tri = new WebGL.Geometry.Waves.Triangle(0.5, 1, 0);
     this.combined = new WebGL.Geometry.Waves.CombinedWave();
     this.combined.addWave(this.sine);
     //this.combined.addWave(this.saw);

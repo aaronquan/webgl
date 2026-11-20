@@ -422,7 +422,7 @@ export class Canvas2DFont{
   private loaded: boolean;
   static canvas: OffscreenCanvas | undefined = undefined;
   static canvas_loaded = false;
-  static alphabet = "abcdefghijklmnopqrstuvwxyz";
+  static alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
   constructor(style: string, size: Int32){
     this.font_style = style;
     this.font_size = size;
@@ -442,6 +442,16 @@ export class Canvas2DFont{
   }
   toString(){
     return `${this.font_style} ${this.font_size.toString()}`;
+  }
+  getTextWidth(text: string): Int32{
+    let width = 0;
+    for(const char of text){
+      const cw = this.collection.getCharWidth(char);
+      if(cw != undefined){
+        width += cw;
+      }
+    }
+    return width;
   }
   loadTextures(){
     if(this.loaded){
@@ -470,7 +480,23 @@ export class Canvas2DFont{
       this.collection.addTexture(ch, tex);
       ctx.clearRect(0, 0, w+1, h+1);
     }
-
+    let other_chars = ' []{};:",./<>?!@#$%^&*()_+-=\\|~`';
+    other_chars += "'";
+    //const other_chars = [' ', ',', '.', "'", '"', '!', ];
+    for(const ch of other_chars){
+      ctx.fillText(ch, 0, 0);
+      const metrics = ctx.measureText(ch);
+      //console.log(metrics);
+      const char_width = Math.ceil(metrics.width);
+      const w = Math.max(metrics.actualBoundingBoxRight - metrics.actualBoundingBoxLeft, char_width);
+      const h = this.font_size;
+      const img = ctx.getImageData(0, 0, w, h);
+      const tex = new FontGlyph(char_width, ch, img);
+      tex.setImageData(img);
+      tex.load(() => {});
+      this.collection.addTexture(ch, tex);
+      ctx.clearRect(0, 0, w+1, h+1);
+    }
 
     this.loaded = true;
   }
@@ -538,7 +564,7 @@ export class Canvas2DFont{
       }
       this.collection.active(ch, 0);
       const dims = this.collection.getDimensions(ch)!;
-      const model = WebGL.WebGL.rectangleModel(0, 0, dims.width, dims.height);
+      const model = WebGL.WebGL.rectangleModel(dx, 0, dims.width, dims.height);
 
       texture_shader.setMvp(mat.multiplyCopy(model));
       WebGL.Shapes.Quad.drawRelative();
@@ -546,8 +572,6 @@ export class Canvas2DFont{
     }
     WebGL.WebGL.disableBlend();
   }
-
-
 }
 
 //export class Texture

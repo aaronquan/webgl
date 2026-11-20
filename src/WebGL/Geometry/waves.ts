@@ -151,7 +151,7 @@ export class Square extends Wave{
 		if((x_start-this.shift+(1/this.frequency)) % (2/this.frequency) == 0){
 			is1 = !is1;
 		}
-		points.push(start);
+		points.push(new Point2D(x_start, is1 ? this.amplitude : -this.amplitude));
 		while(next < x_end){
 			points.push(new Point2D(next, is1 ? this.amplitude : -this.amplitude));
 			points.push(new Point2D(next, is1 ? -this.amplitude : this.amplitude));
@@ -204,20 +204,55 @@ export class Triangle extends Wave{
 	constructor(f: Float=1, a: Float=1, shift: Float=0){
 		super(f,a, shift);
 	}
+	nextPeak(curr_x: Float): Float{
+		const period = 1/this.frequency;
+		//Math.ceil(curr_x-this.shift)
+		let diff_to_next = ((curr_x-this.shift) % period);
+		if(diff_to_next < 0){
+			diff_to_next += period;
+		}
+		return curr_x + period - diff_to_next;
+	}
 
-	//todo get proper points (not sampled)
-	getPointsInRange(x_start: Float, x_end: Float, samples:Int32=5): Point2D[]{
+	getPointsInRange(x_start: Float, x_end: Float): Point2D[]{
+		const points = [];
+		const start = new Point2D(x_start, this.getY(x_start));
+		let next = this.nextPeak(x_start);
+		let is1 = start.y == this.amplitude;
+		//for the condition where square wave starts down
+		if((x_start-this.shift+(1/this.frequency)) % (2/this.frequency) == 0){
+			is1 = !is1;
+		}
+		points.push(new Point2D(x_start, is1 ? this.amplitude : -this.amplitude));
+		while(next < x_end){
+			//points.push(new Point2D(next, is1 ? this.amplitude : -this.amplitude));
+			points.push(new Point2D(next, is1 ? -this.amplitude : this.amplitude));
+			is1 = !is1;
+			//if(this.nextPeak(next) <= next) break;
+			//next = this.nextPeak(next);
+			next += 1/this.frequency;
+		}
+		if(next != x_end){
+			const end = new Point2D(x_end, is1 ? -this.amplitude : this.amplitude);
+			points.push(end);
+		}else if(next == x_end){
+			const end = new Point2D(x_end, is1 ? -this.amplitude : this.amplitude);
+			points.push(end);
+		}
+		return points;
+	}
+	testPoints(x_start: Float, x_end: Float, samples: Int32=20): Point2D[]{
 		const points: Point2D[] = [];
 		points.push(new Point2D(x_start, this.getY(x_start)));
 		const inc = 1/samples;
 		let x_sample = Math.floor(x_start);
 		while(x_sample <= x_start){
-				x_sample+=inc;
+			x_sample+=inc;
 		}
 		while(x_sample < x_end){
-				const y_sample = this.getY(x_sample);
-				points.push(new Point2D(x_sample, y_sample));
-				x_sample+=inc;
+			const y_sample = this.getY(x_sample);
+			points.push(new Point2D(x_sample, y_sample));
+			x_sample+=inc;
 		}
 		points.push(new Point2D(x_end, this.getY(x_end)));
 		return points;

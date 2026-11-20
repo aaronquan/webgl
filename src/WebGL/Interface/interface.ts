@@ -1,4 +1,5 @@
 export * as InterfaceElement from "./interface_element";
+export * as ScrollInterfaceElement from "./scroll_interface";
 export * as Button from "./button";
 export * as ScrollBar from "./scroll_bar";
 export * as InternalWindow from "./internal_window";

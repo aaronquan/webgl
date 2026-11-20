@@ -5,6 +5,8 @@ type Float = number;
 type VoidFunction = () => void;
 const EmptyFunction = () => {};
 
+type Point2D = WebGL.Geometry.Base.Point2D | WebGL.Matrix.Point2D;
+
 export class TextGlobals{
   static selected_text = undefined;
   static cursor_on: boolean = false;
@@ -91,7 +93,7 @@ export class TextInput{
   maxTextSize(): Int32{
     return Math.floor((this.width-(this.text_offset*2)) / this.text_size);
   }
-  isInside(point: WebGL.Matrix.Point2D): boolean{
+  isInside(point: Point2D): boolean{
     const in_x = this.x < point.x && point.x < this.x+this.width;
     const in_y = this.y < point.y && point.y < this.y+this.height;
     return in_x && in_y;
@@ -195,7 +197,7 @@ export class TextInput{
     if(i < 0) return 0;
     return i > this.text.length ? this.text.length : i;
   }
-  onMouseMove(point: WebGL.Matrix.Point2D){
+  onMouseMove(point: Point2D){
     if(this.highlighting){
       const index = this.cursorIndexFromX(point.x);
       this.highlight_start = Math.min(index, this.highlight_pivot);
@@ -203,7 +205,7 @@ export class TextInput{
       this.cursor_index = index;
     }
   }
-  onMouseDown(point: WebGL.Matrix.Point2D){
+  onMouseDown(point: Point2D){
     if(this.isInside(point)){
       this.state = TextStatusEnum.Selected;
       const index = this.cursorIndexFromX(point.x);
@@ -251,7 +253,7 @@ export class TextInput{
       
 
       //draw text
-      text_drawer.drawTextColour(vp, this.x+this.text_offset, y, this.text, this.text_size, this.text_colour);
+      text_drawer.drawText(vp, this.x+this.text_offset, y, this.text, this.text_colour, this.text_size);
   
       //draw border
       if(this.state == TextStatusEnum.Selected){

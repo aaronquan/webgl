@@ -5,6 +5,8 @@ import * as Grid from "./grid";
 type Int32 = number;
 type Float = number;
 
+
+
 interface Point{
   x: Int32;
   y: Int32;
@@ -111,7 +113,7 @@ export class KeyNode{
   update(t: Float){
     
   }
-  distanceSq(p: Point): Float | undefined{
+  distanceSq(p: WebGL.Geometry.Base.Point2D): Float | undefined{
     if(this.tile == undefined) return undefined;
     const dx = p.x - this.tile.x - 0.5;
     const dy = p.y - this.tile.y - 0.5;
@@ -128,12 +130,12 @@ export class KeyNode{
     WebGL.Shapes.Quad.draw();
     
     //details
-    text_drawer.drawTextColour(perspective, x, y, `id ${this.id.toString()}`, text_size, white);
-    text_drawer.drawTextColour(perspective, x+(text_size*6), y, this.typeToString(this.type), text_size, white);
+    text_drawer.drawText(perspective, x, y, `id ${this.id.toString()}`, white, text_size);
+    text_drawer.drawText(perspective, x+(text_size*6), y, this.typeToString(this.type), white, text_size);
     //
     if(this.tile != undefined){
-      text_drawer.drawTextColour(perspective, x, y+text_size, this.tile.x.toFixed(0), text_size, white);
-      text_drawer.drawTextColour(perspective, x, y+(text_size*2), this.tile.y.toFixed(0), text_size, white);
+      text_drawer.drawText(perspective, x, y+text_size, this.tile.x.toFixed(0), white, text_size);
+      text_drawer.drawText(perspective, x, y+(text_size*2), this.tile.y.toFixed(0), white, text_size);
     }
     return text_size*3;
   }

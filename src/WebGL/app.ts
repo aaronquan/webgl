@@ -51,8 +51,7 @@ export class BaseEngine implements IEngine{
   //to override
   protected handleMouseUp(ev: MouseEvent){};
   //to override
-  protected handleScrollWheel(ev: WheelEvent){
-  }
+  protected handleScrollWheel(ev: WheelEvent){};
 
 }
 
@@ -136,7 +135,6 @@ export class SimpleAppRenderer<E extends BaseEngine> implements IEngineRenderer<
     console.log("loading textures");
 
     for(const cf of this.canvas2d_fonts){
-      console.log(cf);
       this.fonts.loadCanvas2DFont(cf.style, cf.size, cf.alias);
     }
 

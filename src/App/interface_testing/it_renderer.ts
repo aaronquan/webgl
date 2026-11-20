@@ -26,6 +26,7 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.canvas_height = h;
     this.font_names.push("font16-Sheet.png");
     this.canvas2d_fonts.push({style: "", size: 25, alias: "test"});
+    this.canvas2d_fonts.push({style: "serif", size: 20, alias: "f2"});
     this.colour_shader = new WebGL.Shader.MVPColourProgram();
     this.circle_shader = new WebGL.Shader.MVPCircleOnlyProgram();
     this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
@@ -39,23 +40,19 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   }
 
   render(engine: ITEngine){
+    const test_font = this.fonts.getCanvasFont("test");
+    this.text_drawer.setCustom2DFont(test_font!);
     engine.button.draw(this.orthographic, this.colour_shader, this.text_drawer);
     engine.toggle_button.draw(this.orthographic, this.colour_shader, this.text_drawer);
 
-
     for(let i = engine.windows.draw_order.length-1; i >= 0; i--){
       const id = engine.windows.draw_order[i];
-      //console.log(id);
       engine.windows.windows[id].draw(this.orthographic, this.colour_shader);
       if(id === 0){
         engine.vwindow.drawContent(this.orthographic, this.colour_shader);
       }
     }
 
-    //engine.vwindow.draw(this.orthographic, this.colour_shader);
-    //engine.vwindow.drawContent(this.orthographic, this.colour_shader);
-
-    //engine.hwindow.draw(this.orthographic, this.colour_shader);
     this.drawLinesFromPoints(engine.triangle.getDrawPoints());
     engine.triangle.drawPoints(this.orthographic, this.circle_shader);
 
@@ -74,17 +71,6 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     const hex_pts = hex1.toPoints(0, 50);
     hex_pts.push(hex_pts[0]);
 
-    
-    //this.drawLinesFromPoints(hex_pts);
-
-    //draw the hex grid
-    //engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
-    
-    //engine.hex_grid.drawOutline(this.orthographic, this.colour_shader, 20, 30, 30, WebGL.Colour.ColourUtils.green(), 4);
-    
-
-    //this.drawLinesFromPoints(scaled_points);
-
     //test diamond drawing
     this.diamond_shader.use();
     const model = WebGL.WebGL.rectangleModel(150, 150, 100, 100);
@@ -101,7 +87,6 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.hexagon_shader.setMvp(this.orthographic.multiplyCopy(hm));
     WebGL.Shapes.Quad.drawRelative();
 
-    //engine.hex_grid.drawSolidWithLayout(this.orthographic, this.hexagon_shader, this.colours.getColour("blue")!);
     engine.hex_grid.drawOutlineWithLayout(this.orthographic, this.colour_shader, WebGL.Colour.ColourUtils.green(), 4);
     if(engine.hover_hex != undefined){
       engine.hex_grid.drawSolidHexWithLayout(this.orthographic, this.hexagon_shader, engine.hover_hex.x,
@@ -111,13 +96,31 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
 
     engine.graph_test.draw(this.orthographic, this.colour_shader, this.circle_shader);
     
-    const test_font = this.fonts.getCanvasFont("test");
+    //const test_font = this.fonts.getCanvasFont("test");
     if(test_font != undefined){
       this.text_drawer.setCustom2DFont(test_font);
-      this.text_drawer.drawText(this.orthographic, 300, 300, "hi", this.colours.getColour("blue")!);
+      this.text_drawer.drawText(this.orthographic, 300, 300, "hi i'm off", this.colours.getColour("blue")!);
+    }
+    const f2 = this.fonts.getCanvasFont("f2");
+    if(f2 != undefined){
+      this.text_drawer.setCustom2DFont(f2);
+      const trans = WebGL.Matrix.TransformationMatrix3x3.translate(100, 30);
+      const scale = WebGL.Matrix.TransformationMatrix3x3.scale(1.3, 1.3);
+      const mm = trans.multiplyCopy(scale);
+      const mat = this.orthographic.multiplyCopy(mm);
+      this.text_drawer.drawTextModel(mat, "bye", this.colours.getColour("red")!);
     }
 
-    this.text_drawer.drawTextColour(this.orthographic, 40, 500, "test", 20, this.colours.getColour("red")!);
+    this.text_drawer.setFont(this.fonts.getFont("font16-Sheet.png")!);
+
+    this.text_drawer.drawText(this.orthographic, 40, 500, "test", this.colours.getColour("red")!, 20);
+
+    const trans = WebGL.Matrix.TransformationMatrix3x3.translate(200, 10);
+    trans.rotate(1.5);
+    const mat = this.orthographic.multiplyCopy(trans);
+    this.text_drawer.drawTextModel(mat, "there", WebGL.Colour.ColourUtils.pink());
+
+    engine.scroll_interface.draw(this.orthographic, this.colour_shader, this.colours.getColour("blue")!);
   }
 
   drawLinesFromPoints(points: Point2D[]){

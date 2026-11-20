@@ -60,7 +60,6 @@ export class WebGL{
   static noCanvasInitialise(w: Int32=200, h: Int32=200){
     const offscreen = new OffscreenCanvas(w, h);
     this.gl = offscreen.getContext("webgl2", {alpha: false});
-    
   }
 
   static resetViewport(canvas: HTMLCanvasElement){
@@ -364,31 +363,6 @@ export class TextDrawer{
   }
   loadFont(onLoaded:()=>void=()=>{}){
   }
-
-  drawCanvas2DFont(mat: Matrix.TransformationMatrix3x3, text: string, colour: Colour.ColourRGB){
-    
-  }
-
-  drawTextModelColour(mat: Matrix.TransformationMatrix3x3, text: string, size: Float, colour: Colour.ColourRGB){
-    if(this.font){
-      this.colour_sheet_shader.use();
-      this.colour_sheet_shader.setColourFromColourRGB(colour);
-      this.font.active(0);
-      this.colour_sheet_shader.setTextureId(0);
-      const scale = Matrix.TransformationMatrix3x3.scale(size, size);
-      WebGL.enableBlend();
-      for(let i = 0; i < text.length; i++){
-        if(text[i] == ' ') continue;
-        const tr = Matrix.TransformationMatrix3x3.translate(size*i,0);
-        const matrix = mat.multiplyCopy(tr.multiplyCopy(scale));
-        this.colour_sheet_shader.setMvp(matrix);
-        this.font.setChar(this.colour_sheet_shader, text[i]);
-        Shapes.Quad.drawRelative();
-      }
-      WebGL.disableBlend();
-    }
-
-  }
   drawText(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, colour: Colour.ColourRGB, size: Float=12){
     switch(this.font_type){
       case TextDrawerFontTypeEnum.Canvas2D:
@@ -398,33 +372,7 @@ export class TextDrawer{
         this.font?.drawText(vp, this.colour_sheet_shader, x, y, size, text, colour);
         break;
     }
-
-    /*
-    if(this.font){
-      //console.log(this.font);
-      const gl = WebGL.gl!;
-      this.sprite_sheet_shader.use();
-      this.font.active(1);
-      this.sprite_sheet_shader.setTextureId(1);
-      const scale = Matrix.TransformationMatrix3x3.scale(size, size);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      for(let i = 0; i < text.length; i++){
-        if(text[i] == ' ') continue;
-        const cx = x+i*size;
-        const tr = Matrix.TransformationMatrix3x3.translate(cx, y);
-        const model = tr.multiplyCopy(scale);
-        this.sprite_sheet_shader.setMvp(vp.multiplyCopy(model));
-        this.font.setChar(this.sprite_sheet_shader, text[i]);
-        Shapes.Quad.drawRelative();
-      }
-      gl.disable(gl.BLEND);
-    }else{
-      console.log("TextDrawer: No font set");
-    }*/
   }
-
-  //todo: needs testing
   drawTextModel(mat: Matrix.TransformationMatrix3x3, text: string, colour: Colour.ColourRGB, size: Float=12){
     switch(this.font_type){
       case TextDrawerFontTypeEnum.Canvas2D:
@@ -434,55 +382,13 @@ export class TextDrawer{
         this.font?.drawTextModel(mat, this.colour_sheet_shader, size, text, colour);
         break;
     }
+  }
 
-    /*
-    if(this.font){
-      const gl = WebGL.gl!;
-      this.sprite_sheet_shader.use();
-      this.font.active(1);
-      this.sprite_sheet_shader.setTextureId(1);
-      const scale = Matrix.TransformationMatrix3x3.scale(size, size);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      for(let i = 0; i < text.length; i++){
-        if(text[i] == ' ') continue;
-        const tr = Matrix.TransformationMatrix3x3.translate(size*i,0);
-        
-        const matrix = mat.multiplyCopy(tr.multiplyCopy(scale));
-        this.sprite_sheet_shader.setMvp(matrix);
-        this.font.setChar(this.sprite_sheet_shader, text[i]);
-        Shapes.Quad.drawRelative();
-      }
-      gl.disable(gl.BLEND);
-    }
-      */
-  }
-  drawTextColour(vp: Matrix.TransformationMatrix3x3, x: Float, y: Float, text: string, size: Float, colour: Colour.ColourRGB){
-    if(this.font){
-      const gl = WebGL.gl!;
-      this.colour_sheet_shader.use();
-      this.colour_sheet_shader.setColourFromColourRGB(colour);
-      this.font.active(1);
-      this.colour_sheet_shader.setTextureId(1);
-      const scale = Matrix.TransformationMatrix3x3.scale(size, size);
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      for(let i = 0; i < text.length; i++){
-        if(text[i] == ' ') continue;
-        const cx = x+i*size;
-        const tr = Matrix.TransformationMatrix3x3.translate(cx, y);
-        const model = tr.multiplyCopy(scale);
-        this.colour_sheet_shader.setMvp(vp.multiplyCopy(model));
-        this.font.setChar(this.colour_sheet_shader, text[i]);
-        Shapes.Quad.drawRelative();
-      }
-      gl.disable(gl.BLEND);
-    }else{
-      console.log("TextDrawer: No font set");
-    }
-  }
   //expects that all characters are of same width
   getTextWidth(text: string, size: Float): Float{
+    if(this.font_type == TextDrawerFontTypeEnum.SpriteSheet){
+      return this.canvas2d_font!.getTextWidth(text);
+    }
     return text.length*size;
   }
 }

@@ -238,7 +238,7 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
     be.player_buff_interface.draw(this.orthographic, this.colour_shader, this.text_drawer);
     
     const kill_text = `Kills: ${be.kills}`;
-    this.text_drawer.drawTextColour(this.orthographic, 2, 2, kill_text, 9, this.colours.getColour("red")!);
+    this.text_drawer.drawText(this.orthographic, 2, 2, kill_text, this.colours.getColour("red")!, 9);
   
     // will need updating as dump zone is deved
 
@@ -253,9 +253,6 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
   drawCharacterHPBar(char_instance: Character.BattleCharacterInstance, x: Int32, y: Int32, w: Int32=150, h: Int32=30){
     //draw back
-    //this.colour_shader.use();
-    //this.colour_shader.setColourFromColourRGB(this.colours.getColour("red")!);
-
     WebGL.WebGL.drawColourRect(this.orthographic, this.colour_shader, x,
       y, w, h, this.colours.getColour("red")!
     );
@@ -266,6 +263,6 @@ export class PuzzleRenderer extends WebGL.App.SimpleAppRenderer<PuzzleEngine>{
 
     const health_text = `${char.current_health.toString()}/${char.max_health.toString()}`;
     //middle
-    this.text_drawer.drawTextColour(this.orthographic, x, y, health_text, 15, this.colours.getColour("black")!);
+    this.text_drawer.drawText(this.orthographic, x, y, health_text, this.colours.getColour("black")!, 15);
   }
 }

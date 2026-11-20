@@ -1,3 +1,5 @@
+import * as WebGL from "./../globals";
+
 type Float = number;
 
 export class Point2D{
@@ -9,6 +11,9 @@ export class Point2D{
   }
   equals(p: Point2D): boolean{
     return this.x === p.x && this.y === p.y;
+  }
+  toGeometryPoint(): WebGL.Geometry.Base.Point2D{
+    return new WebGL.Geometry.Base.Point2D(this.x, this.y);
   }
 }
 
@@ -277,7 +282,7 @@ export class TransformationMatrix3x3 extends Matrix3x3{
     return cpy;
   }
 
-  transformPoint(point: Point2D): Point2D{
+  transformPoint(point: Point2D | WebGL.Geometry.Base.Point2D): Point2D{
     const x = this._matrix[0] * point.x + this._matrix[3] * point.y + this._matrix[6]
     const y = this._matrix[1] * point.x + this._matrix[4] * point.y + this._matrix[7];
     return new Point2D(x, y);

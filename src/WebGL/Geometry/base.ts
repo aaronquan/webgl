@@ -39,6 +39,7 @@ export class Point2D{
   serialise(){
     return `${this.x.toString()},${this.y.toString()}`;
   }
+
 }
 
 export class Vector{

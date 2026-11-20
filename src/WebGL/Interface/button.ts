@@ -130,10 +130,11 @@ export class BasicButton{
     WebGL.Shapes.Quad.draw();
 
     if(this.text.length > 0){
-      const text_width = this.text_size*this.text.length;
+      const text_width = text_drawer.getTextWidth(this.text, this.text_size);
+      //const text_width = this.text_size*this.text.length;
       const tx = this.x + (this.width/2) - (text_width/2);
       const ty = this.y + (this.height/2) - (this.text_size/2);
-      text_drawer.drawTextColour(vp, tx, ty, this.text, this.text_size, this.text_colour);
+      text_drawer.drawText(vp, tx, ty, this.text, this.text_colour, this.text_size);
     }
   }
 }
@@ -296,7 +297,7 @@ export class ToggleButton implements Button{
       const text_width = this.text_size*text.length;
       const tx = this.x + (this.width/2) - (text_width/2);
       const ty = this.y + (this.height/2) - (this.text_size/2);
-      text_drawer.drawTextColour(vp, tx, ty, text, this.text_size, this.text_colour);
+      text_drawer.drawText(vp, tx, ty, text, this.text_colour, this.text_size);
     }
   }
 }

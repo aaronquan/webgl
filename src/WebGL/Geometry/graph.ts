@@ -329,9 +329,9 @@ export class DrawGraph extends Interface.InterfaceElement.InterfaceElement{
   }
 
   drawTriangle(vp: WebGL.Matrix.TransformationMatrix3x3, tr: Wave.Triangle, lt: Float,
-    colour_shader: WebGL.Shader.MVPColourProgram, colour: WebGL.Colour.ColourRGB, samples: Int32=5
+    colour_shader: WebGL.Shader.MVPColourProgram, colour: WebGL.Colour.ColourRGB
   ){
-    const points = tr.getPointsInRange(this.rect.left, this.rect.right, samples);
+    const points = tr.getPointsInRange(this.rect.left, this.rect.right);
     this.drawLinesFromPoints(vp, points, lt, colour_shader, colour);
   }
 

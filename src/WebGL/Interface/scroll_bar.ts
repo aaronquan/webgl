@@ -5,6 +5,8 @@ import * as Theme from "./theme";
 type Int32 = number;
 type Float = number;
 
+type Point2D = WebGL.Geometry.Base.Point2D | WebGL.Matrix.Point2D;
+
 class ScrollBar extends InterfaceElement{
   value: Float;
 
@@ -65,7 +67,7 @@ export class HorizontalScrollBar extends ScrollBar{
     return diff*this.value;
   }
 
-  isInsideBar(point: WebGL.Matrix.Point2D){
+  isInsideBar(point: Point2D){
     const offset_x = this.barOffsetX();
     const in_x = this.x + offset_x < point.x && point.x < this.x + offset_x + this.bar_width;
     const in_y = this.y < point.y && point.y < this.y + this.height;
@@ -95,7 +97,7 @@ export class HorizontalScrollBar extends ScrollBar{
     }
   }
 
-  onMouseDown(point: WebGL.Geometry.Base.Point2D){
+  onMouseDown(point: Point2D){
     if(this.isInside(point)){
       this.dragging = true;
       this.bar_hovering = true;
@@ -105,7 +107,7 @@ export class HorizontalScrollBar extends ScrollBar{
   onMouseUp(){
     this.dragging = false;
   }
-  onMouseMove(point: WebGL.Geometry.Base.Point2D){
+  onMouseMove(point: Point2D){
     this.bar_hovering = this.isInsideBar(point);
     if(this.dragging){
       this.setScroll(point.x);
@@ -152,7 +154,7 @@ export class VerticalScrollBar extends ScrollBar{
     const diff = this.height-this.bar_height;
     return diff*this.value;
   }
-  isInsideBar(point: WebGL.Geometry.Base.Point2D){
+  isInsideBar(point: Point2D){
     const offset_y = this.barOffsetY();
     const in_x = this.x < point.x && point.x < this.x + this.width;
     const in_y = this.y + offset_y < point.y && point.y < this.y + offset_y + this.bar_height;
