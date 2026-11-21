@@ -1,4 +1,5 @@
 import * as WebGL from "../globals";
+import * as InterfaceElement from "./interface_element";
 
 type Int32 = number;
 type Float = number;
@@ -30,11 +31,19 @@ const TextStatusEnum = {
 
 type TextStatus = (typeof TextStatusEnum)[keyof typeof TextStatusEnum];
 
-export class TextInput{
-  x: Int32;
+export class EditableLabel extends InterfaceElement.InterfaceElement{
+  input: TextInput;
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32){
+    super(x, y, width, height);
+    this.input = new TextInput(x, y, width, height);
+  }
+}
+
+export class TextInput extends InterfaceElement.InterfaceElement{
+  /*x: Int32;
   y: Int32;
   width: Int32;
-  height: Int32;
+  height: Int32;*/
 
   background_colour: WebGL.Colour.ColourRGB;
   text_colour: WebGL.Colour.ColourRGB;
@@ -61,11 +70,14 @@ export class TextInput{
   highlight_end: Int32;
   highlighting: boolean;
 
+  visible: boolean;
+
   constructor(x: Int32, y: Int32, width: Int32, height: Int32, ts: Int32=height-4){
-    this.x = x;
+    super(x, y, width, height);
+    /*this.x = x;
     this.y = y;
     this.width = width;
-    this.height = height;
+    this.height = height;*/
 
     this.text_offset = 3;
 
@@ -89,6 +101,7 @@ export class TextInput{
     this.highlight_start = 0;
     this.highlight_end = 0;
     this.highlighting = false;
+    this.visible = true;
   }
   maxTextSize(): Int32{
     return Math.floor((this.width-(this.text_offset*2)) / this.text_size);
@@ -224,6 +237,7 @@ export class TextInput{
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
     colour_shader: WebGL.Shader.MVPColourProgram, 
     text_drawer: WebGL.TextDrawer){
+      if(!this.visible) return;
       //draw background
       colour_shader.use();
       colour_shader.setColourFromColourRGB(this.background_colour);
