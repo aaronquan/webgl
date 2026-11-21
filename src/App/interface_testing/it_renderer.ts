@@ -121,6 +121,7 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.text_drawer.drawTextModel(mat, "there", WebGL.Colour.ColourUtils.pink());
 
     engine.scroll_interface.draw(this.orthographic, this.colour_shader, this.colours.getColour("blue")!);
+    engine.test_label.draw(this.orthographic, this.colour_shader, this.text_drawer);
   }
 
   drawLinesFromPoints(points: Point2D[]){

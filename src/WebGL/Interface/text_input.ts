@@ -33,9 +33,58 @@ type TextStatus = (typeof TextStatusEnum)[keyof typeof TextStatusEnum];
 
 export class EditableLabel extends InterfaceElement.InterfaceElement{
   input: TextInput;
-  constructor(x: Int32, y: Int32, width: Int32, height: Int32){
+  text_colour: WebGL.Colour.ColourRGB;
+  background_colour: WebGL.Colour.ColourRGB;
+  hovered: boolean;
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32, text: string, size: Int32=height){
     super(x, y, width, height);
+    this.text_colour = WebGL.Colour.ColourUtils.white();
+    this.background_colour = WebGL.Colour.ColourUtils.grey();
     this.input = new TextInput(x, y, width, height);
+    this.input.visible = false;
+    this.input.text = text;
+    this.hovered = false;
+  }
+  onMouseMove(point: Point2D){
+    this.hovered = this.isInside(point);
+    if(this.input.visible){
+      this.input.onMouseMove(point);
+    }
+  }
+  onMouseDown(point: Point2D){
+    if(this.isInside(point)){
+      this.input.visible = true;
+    }else{
+      this.input.visible = false;
+    }
+    if(this.input.visible){
+      this.input.onMouseDown(point);
+    }
+  }
+  onMouseUp(){
+    this.input.onMouseUp();
+  }
+  onKeyDown(ev: KeyboardEvent){
+    if(ev.key == "Enter"){
+      this.input.visible = false;
+    }
+    if(this.input.visible){
+      this.input.onKeyDown(ev);
+    }
+  }
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
+    colour_shader: WebGL.Shader.MVPColourProgram, 
+    text_drawer: WebGL.TextDrawer
+  ){
+    this.input.draw(vp, colour_shader, text_drawer);
+    const text_point = this.input.getTextPosition();
+    if(!this.input.visible){
+      if(this.hovered){
+        this.drawBackground(vp, colour_shader, this.background_colour);
+      }
+      text_drawer.drawText(vp, text_point.x, text_point.y, this.input.text, this.text_colour, this.input.text_size);
+    }
+
   }
 }
 
@@ -233,6 +282,12 @@ export class TextInput extends InterfaceElement.InterfaceElement{
   onMouseUp(){
     this.highlighting = false;
   }
+  getTextPosition(): WebGL.Geometry.Base.Point2D{
+    const x = this.x+this.text_offset;
+    const text_height_diff = this.height - this.text_size;
+    const y = this.y + (text_height_diff*0.5);
+    return new WebGL.Geometry.Base.Point2D(x, y);
+  }
 
   draw(vp: WebGL.Matrix.TransformationMatrix3x3, 
     colour_shader: WebGL.Shader.MVPColourProgram, 
@@ -245,12 +300,14 @@ export class TextInput extends InterfaceElement.InterfaceElement{
       colour_shader.setMvp(vp.multiplyCopy(background_model));
       WebGL.Shapes.Quad.draw();
 
-      const text_height_diff = this.height - this.text_size;
-      const y = this.y + (text_height_diff*0.5);
+      //const text_height_diff = this.height - this.text_size;
+      //const y = this.y + (text_height_diff*0.5);
+
+      const text_point = this.getTextPosition();
 
       if(this.highlight_start != this.highlight_end){
         WebGL.WebGL.drawColourRect(vp, colour_shader, this.x+this.text_offset+(this.highlight_start*this.text_size), 
-        y, (this.highlight_end-this.highlight_start)*this.text_size,
+        text_point.y, (this.highlight_end-this.highlight_start)*this.text_size,
         this.text_size, this.highlight_colour);
       }
 
@@ -259,7 +316,7 @@ export class TextInput extends InterfaceElement.InterfaceElement{
         colour_shader.setColourFromColourRGB(this.cursor_colour);
         const cursor_model = WebGL.WebGL.rectangleModel(
           this.x+this.text_offset-this.cursor_thickness+(this.text_size*this.cursor_index),
-          y, this.cursor_thickness, this.text_size
+          text_point.y, this.cursor_thickness, this.text_size
         );
         colour_shader.setMvp(vp.multiplyCopy(cursor_model));
         WebGL.Shapes.Quad.draw();
@@ -267,7 +324,7 @@ export class TextInput extends InterfaceElement.InterfaceElement{
       
 
       //draw text
-      text_drawer.drawText(vp, this.x+this.text_offset, y, this.text, this.text_colour, this.text_size);
+      text_drawer.drawText(vp, text_point.x, text_point.y, this.text, this.text_colour, this.text_size);
   
       //draw border
       if(this.state == TextStatusEnum.Selected){

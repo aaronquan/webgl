@@ -46,7 +46,7 @@ export class ColourUtils{
   static fromRGB(red: Float, green: Float, blue: Float): ColourRGB{
     return {red, green, blue};
   }
-  static toRGBA(colour: ColourRGB, alpha: Float): ColourRGBA{
+  static toRGBA(colour: ColourRGB, alpha: Float=1.0): ColourRGBA{
     return {...colour, alpha};
   }
   static black(): ColourRGB{

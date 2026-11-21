@@ -37,6 +37,9 @@ export function ColourAlphaShaderProgramMix<TBase extends Shader.CustomShaderPro
     setColour(a: GLfloat, b: GLfloat, c: GLfloat, d: GLfloat){
       this.program.setFloat4(this.colour_uniform_location!, a, b, c, d);
     }
+    setColourFromColourRGB(colour: WebGL.Colour.ColourRGB){
+      this.program.setFloat4(this.colour_uniform_location!, colour.red, colour.green, colour.blue, 1.0);
+    }
     setColourFromColourRGBA(colour: WebGL.Colour.ColourRGBA){
       this.program.setFloat4(this.colour_uniform_location!, colour.red, colour.green, colour.blue, colour.alpha);
     }

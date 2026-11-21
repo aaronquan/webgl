@@ -128,8 +128,11 @@ export class ITEngine extends WebGL.App.BaseEngine{
   hover_hex: WebGL.Grid.Generic.Coordinate | undefined;
 
   graph_test: ExampleGraph;
+  test_label: WebGL.Interface.TextInput.EditableLabel;
 
   scroll_interface: ExampleScroll;
+
+  last_time: Float;
 
   constructor(){
     super();
@@ -181,6 +184,13 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.graph_test = new ExampleGraph();
 
     this.scroll_interface = new ExampleScroll(80, 500, 300, 200, 500, 400);
+    this.test_label = new WebGL.Interface.TextInput.EditableLabel(20, 300, 100, 30, "HI");
+    this.last_time = 0;
+  }
+  update(t: number): void {
+    const dt = t - this.last_time;
+    WebGL.Interface.TextInput.TextGlobals.update(dt);
+    this.last_time = t;
   }
   protected handleMouseMove(ev: MouseEvent): void {
     this.global_mouse = new Point2D(ev.clientX, ev.clientY);
@@ -216,6 +226,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
     this.hover_hex = this.hex_grid.pointToHexCoord(this.global_mouse);
     this.scroll_interface.onMouseMove(this.global_mouse);
+    this.test_label.onMouseMove(this.global_mouse);
   }
   protected handleMouseDown(ev: MouseEvent): void {
     this.button.onMouseDown();
@@ -225,6 +236,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.windows.onMouseDown(this.global_mouse);
     this.triangle.onMouseDown(this.global_mouse);
     this.scroll_interface.onMouseDown(this.global_mouse);
+    this.test_label.onMouseDown(this.global_mouse);
   }
   protected handleMouseUp(ev: MouseEvent): void {
     this.button.onMouseUp();
@@ -234,10 +246,14 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.windows.onMouseUp();
     this.triangle.onMouseUp();
     this.scroll_interface.onMouseUp();
+    this.test_label.onMouseUp();
   }
   protected handleScrollWheel(ev: WheelEvent): void {
     //this.vwindow.onScrollWheel(ev);
     this.windows.onScrollWheel(ev);
+  }
+  protected handleKeyDown(ev: KeyboardEvent): void {
+    this.test_label.onKeyDown(ev);
   }
 }
 
