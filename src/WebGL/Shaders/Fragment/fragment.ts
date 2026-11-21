@@ -15,6 +15,7 @@ import * as MultiColourCentreCirclePath from './Program/multi_colour_centre_circ
 import * as SpriteSheetColour from './Program/sprite_sheet_colour';
 import * as Diamond from "./Program/diamond";
 import * as Hexagon from "./Program/hexagon";
+import * as Gradient from "./Program/gradient";
 
 export function loadFragmentShaders(){
   console.log("loading fragment shaders");
@@ -58,3 +59,5 @@ export const DiamondColourMixin = Diamond.DiamondShaderProgramMix;
 export const HexagonFlatColourMixin = Hexagon.HexagonFlatShaderProgramMix;
 export const HexagonPointyColourMixin = Hexagon.HexagonPointyShaderProgramMix;
 export const HexagonColourMixin = Hexagon.HexagonShaderProgramMix;
+export const HorizontalGradientMixin = Gradient.HorizontalGradientShaderProgramMix;
+export const VerticalGradientMixin = Gradient.VerticalGradientShaderProgramMix;

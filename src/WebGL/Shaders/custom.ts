@@ -34,6 +34,8 @@ export class MVPDiamondProgram extends Fragment.DiamondColourMixin(Vertex.Mvp2dM
 export class MVPHexagonFlatProgram extends Fragment.HexagonFlatColourMixin(Vertex.Mvp2dMixin){};
 export class MVPHexagonPointyProgram extends Fragment.HexagonPointyColourMixin(Vertex.Mvp2dMixin){};
 export class MVPHexagonProgram extends Fragment.HexagonColourMixin(Vertex.Mvp2dMixin){};
+export class MVPHorizontalGradientProgram extends Fragment.HorizontalGradientMixin(Vertex.Mvp2dMixin){};
+export class MVPVerticalGradientProgram extends Fragment.VerticalGradientMixin(Vertex.Mvp2dMixin){};
 
 /*
 interface Colour{

@@ -13,6 +13,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
   hexagon_shader: WebGL.Shader.MVPHexagonProgram;
   hexagonp_shader: WebGL.Shader.MVPHexagonPointyProgram;
 
+  h_gradient_shader: WebGL.Shader.MVPHorizontalGradientProgram;
+
   simple_shader: WebGL.Shader.SimpleColourProgram;
 
   colours: WebGL.Colour.ColourRGBCollection;
@@ -32,6 +34,8 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
     this.diamond_shader = new WebGL.Shader.MVPDiamondProgram();
     this.hexagon_shader = new WebGL.Shader.MVPHexagonProgram();
     this.hexagonp_shader = new WebGL.Shader.MVPHexagonPointyProgram();
+
+    this.h_gradient_shader = new WebGL.Shader.MVPHorizontalGradientProgram();
 
     this.simple_shader = new WebGL.Shader.SimpleColourProgram();
 
@@ -122,6 +126,19 @@ export class ITRenderer extends WebGL.App.SimpleAppRenderer<ITEngine>{
 
     engine.scroll_interface.draw(this.orthographic, this.colour_shader, this.colours.getColour("blue")!);
     engine.test_label.draw(this.orthographic, this.colour_shader, this.text_drawer);
+  
+    //test gradients
+    const g_model = WebGL.WebGL.rectangleModel(150, 10, 100, 40);
+
+    this.h_gradient_shader.use();
+    this.h_gradient_shader.setColourLeftFromColourRGB(this.colours.getColour("red")!);
+    this.h_gradient_shader.setColourRightFromColourRGB(this.colours.getColour("blue")!);
+    this.h_gradient_shader.setMvp(this.orthographic.multiplyCopy(g_model));
+
+    WebGL.Shapes.Quad.drawRelative();
+
+    engine.hue_strip.draw(this.orthographic, this.h_gradient_shader);
+
   }
 
   drawLinesFromPoints(points: Point2D[]){

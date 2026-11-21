@@ -18,8 +18,9 @@ const SliderStateEnum = {
 
 type SliderState = (typeof SliderStateEnum)[keyof typeof SliderStateEnum];
 
+
+//slider should be a rectangle
 class Slider{
-  //todo generic slider class that horizontal and vertical inherits
   knob_radius: Float;
   slider_height: Int32;
   slider_width: Int32;
@@ -135,5 +136,11 @@ export class HorizontalSlider extends Slider{
     colour_shader.setMvp(perspective.multiplyCopy(knob_model));
     WebGL.Shapes.Quad.draw();
   }
+
+}
+
+
+//todo
+export class VerticalSlider extends Slider{
 
 }

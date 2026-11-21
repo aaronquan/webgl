@@ -132,6 +132,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
   scroll_interface: ExampleScroll;
 
+  hue_strip: WebGL.Interface.Colour.HuePicker;
+
   last_time: Float;
 
   constructor(){
@@ -185,6 +187,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
 
     this.scroll_interface = new ExampleScroll(80, 500, 300, 200, 500, 400);
     this.test_label = new WebGL.Interface.TextInput.EditableLabel(20, 300, 100, 30, "HI");
+    
+    this.hue_strip = new WebGL.Interface.Colour.HuePicker(150, 50, 100, 20);
     this.last_time = 0;
   }
   update(t: number): void {
