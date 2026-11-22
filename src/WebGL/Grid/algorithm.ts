@@ -118,9 +118,9 @@ export class GridAlgorithms{
 		}
 		//search for limit index
 		const find_index = Utils.Array.binarySearchLowerBound(GridAlgorithms.positions_at_distance, (e:PositionsAtDistance) => limit_squared-e.distance_squared);
-		//console.log(find_index);
 		let positions: Coordinate[] = [];
-		for(let i = 0; i < find_index; i++){
+		for(let i = 0; i <= find_index; i++){
+			if(i >= GridAlgorithms.positions_at_distance.length) break;
 			positions = positions.concat(GridAlgorithms.positions_at_distance[i].positions.map((p) => {
 				return {x: p.x+center.x, y: p.y+center.y};
 			}));

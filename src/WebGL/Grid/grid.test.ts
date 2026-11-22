@@ -48,4 +48,11 @@ test("algorithms", () => {
   expect(coords.findIndex((c) => c.x == 0 && c.y == 2) != -1).toBeFalsy();
   console.log(coords);
 
+  const in4 = Grid.Algorithm.GridAlgorithms.coordinatesWithinRange(4);
+
+  const in4_2 = Grid.Algorithm.GridAlgorithms.coordinatesWithinRange(4);
+
+  console.log(in4);
+  console.log(in4_2);
+  expect(in4.length).toBe(in4_2.length);
 });

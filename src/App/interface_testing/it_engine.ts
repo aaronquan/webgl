@@ -231,6 +231,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.hover_hex = this.hex_grid.pointToHexCoord(this.global_mouse);
     this.scroll_interface.onMouseMove(this.global_mouse);
     this.test_label.onMouseMove(this.global_mouse);
+    this.hue_strip.onMouseMove(this.global_mouse);
   }
   protected handleMouseDown(ev: MouseEvent): void {
     this.button.onMouseDown();
@@ -241,6 +242,7 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.triangle.onMouseDown(this.global_mouse);
     this.scroll_interface.onMouseDown(this.global_mouse);
     this.test_label.onMouseDown(this.global_mouse);
+    this.hue_strip.onMouseDown(this.global_mouse);
   }
   protected handleMouseUp(ev: MouseEvent): void {
     this.button.onMouseUp();
@@ -251,6 +253,8 @@ export class ITEngine extends WebGL.App.BaseEngine{
     this.triangle.onMouseUp();
     this.scroll_interface.onMouseUp();
     this.test_label.onMouseUp();
+    this.hue_strip.onMouseUp();
+    
   }
   protected handleScrollWheel(ev: WheelEvent): void {
     //this.vwindow.onScrollWheel(ev);

@@ -1,11 +1,62 @@
 import * as WebGL from "./../globals"
 import * as InterfaceElement from "./interface_element";
+import * as Colour from './../colour';
 
-import ColourUtils = WebGL.Colour.ColourUtils;
+import ColourUtils = Colour.ColourUtils;
+
+type Int32 = number;
+type Float = number;
 
 export class HuePicker extends InterfaceElement.InterfaceElement{
-  
-  draw(vp: WebGL.Matrix.TransformationMatrix3x3, gradient_shader: WebGL.Shader.MVPHorizontalGradientProgram){
+  hue_value: Float;
+  dragging: boolean;
+
+  constructor(x: Int32, y: Int32, width: Int32, height: Int32){
+    super(x, y, width, height);
+    this.hue_value = 0.0;
+    this.dragging = false;
+  }
+  onMouseMove(pt: WebGL.Geometry.Base.Point2D){
+    if(this.dragging){
+      this.hue_value = (pt.x - this.x)/this.width;
+      if(this.hue_value < 0){
+        this.hue_value = 0;
+      }else if(this.hue_value > 1){
+        this.hue_value = 1;
+      }
+    }
+  }
+  onMouseDown(pt: WebGL.Geometry.Base.Point2D){
+    if(this.isInside(pt)){
+      this.hue_value = (pt.x - this.x)/this.width;
+      this.dragging = true;
+    }
+  }
+  onMouseUp(){
+    this.dragging = false;
+  }
+  toRGB(): WebGL.Colour.ColourRGB{
+    const val = this.hue_value * 6;
+    const section = Math.floor(val);
+    const ratio = val - section;
+    switch(section){
+      case 0:
+        return WebGL.Colour.ColourUtils.fromRGB(1.0, ratio, 0);
+      case 1:
+        return WebGL.Colour.ColourUtils.fromRGB(1.0-ratio, 1.0, 0);
+      case 2:
+        return WebGL.Colour.ColourUtils.fromRGB(0, 1.0, ratio);
+      case 3:
+        return WebGL.Colour.ColourUtils.fromRGB(0, 1.0-ratio, 1.0);
+      case 4:
+        return WebGL.Colour.ColourUtils.fromRGB(ratio, 0, 1.0);
+      case 5:
+        return WebGL.Colour.ColourUtils.fromRGB(1.0, 0, 1.0-ratio);
+    }
+    return WebGL.Colour.ColourUtils.fromRGB(0, 0, 0);
+  }
+
+  draw(vp: WebGL.Matrix.TransformationMatrix3x3, colour_shader: WebGL.Shader.MVPColourProgram, gradient_shader: WebGL.Shader.MVPHorizontalGradientProgram){
     const sw = this.width/6;
     gradient_shader.use();
     // red to yellow
@@ -49,6 +100,14 @@ export class HuePicker extends InterfaceElement.InterfaceElement{
     gradient_shader.setColourLeftFromColourRGB(ColourUtils.pink());
     gradient_shader.setColourRightFromColourRGB(ColourUtils.red());
     gradient_shader.setMvp(vp.multiplyCopy(pr_model));
+    WebGL.Shapes.Quad.drawRelative();
+
+    //indicator
+    colour_shader.use();
+    const indicator_width = 4;
+    const indicator_model = WebGL.WebGL.rectangleModel(this.x+(this.hue_value*this.width)-(indicator_width*0.5), this.y, indicator_width, this.height);
+    colour_shader.setMvp(vp.multiplyCopy(indicator_model));
+    colour_shader.setColourFromColourRGB(ColourUtils.white());
     WebGL.Shapes.Quad.drawRelative();
   }
 }

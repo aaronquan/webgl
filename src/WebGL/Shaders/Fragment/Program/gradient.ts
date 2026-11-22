@@ -20,6 +20,9 @@ const VerticalGradient = `precision mediump float;
 varying vec2 v_position;
 varying vec2 v_relative;
 
+uniform vec3 u_colour_left; //colour
+uniform vec3 u_colour_right; //colour
+
 void main(){
   vec3 col = mix(u_colour_left, u_colour_right, v_relative.y);
   gl_FragColor = vec4(col, 1.0);
